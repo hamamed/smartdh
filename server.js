@@ -921,6 +921,18 @@ app.get('/leaderboard', requireActive, (req, res) => {
 // ---------- Admin ----------
 const PER_PAGE = 10;
 
+// Slice a list for the current page, clamping out-of-range page numbers.
+function paginate(list, page, per = PER_PAGE) {
+  const pages = Math.max(1, Math.ceil(list.length / per));
+  const p = Math.min(pages, Math.max(1, parseInt(page) || 1));
+  return { items: list.slice((p - 1) * per, p * per), page: p, pages, total: list.length };
+}
+
+// { pending: 3, approved: 10, ... } for the filter-button badges
+function countBy(list, key = 'status') {
+  return list.reduce((acc, x) => { acc[x[key]] = (acc[x[key]] || 0) + 1; return acc; }, {});
+}
+
 // Counts shown as badges on the admin hub tiles.
 function adminCounts(db) {
   return {
@@ -965,13 +977,13 @@ app.get('/admin/users', requireAdmin, (req, res) => {
     u.name.toLowerCase().includes(q) ||
     u.email.toLowerCase().includes(q) ||
     (u.referralCode || '').toLowerCase().includes(q));
-  const totalUsers = list.length;
-  const pages = Math.max(1, Math.ceil(totalUsers / PER_PAGE));
-  const page = Math.min(pages, Math.max(1, parseInt(req.query.page) || 1));
+  const pg = paginate(list, req.query.page);
   res.render('admin/users', {
     title: req.t('tab_users'),
-    users: list.slice((page - 1) * PER_PAGE, page * PER_PAGE),
-    q, status, page, pages, totalUsers,
+    users: pg.items, page: pg.page, pages: pg.pages, totalUsers: pg.total,
+    q, status,
+    totalUsersAll: db.users.length,
+    statusCounts: countBy(db.users),
     counts: adminCounts(db),
     levelForXp, totalInvested, totalBalance
   });
@@ -1032,19 +1044,33 @@ app.get('/admin/apps', requireAdmin, (req, res) => {
 
 app.get('/admin/deposits', requireAdmin, (req, res) => {
   const db = req.db;
+  const status = req.query.status || '';
+  const q = (req.query.q || '').trim().toLowerCase();
+  let list = db.deposits.slice().sort((a, b) => b.createdAt - a.createdAt);
+  if (status) list = list.filter(d => d.status === status);
+  if (q) list = list.filter(d => (d.userName || '').toLowerCase().includes(q));
+  const pg = paginate(list, req.query.page);
   res.render('admin/deposits', {
     title: req.t('tab_deposits'),
     counts: adminCounts(db),
-    deposits: db.deposits.slice().sort((a, b) => b.createdAt - a.createdAt)
+    deposits: pg.items, page: pg.page, pages: pg.pages, total: pg.total,
+    status, q, statusCounts: countBy(db.deposits)
   });
 });
 
 app.get('/admin/withdrawals', requireAdmin, (req, res) => {
   const db = req.db;
+  const status = req.query.status || '';
+  const q = (req.query.q || '').trim().toLowerCase();
+  let list = db.withdrawals.slice().sort((a, b) => b.createdAt - a.createdAt);
+  if (status) list = list.filter(w => w.status === status);
+  if (q) list = list.filter(w => (w.userName || '').toLowerCase().includes(q));
+  const pg = paginate(list, req.query.page);
   res.render('admin/withdrawals', {
     title: req.t('tab_withdrawals'),
     counts: adminCounts(db),
-    withdrawals: db.withdrawals.slice().sort((a, b) => b.createdAt - a.createdAt)
+    withdrawals: pg.items, page: pg.page, pages: pg.pages, total: pg.total,
+    status, q, statusCounts: countBy(db.withdrawals)
   });
 });
 

@@ -1,0 +1,31 @@
+<%# Pagination that stays short when there are many pages: 1 … 4 5 [6] 7 8 … 20
+    base  – e.g. '/admin/users'
+    qs    – extra query string to keep (e.g. '&status=pending&q=ali'), may be ''
+    page, pages %>
+<% if (pages > 1) {
+     const win = 2;
+     const show = [];
+     for (let p = 1; p <= pages; p++) {
+       if (p === 1 || p === pages || Math.abs(p - page) <= win) show.push(p);
+       else if (show[show.length - 1] !== '…') show.push('…');
+     } %>
+  <nav>
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item <%= page === 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="<%= base %>?page=<%= page - 1 %><%= qs %>"><i data-lucide="chevron-left"></i></a>
+      </li>
+      <% show.forEach(p => { %>
+        <% if (p === '…') { %>
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        <% } else { %>
+          <li class="page-item <%= p === page ? 'active' : '' %>">
+            <a class="page-link" href="<%= base %>?page=<%= p %><%= qs %>"><%= p %></a>
+          </li>
+        <% } %>
+      <% }) %>
+      <li class="page-item <%= page === pages ? 'disabled' : '' %>">
+        <a class="page-link" href="<%= base %>?page=<%= page + 1 %><%= qs %>"><i data-lucide="chevron-right"></i></a>
+      </li>
+    </ul>
+  </nav>
+<% } %>

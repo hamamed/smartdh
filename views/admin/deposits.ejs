@@ -4,11 +4,30 @@
 
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">
-        <div class="d-flex justify-content-end mb-3">
-          <a href="/admin/export/deposits.csv" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="download"></i><%= t('export_deposits') %></a>
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <form method="get" action="/admin/deposits" class="d-flex gap-2" style="max-width:320px">
+            <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i data-lucide="search"></i></span>
+              <input name="q" class="form-control" placeholder="<%= t('search_player') %>" value="<%= q %>">
+            </div>
+            <button class="btn btn-sm btn-primary"><%= t('btn_search') %></button>
+          </form>
+          <div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
+            <%- include('_filters', {
+                  base: '/admin/deposits', current: status, q: q,
+                  options: [
+                    { value: '',         label: t('filter_all'),  count: (statusCounts.pending||0)+(statusCounts.approved||0)+(statusCounts.rejected||0) },
+                    { value: 'pending',  label: t('st_pending'),  count: statusCounts.pending  || 0, danger: true },
+                    { value: 'approved', label: t('st_approved'), count: statusCounts.approved || 0 },
+                    { value: 'rejected', label: t('st_rejected'), count: statusCounts.rejected || 0 }
+                  ]
+                }) %>
+            <a href="/admin/export/deposits.csv" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="download"></i><%= t('export_deposits') %></a>
+          </div>
         </div>
         <% if (deposits.length === 0) { %>
-          <p class="text-muted mb-0"><%= t('dv_none') %></p>
+          <p class="text-muted mb-0"><%= t('no_results') %></p>
         <% } else { %>
           <div class="table-responsive">
             <table class="table align-middle mb-0">
@@ -33,6 +52,13 @@
                 <% }) %>
               </tbody>
             </table>
+          </div>
+          <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <span class="small text-muted"><%= t('showing_n', { shown: deposits.length, total: total }) %></span>
+            <%- include('_pager', {
+                  base: '/admin/deposits', page: page, pages: pages,
+                  qs: (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : '')
+                }) %>
           </div>
         <% } %>
       </div>

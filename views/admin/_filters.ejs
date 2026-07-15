@@ -1,0 +1,17 @@
+<%# Status filter buttons.
+    base    – e.g. '/admin/deposits'
+    current – the active status ('' = all)
+    q       – current search term (preserved across filters)
+    options – [{ value:'pending', label:'Pending', count:3, danger:true }, ...] %>
+<div class="d-flex gap-1 flex-wrap">
+  <% options.forEach(o => {
+       const href = base + (o.value ? '?status=' + o.value : '?') + (q ? '&q=' + encodeURIComponent(q) : '');
+       const active = current === o.value; %>
+    <a href="<%= href %>" class="btn btn-sm <%= active ? 'btn-primary' : 'btn-outline-secondary' %> d-inline-flex align-items-center gap-1">
+      <%= o.label %>
+      <% if (o.count) { %>
+        <span class="badge <%= active ? 'bg-light text-dark' : (o.danger ? 'bg-danger' : 'bg-secondary') %>"><%= o.count %></span>
+      <% } %>
+    </a>
+  <% }) %>
+</div>
