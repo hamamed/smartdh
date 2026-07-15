@@ -53,18 +53,19 @@ adduser --system --group --home /var/www/smartdh smartdh
 mkdir -p /var/www/smartdh
 ```
 
-## 5. Upload the code (on your PC)
-
-From the project folder on your machine:
+## 5. Get the code from GitHub
 
 ```bash
-# excludes node_modules, local data and .env
-rsync -avz --delete \
-  --exclude node_modules --exclude data --exclude .env --exclude .git \
-  ./ root@46.224.32.64:/var/www/smartdh/
+apt install -y git
+git clone https://github.com/hamamed/smartdh.git /var/www/smartdh
+cd /var/www/smartdh
 ```
 
-No rsync on Windows? Use WinSCP, or zip it and `scp` the archive up.
+> Private repo? Either use a
+> [personal access token](https://github.com/settings/tokens):
+> `git clone https://<TOKEN>@github.com/hamamed/smartdh.git /var/www/smartdh`
+> or add a deploy key (`ssh-keygen -t ed25519` → add the `.pub` to the repo's Deploy keys)
+> and clone with `git@github.com:hamamed/smartdh.git`.
 
 ## 6. Install + configure (back on the VPS)
 
@@ -140,23 +141,23 @@ That account becomes admin automatically; everyone else lands in *pending* until
 
 ## Updating later
 
-On your PC:
+On your PC — push your changes:
 
 ```bash
-rsync -avz --delete --exclude node_modules --exclude data --exclude .env --exclude .git \
-  ./ root@46.224.32.64:/var/www/smartdh/
+git add -A
+git commit -m "what changed"
+git push
 ```
 
-On the VPS:
+On the VPS — one command:
 
 ```bash
-cd /var/www/smartdh
-npm ci --omit=dev
-chown -R smartdh:smartdh /var/www/smartdh
-systemctl restart smartdh
+cd /var/www/smartdh && sudo bash deploy/update.sh
 ```
 
-Player logins survive restarts (sessions are stored in `data/sessions`).
+That backs up `data/`, pulls, reinstalls, fixes ownership and restarts.
+Player logins survive restarts (sessions live in `data/sessions`), and `.env`
++ `data/` are untouched by `git pull` because they're gitignored.
 
 ## Backups
 
