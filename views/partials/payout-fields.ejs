@@ -1,0 +1,23 @@
+<%# Structured payout fields — shared by the profile and withdraw pages. %>
+<div class="mb-3">
+  <label class="form-label"><%= t('payout_method') %></label>
+  <select name="method" class="form-select payout-method">
+    <option value="paypal" <%= currentUser.payout.method==='paypal'?'selected':'' %>><%= t('payout_paypal') %></option>
+    <option value="bank" <%= currentUser.payout.method==='bank'?'selected':'' %>><%= t('payout_bank') %></option>
+  </select>
+</div>
+
+<div class="mb-3">
+  <label class="form-label"><%= t('payout_name') %></label>
+  <input name="payoutName" class="form-control" placeholder="<%= t('payout_name_ph') %>" value="<%= currentUser.payout.name %>">
+</div>
+
+<div class="mb-3 payout-if-paypal">
+  <label class="form-label"><%= t('payout_paypal_email') %></label>
+  <input name="paypal" type="email" dir="ltr" class="form-control" placeholder="name@example.com" value="<%= currentUser.payout.paypal %>">
+</div>
+
+<div class="mb-3 payout-if-bank">
+  <label class="form-label"><%= t('payout_rib') %></label>
+  <input name="rib" dir="ltr" class="form-control" placeholder="<%= t('payout_rib_ph') %>" value="<%= currentUser.payout.rib %>">
+</div>

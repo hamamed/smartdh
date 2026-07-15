@@ -1,0 +1,33 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 720px;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="trophy" class="text-warning"></i><%= t('lb_title') %></h3>
+    </div>
+    <p class="text-muted mb-4"><%= t('lb_sub') %></p>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          <% rows.forEach((r, i) => { const medalColor = ['#e8b923', '#a8b3c4', '#c98442'][i]; %>
+            <div class="list-group-item d-flex align-items-center gap-3 py-3 <%= r.isSelf ? 'bg-primary-subtle' : 'bg-transparent' %>">
+              <div class="fw-bold text-muted text-center d-flex align-items-center justify-content-center" style="width:38px;font-size:1.15rem">
+                <% if (medalColor) { %>
+                  <i data-lucide="medal" style="color:<%= medalColor %>"></i>
+                <% } else { %>
+                  <span class="fs-6">#<%= i + 1 %></span>
+                <% } %>
+              </div>
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
+                   style="width:42px;height:42px;flex:0 0 42px"><%= r.name.charAt(0) %></div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold"><%= r.name %><% if (r.isSelf) { %> <span class="badge bg-primary ms-1"><%= t('lb_you') %></span><% } %></div>
+              </div>
+              <div class="fw-bold"><%= money(r.total) %></div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

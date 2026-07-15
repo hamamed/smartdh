@@ -1,0 +1,27 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 720px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('ach_title') %>
+        <span class="text-muted fs-6">(<%= currentUser.achievements.length %>/<%= Object.keys(ACH).length %>)</span>
+      </h3>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="row g-2">
+          <% Object.keys(ACH).forEach(id => { const got = currentUser.achievements.includes(id); %>
+            <div class="col-6 col-md-3">
+              <div class="text-center p-3 rounded-3 h-100 <%= got ? 'bg-warning-subtle' : 'bg-body-secondary opacity-50' %>"
+                   title="<%= achDesc(id) %>">
+                <div class="fs-3 <%= got ? 'text-warning' : 'text-muted' %>"><i data-lucide="<%= ACH[id].icon %>"></i></div>
+                <div class="small fw-semibold mt-1"><%= achName(id) %></div>
+                <div class="small text-muted" style="font-size:.72rem"><%= got ? achDesc(id) : t('locked') %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

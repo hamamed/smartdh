@@ -1,0 +1,90 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <%- include('_head', { heading: t('tab_users') }) %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+          <form method="get" action="/admin/users" class="d-flex gap-2" style="max-width:420px">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i data-lucide="search"></i></span>
+              <input name="q" class="form-control" placeholder="<%= t('search_users') %>" value="<%= q %>">
+            </div>
+            <button class="btn btn-sm btn-primary"><%= t('btn_search') %></button>
+          </form>
+          <div class="d-flex gap-1 ms-auto flex-wrap">
+            <a href="/admin/users" class="btn btn-sm <%= status===''?'btn-primary':'btn-outline-secondary' %>"><%= t('filter_all') %></a>
+            <a href="/admin/users?status=pending" class="btn btn-sm <%= status==='pending'?'btn-primary':'btn-outline-secondary' %>"><%= t('st_pending') %>
+              <% if (counts.pendingUsers) { %><span class="badge bg-danger ms-1"><%= counts.pendingUsers %></span><% } %></a>
+            <a href="/admin/users?status=active" class="btn btn-sm <%= status==='active'?'btn-primary':'btn-outline-secondary' %>"><%= t('st_active') %></a>
+            <a href="/admin/export/users.csv" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="download"></i><%= t('export_users') %></a>
+          </div>
+        </div>
+
+        <% if (users.length === 0) { %>
+          <p class="text-muted mb-0"><%= t('no_results') %></p>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="text-muted small">
+                <tr><th><%= t('th_user') %></th><th><%= t('th_status') %></th><th><%= t('level_label') %></th>
+                    <th><%= t('th_invested') %></th><th><%= t('th_earnings') %></th><th class="text-end"><%= t('th_action') %></th></tr>
+              </thead>
+              <tbody>
+                <% users.forEach(u => { const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <% if (u.avatar) { %>
+                          <img src="<%= u.avatar %>" class="rounded-circle" style="width:36px;height:36px;object-fit:cover" alt="">
+                        <% } else { %>
+                          <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
+                               style="width:36px;height:36px;flex:0 0 36px"><%= u.name.charAt(0).toUpperCase() %></div>
+                        <% } %>
+                        <div>
+                          <div class="fw-semibold"><%= u.name %>
+                            <% if (u.isAdmin) { %><span class="badge bg-primary-subtle text-primary ms-1"><%= t('badge_admin') %></span><% } %>
+                          </div>
+                          <div class="small text-muted"><%= u.email %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge bg-<%= sc %>-subtle text-<%= sc %>"><%= statusLabel(u.status) %></span></td>
+                    <td><span class="badge bg-body-secondary text-muted"><%= levelForXp(u.xp) %></span></td>
+                    <td class="fw-semibold"><%= money(totalInvested(u)) %></td>
+                    <td class="fw-semibold text-success"><%= money(u.earnings) %></td>
+                    <td class="text-end text-nowrap">
+                      <% if (u.status === 'pending') { %>
+                        <form action="/admin/approve/<%= u.id %>" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn btn-sm btn-success"><i data-lucide="check" class="me-1"></i><%= t('btn_approve') %></button>
+                        </form>
+                        <form action="/admin/reject/<%= u.id %>" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn btn-sm btn-outline-danger"><i data-lucide="x"></i></button>
+                        </form>
+                      <% } %>
+                      <a href="/admin/users/<%= u.id %>" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                        <i data-lucide="eye"></i><%= t('btn_manage') %></a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <span class="small text-muted"><%= t('showing_n', { shown: users.length, total: totalUsers }) %></span>
+            <% if (pages > 1) { %>
+              <nav><ul class="pagination pagination-sm mb-0">
+                <% for (let p = 1; p <= pages; p++) { %>
+                  <li class="page-item <%= p===page?'active':'' %>">
+                    <a class="page-link" href="/admin/users?page=<%= p %><%= q?'&q='+encodeURIComponent(q):'' %><%= status?'&status='+status:'' %>"><%= p %></a>
+                  </li>
+                <% } %>
+              </ul></nav>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

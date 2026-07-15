@@ -1,0 +1,38 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <%- include('_head', { heading: t('set_payments_t'), back: '/admin/settings' }) %>
+    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div><% } %>
+
+    <div class="alert alert-warning small d-flex align-items-center gap-2">
+      <i data-lucide="alert-triangle"></i><span><%= t('set_depwarn') %></span>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%= t('set_payments_d') %></p>
+        <form action="/admin/settings/payments" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><%= t('set_bankname') %></label>
+              <input name="dep_bankName" class="form-control" value="<%= settings.depositInfo.bankName %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><%= t('set_accountname') %></label>
+              <input name="dep_accountName" class="form-control" value="<%= settings.depositInfo.accountName %>">
+            </div>
+            <div class="col-12">
+              <label class="form-label"><%= t('set_rib') %></label>
+              <input name="dep_rib" class="form-control" dir="ltr" value="<%= settings.depositInfo.rib %>">
+              <div class="form-text"><%= t('set_rib_hint') %></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label"><%= t('set_depnote') %></label>
+              <input name="dep_note" class="form-control" value="<%= settings.depositInfo.note %>">
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3 d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

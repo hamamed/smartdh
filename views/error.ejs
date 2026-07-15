@@ -1,0 +1,16 @@
+<section class="py-5">
+  <div class="container text-center" style="max-width: 560px;">
+    <div class="tile-icon ti-coral mx-auto mb-3" style="width:76px;height:76px;font-size:2rem">
+      <i data-lucide="<%= code === 404 ? 'map-pin-off' : (code === 403 ? 'shield-alert' : 'triangle-alert') %>"></i>
+    </div>
+    <div class="display-5 fw-bold text-primary mb-1"><%= code %></div>
+    <h4 class="fw-bold mb-2"><%= heading %></h4>
+    <p class="text-muted mb-4"><%= body %></p>
+    <% if (typeof detail !== 'undefined' && detail) { %>
+      <pre class="text-start small bg-body-secondary rounded-3 p-3 mb-4" style="white-space:pre-wrap"><%= detail %></pre>
+    <% } %>
+    <a href="<%= currentUser ? '/dashboard' : '/' %>" class="btn btn-primary d-inline-flex align-items-center gap-1">
+      <i data-lucide="house"></i><%= t('btn_back_home') %>
+    </a>
+  </div>
+</section>

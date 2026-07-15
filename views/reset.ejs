@@ -1,0 +1,24 @@
+<section class="py-5">
+  <div class="container" style="max-width: 460px;">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h3 class="fw-bold mb-1"><%= t('reset_title') %></h3>
+        <p class="text-muted mb-4"><%= t('reset_sub') %></p>
+
+        <% if (error) { %>
+          <div class="alert alert-danger py-2 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= error %></div>
+        <% } %>
+
+        <form method="post" action="/reset/<%= token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('pw_new') %></label>
+            <input name="password" type="password" class="form-control" minlength="4" required autofocus>
+          </div>
+          <button class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-1">
+            <i data-lucide="lock"></i><%= t('reset_save') %>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

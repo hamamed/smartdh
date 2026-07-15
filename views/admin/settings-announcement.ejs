@@ -1,0 +1,33 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <%- include('_head', { heading: t('set_announcement_t'), back: '/admin/settings' }) %>
+    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div><% } %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%= t('set_announcement_d') %></p>
+
+        <% if (settings.announcement.enabled && settings.announcement.text) { %>
+          <div class="small text-muted mb-1"><%= t('ann_preview') %></div>
+          <div class="announcement-bar rounded-3 mb-3">
+            <div class="d-flex align-items-center gap-2 p-2 small">
+              <i data-lucide="megaphone"></i><span><%= settings.announcement.text %></span>
+            </div>
+          </div>
+        <% } %>
+
+        <form action="/admin/settings/announcement" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('ann_text') %></label>
+            <input name="ann_text" class="form-control" placeholder="<%= t('ann_ph') %>" value="<%= settings.announcement.text %>">
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="ann_enabled" id="ann_enabled" value="1" <%= settings.announcement.enabled ? 'checked' : '' %>>
+            <label class="form-check-label" for="ann_enabled"><%= t('ann_show') %></label>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,48 @@
+<%# Invite-challenge card. Needs `campaign` (from campaignStatus) and `redirectTo`. %>
+<% if (campaign.enabled) { %>
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <span class="tile-icon ti-lilac" style="width:52px;height:52px;flex:0 0 52px;font-size:1.4rem"><i data-lucide="party-popper"></i></span>
+        <div class="flex-grow-1">
+          <h6 class="fw-bold mb-1"><%= campaign.title || t('camp_title') %></h6>
+          <p class="text-muted small mb-0">
+            <%= t('camp_desc', { goal: campaign.goal, min: money(campaign.minDeposit), coins: money(campaign.rewardCoins), xp: campaign.rewardXp }) %>
+          </p>
+          <% if (campaign.coinsPerInvite > 0 || campaign.xpPerInvite > 0) { %>
+            <span class="badge bg-success-subtle text-success mt-2 d-inline-flex align-items-center gap-1">
+              <i data-lucide="user-check"></i><%= t('camp_perinvite_badge', { coins: money(campaign.coinsPerInvite), xp: campaign.xpPerInvite }) %>
+            </span>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (campaign.maxed) { %>
+        <div class="alert alert-success py-2 small mb-0 d-flex align-items-center gap-2">
+          <i data-lucide="check"></i><span><%= t('camp_done', { n: campaign.claims }) %></span>
+        </div>
+      <% } else { %>
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="text-muted"><%= t('camp_progress', { have: campaign.inStage, goal: campaign.goal }) %></span>
+          <% if (campaign.claims > 0) { %><span class="text-muted"><%= t('camp_times', { n: campaign.claims }) %></span><% } %>
+        </div>
+        <div class="progress mb-3">
+          <div class="progress-bar" style="width: <%= Math.round(campaign.inStage / campaign.goal * 100) %>%"></div>
+        </div>
+
+        <% if (campaign.canClaim) { %>
+          <form action="/campaign/claim" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="redirect" value="<%= redirectTo %>">
+            <button class="btn btn-warning w-100 d-inline-flex align-items-center justify-content-center gap-2">
+              <i data-lucide="gift"></i><%= t('camp_claim', { coins: money(campaign.rewardCoins), xp: campaign.rewardXp }) %>
+            </button>
+          </form>
+        <% } else { %>
+          <div class="small text-muted d-flex align-items-center gap-1">
+            <i data-lucide="lock"></i><%= t('camp_locked', { n: campaign.goal - campaign.inStage }) %>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+<% } %>

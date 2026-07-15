@@ -1,0 +1,94 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="shield" class="text-primary"></i><%= t('admin_title') %></h3>
+    </div>
+
+    <!-- Site stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-coral rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="users"></i><%= t('stat_players') %></div>
+          <div class="h4 fw-bold mb-0 mt-1"><%= stats.players %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-mint rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="piggy-bank"></i><%= t('stat_invested') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.invested) %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-yellow rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('stat_earnings') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.earnings) %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
+          <div class="small text-muted d-flex align-items-center gap-1"><i data-lucide="wallet"></i><%= t('stat_total') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.total) %></div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- Needs attention -->
+    <% const todo = counts.pendingUsers + counts.pendingDeposits + counts.pendingWithdrawals; %>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="bell" class="text-primary"></i><%= t('needs_attention') %></h6>
+        <% if (todo === 0) { %>
+          <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i data-lucide="check" class="text-success"></i><%= t('all_clear') %></p>
+        <% } else { %>
+          <div class="d-flex flex-wrap gap-2">
+            <% if (counts.pendingUsers) { %>
+              <a href="/admin/users?status=pending" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="user-plus"></i><%= t('tab_pending') %> <span class="badge bg-dark ms-1"><%= counts.pendingUsers %></span></a>
+            <% } %>
+            <% if (counts.pendingDeposits) { %>
+              <a href="/admin/deposits" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="receipt"></i><%= t('tab_deposits') %> <span class="badge bg-dark ms-1"><%= counts.pendingDeposits %></span></a>
+            <% } %>
+            <% if (counts.pendingWithdrawals) { %>
+              <a href="/admin/withdrawals" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="banknote"></i><%= t('tab_withdrawals') %> <span class="badge bg-dark ms-1"><%= counts.pendingWithdrawals %></span></a>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Grid menu -->
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="layout-grid" class="text-primary"></i><%= t('menu_title') %></h6>
+    <div class="menu-grid">
+      <a class="menu-tile position-relative" href="/admin/users">
+        <span class="tile-icon ti-coral"><i data-lucide="users"></i></span>
+        <span class="tile-label"><%= t('tab_users') %></span>
+        <% if (counts.pendingUsers) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingUsers %></span><% } %>
+      </a>
+      <a class="menu-tile position-relative" href="/admin/deposits">
+        <span class="tile-icon ti-mint"><i data-lucide="receipt"></i></span>
+        <span class="tile-label"><%= t('tab_deposits') %></span>
+        <% if (counts.pendingDeposits) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingDeposits %></span><% } %>
+      </a>
+      <a class="menu-tile position-relative" href="/admin/withdrawals">
+        <span class="tile-icon ti-yellow"><i data-lucide="banknote"></i></span>
+        <span class="tile-label"><%= t('tab_withdrawals') %></span>
+        <% if (counts.pendingWithdrawals) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingWithdrawals %></span><% } %>
+      </a>
+      <a class="menu-tile" href="/admin/apps">
+        <span class="tile-icon ti-sky"><i data-lucide="layers"></i></span>
+        <span class="tile-label"><%= t('tab_apps') %></span>
+      </a>
+      <a class="menu-tile" href="/admin/settings">
+        <span class="tile-icon ti-lilac"><i data-lucide="settings"></i></span>
+        <span class="tile-label"><%= t('tab_settings') %></span>
+      </a>
+      <a class="menu-tile" href="/admin/audit">
+        <span class="tile-icon ti-navy"><i data-lucide="history"></i></span>
+        <span class="tile-label"><%= t('tab_audit') %></span>
+      </a>
+    </div>
+  </div>
+</section>

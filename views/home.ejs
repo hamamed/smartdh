@@ -1,0 +1,187 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-start mb-4 gap-2">
+      <div>
+        <h3 class="fw-bold mb-0"><%= t('hi_name', { name: currentUser.name }) %></h3>
+        <p class="text-muted mb-0"><%= t('dash_sub') %></p>
+      </div>
+      <button id="tourOpen" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 flex-shrink-0">
+        <i data-lucide="circle-help"></i><span class="d-none d-sm-inline"><%= t('tour_help') %></span>
+      </button>
+    </div>
+
+    <div id="flash"></div>
+
+    <!-- Daily bonus -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body d-flex flex-wrap align-items-center gap-3">
+        <div class="tile-icon ti-yellow" style="width:52px;height:52px;flex:0 0 52px;font-size:1.4rem"><i data-lucide="flame"></i></div>
+        <div class="flex-grow-1">
+          <h6 class="fw-bold mb-1"><%= t('db_title') %></h6>
+          <p class="text-muted small mb-0"><%= t('streak_line', { n: currentUser.streak.count }) %> · <%= t('bonus_grows', { max: money(settings.dailyBonusBase * 7) }) %></p>
+        </div>
+        <form action="/daily-bonus" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="redirect" value="home">
+          <button class="btn btn-warning d-inline-flex align-items-center gap-1" <%= canClaim ? '' : 'disabled' %>>
+            <i data-lucide="gift"></i><%= canClaim ? t('btn_claim') : t('btn_claimed') %>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <%- include("partials/campaign-card", { campaign: campaign, redirectTo: "home" }) %>
+
+    <!-- Tinted wallet cards with live counters -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card wallet wallet-coral rounded-4 h-100">
+          <div class="card-body">
+            <div class="small d-flex align-items-center gap-1"><i data-lucide="piggy-bank"></i><%= t('c_invested') %></div>
+            <div class="h3 fw-bold mb-0 mt-1"><%= money(totalInvested) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card wallet wallet-mint rounded-4 h-100">
+          <div class="card-body">
+            <div class="small d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('c_earnings') %></div>
+            <div class="h3 fw-bold mb-0 mt-1 live-counter"
+                 data-value="<%= currentUser.earnings %>" data-persec="<%= perSecond %>"
+                 data-currency="<%= settings.currency %>"><%= money(currentUser.earnings) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card wallet wallet-yellow rounded-4 h-100">
+          <div class="card-body">
+            <div class="small d-flex align-items-center gap-1"><i data-lucide="wallet"></i><%= t('c_total') %></div>
+            <div class="h3 fw-bold mb-0 mt-1 live-counter"
+                 data-value="<%= totalBalance %>" data-persec="<%= perSecond %>"
+                 data-currency="<%= settings.currency %>"><%= money(totalBalance) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level & XP -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+               style="width:48px;height:48px;flex:0 0 48px;font-size:1.1rem"><%= level %></div>
+          <div class="flex-grow-1">
+            <div class="fw-bold d-flex align-items-center gap-1"><i data-lucide="star" style="color:#ffb020"></i><%= t('level_label') %> <%= level %></div>
+            <div class="small text-muted"><%= t('xp_progress', { have: (xp - xpCur), need: (xpNext - xpCur) }) %></div>
+          </div>
+        </div>
+        <div class="progress" role="progressbar">
+          <div class="progress-bar" style="width: <%= Math.min(100, Math.round((xp - xpCur) / (xpNext - xpCur) * 100)) %>%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Balance history -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="chart-line" class="text-primary"></i><%= t('chart_title') %></h6>
+        <% if (history.length < 2) { %>
+          <p class="text-muted small mb-0"><%= t('chart_empty') %></p>
+        <% } else { %>
+          <%# fixed-height wrapper: Chart.js fills its parent, so without this the
+              canvas and parent grow each other infinitely down the page %>
+          <div class="chart-box">
+            <canvas id="balanceChart"
+                    data-points='<%- JSON.stringify(history.map(h => ({ t: h.t, v: h.total }))) %>'
+                    data-currency="<%= settings.currency %>"></canvas>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Grid menu -->
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="layout-grid" class="text-primary"></i><%= t('menu_title') %></h6>
+    <div class="menu-grid">
+      <a class="menu-tile" href="/invest"><span class="tile-icon ti-coral"><i data-lucide="layers"></i></span><span class="tile-label"><%= t('plans_title') %></span></a>
+      <a class="menu-tile" href="/withdraw"><span class="tile-icon ti-mint"><i data-lucide="arrow-down-to-line"></i></span><span class="tile-label"><%= t('withdraw_title') %></span></a>
+      <a class="menu-tile" href="/send"><span class="tile-icon ti-sky"><i data-lucide="send"></i></span><span class="tile-label"><%= t('send_title') %></span></a>
+      <a class="menu-tile" href="/rewards"><span class="tile-icon ti-yellow"><i data-lucide="gift"></i></span><span class="tile-label"><%= t('db_title') %></span></a>
+      <a class="menu-tile" href="/achievements"><span class="tile-icon ti-lilac"><i data-lucide="trophy"></i></span><span class="tile-label"><%= t('ach_title') %></span></a>
+      <a class="menu-tile" href="/activity"><span class="tile-icon ti-navy"><i data-lucide="history"></i></span><span class="tile-label"><%= t('activity_title') %></span></a>
+      <a class="menu-tile" href="/leaderboard"><span class="tile-icon ti-coral"><i data-lucide="medal"></i></span><span class="tile-label"><%= t('lb_title') %></span></a>
+      <a class="menu-tile" href="/referral"><span class="tile-icon ti-mint"><i data-lucide="user-plus"></i></span><span class="tile-label"><%= t('invite_title') %></span></a>
+      <a class="menu-tile" href="/profile"><span class="tile-icon ti-sky"><i data-lucide="user"></i></span><span class="tile-label"><%= t('profile_title') %></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- Welcome tour -->
+<div class="modal fade" id="tourModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <div class="modal-body p-4 text-center">
+        <% const steps = [
+             { icon:'sparkles',    color:'ti-coral',  t:'tour_1_t', d:'tour_1_d' },
+             { icon:'layers',      color:'ti-mint',   t:'tour_2_t', d:'tour_2_d' },
+             { icon:'layout-grid', color:'ti-sky',    t:'tour_3_t', d:'tour_3_d' },
+             { icon:'star',        color:'ti-yellow', t:'tour_4_t', d:'tour_4_d' },
+             { icon:'rocket',      color:'ti-lilac',  t:'tour_5_t', d:'tour_5_d' }
+           ]; %>
+        <% steps.forEach((s, i) => { %>
+          <div class="tour-step <%= i===0 ? '' : 'd-none' %>">
+            <div class="tile-icon <%= s.color %> mx-auto mb-3" style="width:76px;height:76px;font-size:2rem"><i data-lucide="<%= s.icon %>"></i></div>
+            <h5 class="fw-bold mb-2"><%= t(s.t) %></h5>
+            <p class="text-muted mb-0"><%= t(s.d, { site: settings.siteName }) %></p>
+          </div>
+        <% }) %>
+        <div class="d-flex justify-content-center gap-1 my-4" id="tourDots"></div>
+        <div class="d-flex justify-content-between gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="tourSkip"><%= t('tour_skip') %></button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm d-none" id="tourBack"><%= t('tour_back') %></button>
+            <button class="btn btn-primary btn-sm px-3" id="tourNext"><%= t('tour_next') %></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function initTour() {
+  var el = document.getElementById('tourModal');
+  if (!el || !window.bootstrap) return;
+  var steps = el.querySelectorAll('.tour-step');
+  var dotsWrap = document.getElementById('tourDots');
+  var back = document.getElementById('tourBack');
+  var next = document.getElementById('tourNext');
+  var skip = document.getElementById('tourSkip');
+  var NEXT = "<%= t('tour_next') %>", DONE = "<%= t('tour_done') %>";
+  var i = 0, done = false;
+  for (var k = 0; k < steps.length; k++) { var d = document.createElement('span'); d.className = 'tour-dot'; dotsWrap.appendChild(d); }
+  var dots = dotsWrap.children;
+  var modal = new bootstrap.Modal(el);
+  function show(k) {
+    i = k;
+    for (var j = 0; j < steps.length; j++) steps[j].classList.toggle('d-none', j !== k);
+    for (var j2 = 0; j2 < dots.length; j2++) dots[j2].classList.toggle('active', j2 === k);
+    back.classList.toggle('d-none', k === 0);
+    next.textContent = (k === steps.length - 1) ? DONE : NEXT;
+  }
+  function finish() {
+    if (!done) {
+      done = true;
+      fetch('/onboarded', { method: 'POST', headers: { 'X-CSRF-Token': "<%= csrfToken %>" } }).catch(function () {});
+    }
+    modal.hide();
+  }
+  next.addEventListener('click', function () { if (i < steps.length - 1) show(i + 1); else finish(); });
+  back.addEventListener('click', function () { if (i > 0) show(i - 1); });
+  skip.addEventListener('click', finish);
+  var openBtn = document.getElementById('tourOpen');
+  if (openBtn) openBtn.addEventListener('click', function () { done = true; show(0); modal.show(); });
+  show(0);
+  <% if (showTour) { %> modal.show(); <% } %>
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTour);
+else initTour();
+</script>

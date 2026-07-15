@@ -1,0 +1,30 @@
+# systemd unit — install to /etc/systemd/system/smartdh.service
+[Unit]
+Description=SmartDH play-money investing game
+After=network.target
+
+[Service]
+Type=simple
+User=smartdh
+Group=smartdh
+WorkingDirectory=/var/www/smartdh
+Environment=NODE_ENV=production
+# the rest of the config is read from /var/www/smartdh/.env by dotenv
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+# Logs go to journalctl
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smartdh
+
+# --- hardening: the app may only write to its data + uploads dirs ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/smartdh/data /var/www/smartdh/public/uploads
+
+[Install]
+WantedBy=multi-user.target

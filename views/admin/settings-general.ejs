@@ -1,0 +1,24 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <%- include('_head', { heading: t('set_general_t'), back: '/admin/settings' }) %>
+    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div><% } %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%= t('set_general_d') %></p>
+        <form action="/admin/settings/general" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('set_gamename') %></label>
+            <input name="siteName" class="form-control" value="<%= settings.siteName %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><%= t('set_currency') %></label>
+            <input name="currency" class="form-control" style="max-width:140px" value="<%= settings.currency %>" required>
+            <div class="form-text"><%= t('set_currency_hint') %></div>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

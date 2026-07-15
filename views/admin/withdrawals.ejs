@@ -1,0 +1,47 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <%- include('_head', { heading: t('tab_withdrawals') }) %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-end mb-3">
+          <a href="/admin/export/withdrawals.csv" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="download"></i><%= t('export_withdrawals') %></a>
+        </div>
+        <% if (withdrawals.length === 0) { %>
+          <p class="text-muted mb-0"><%= t('wd_none') %></p>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="text-muted small"><tr><th><%= t('th_user') %></th><th><%= t('th_amount') %></th><th><%= t('th_from') %></th><th><%= t('th_method') %></th><th><%= t('th_details') %></th><th><%= t('th_status') %></th><th class="text-end"><%= t('th_action') %></th></tr></thead>
+              <tbody>
+                <% withdrawals.forEach(w => { const wc = w.status==='paid'?'success':(w.status==='rejected'?'danger':'warning'); %>
+                  <tr>
+                    <td><a href="/admin/users/<%= w.userId %>" class="fw-semibold"><%= w.userName %></a></td>
+                    <td class="fw-semibold"><%= money(w.amount) %></td>
+                    <td class="small"><%= w.fromLabel || w.from %></td>
+                    <td class="small"><%= w.method === 'bank' ? t('payout_bank') : (w.method === 'paypal' ? t('payout_paypal') : '—') %></td>
+                    <td class="small" style="max-width:200px;word-break:break-word">
+                      <% if (w.payoutName || w.payoutAccount) { %>
+                        <div class="fw-semibold"><%= w.payoutName || '—' %></div>
+                        <div class="text-muted" dir="ltr"><%= w.payoutAccount || '—' %></div>
+                      <% } else { %><%= w.details || '—' %><% } %>
+                    </td>
+                    <td><span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize"><%= w.status %></span></td>
+                    <td class="text-end text-nowrap">
+                      <% if (w.status === 'pending') { %>
+                        <form action="/admin/withdraw/<%= w.id %>/approve" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn btn-sm btn-success"><i data-lucide="check" class="me-1"></i><%= t('btn_markpaid') %></button></form>
+                        <form action="/admin/withdraw/<%= w.id %>/reject" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn btn-sm btn-outline-danger"><i data-lucide="x"></i></button></form>
+                      <% } else { %><span class="text-muted small">—</span><% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

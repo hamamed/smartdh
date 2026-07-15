@@ -1,0 +1,10 @@
+<section class="py-5">
+  <div class="container text-center" style="max-width: 560px;">
+    <div class="feature-icon mb-3 mx-auto"><i data-lucide="hourglass"></i></div>
+    <h3 class="fw-bold"><%= t('pending_title') %></h3>
+    <p class="text-muted"><%= t('pending_body', { name: currentUser.name }) %></p>
+    <form action="/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-outline-secondary"><i data-lucide="log-out" class="me-1"></i><%= t('nav_logout') %></button>
+    </form>
+  </div>
+</section>

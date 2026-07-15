@@ -1,0 +1,96 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('plans_title') %></h3>
+    </div>
+
+    <div id="flash"></div>
+
+    <!-- How to deposit -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-2 d-flex align-items-center gap-2"><i data-lucide="landmark" class="text-primary"></i><%= t('deposit_how_title') %></h6>
+        <p class="text-muted small mb-3"><%= t('deposit_how_desc') %></p>
+        <div class="row g-3 align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_bank') %></span><span class="fw-semibold"><%= depositInfo.bankName %></span></div>
+            <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_account') %></span><span class="fw-semibold"><%= depositInfo.accountName %></span></div>
+            <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_rib') %></span><span class="fw-semibold" dir="ltr"><%= depositInfo.rib %></span></div>
+            <div class="alert alert-warning mt-3 mb-0 py-2 small d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><span><%= depositInfo.note || t('deposit_warn') %></span></div>
+          </div>
+          <div class="col-md-4 text-center">
+            <% if (depositQR) { %>
+              <img src="<%= depositQR %>" alt="QR" class="img-fluid rounded-3 border" style="max-width:180px">
+              <div class="small text-muted mt-1 d-flex align-items-center justify-content-center gap-1"><i data-lucide="qr-code"></i><%= t('deposit_scan') %></div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Apps -->
+    <div class="row g-3 mb-4">
+      <% plans.forEach(p => { const held = (currentUser.invested && currentUser.invested[p.id]) || 0;
+           const locked = level < (p.minLevel || 1); %>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm rounded-4 h-100 <%= locked ? 'opacity-75' : '' %>">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <% if (p.imageUrl) { %>
+                    <img src="<%= p.imageUrl %>" alt="" style="width:40px;height:40px;object-fit:cover" class="rounded-3">
+                  <% } else { %>
+                    <span class="tile-icon ti-<%= p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))) %>" style="width:44px;height:44px;font-size:1.25rem"><i data-lucide="<%= p.icon %>"></i></span>
+                  <% } %>
+                  <h6 class="fw-bold mb-0"><%= planName(p) %></h6>
+                </div>
+                <span class="badge bg-<%= p.color %>-subtle text-<%= p.color %> rounded-pill">
+                  <%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %>
+                </span>
+              </div>
+              <p class="text-muted small mb-2"><%= planDesc(p) %></p>
+              <div class="small text-muted"><%= t('plan_youhave') %></div>
+              <div class="fw-bold mb-3"><%= money(held) %></div>
+              <% if (locked) { %>
+                <div class="alert alert-secondary py-2 small mb-0 text-center d-flex align-items-center justify-content-center gap-1">
+                  <i data-lucide="lock"></i><%= t('locked_at', { n: p.minLevel }) %>
+                </div>
+              <% } else { %>
+                <form action="/add-funds" method="post" class="d-flex gap-1"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="plan" value="<%= p.id %>">
+                  <input name="amount" type="number" min="<%= settings.minAddFunds %>" step="1"
+                         class="form-control form-control-sm" placeholder="<%= t('amount_ph') %>">
+                  <button class="btn btn-sm btn-<%= p.color %>"><i data-lucide="plus"></i></button>
+                </form>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Your deposits -->
+    <% if (myDeposits && myDeposits.length) { %>
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="receipt" class="text-primary"></i><%= t('deposit_pending_title') %></h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <tbody>
+                <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
+                  <tr>
+                    <td class="fw-semibold"><%= money(d.amount) %></td>
+                    <td class="small"><%= d.planLabel %></td>
+                    <td><span class="badge bg-<%= dc %>-subtle text-<%= dc %>"><%= statusLabel(d.status) %></span></td>
+                    <td class="small text-muted text-end"><%= new Date(d.createdAt).toLocaleDateString() %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>

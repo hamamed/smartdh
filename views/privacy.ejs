@@ -1,0 +1,39 @@
+<section class="py-5">
+  <div class="container" style="max-width: 760px;">
+    <h2 class="fw-bold mb-4"><%= t('footer_privacy') %></h2>
+    <div class="text-muted lh-lg">
+      <% if (lang === 'ar') { %>
+        <p>هذه لعبة خاصة صغيرة. نُبقي الأمور بسيطة.</p>
+        <h6 class="fw-bold text-body">ما الذي نخزّنه</h6>
+        <p>فقط ما تقدّمه للّعب: اسمك وبريدك وكلمة مرور مُشفّرة بأمان. كما نخزّن أرصدتك الافتراضية ونشاطك داخل اللعبة.</p>
+        <h6 class="fw-bold text-body">كيف يُستخدم</h6>
+        <p>يُستخدم بريدك لتسجيل دخولك وإرسال إشعارات الحساب (مثل الموافقة). لا نبيع بياناتك ولا نشاركها — تبقى داخل هذه اللعبة.</p>
+        <h6 class="fw-bold text-body">الأمان</h6>
+        <p>تُخزَّن كلمات المرور مُشفّرة (لا كنص صريح). مع ذلك، بما أنها لعبة، لا تستخدم كلمة مرور مهمّة هنا.</p>
+        <h6 class="fw-bold text-body">الحذف</h6>
+        <p>اطلب من المشرف حذف حسابك في أي وقت وستُزال بياناتك.</p>
+      <% } else if (lang === 'fr') { %>
+        <p>C'est un petit jeu privé. On fait simple.</p>
+        <h6 class="fw-bold text-body">Ce que nous stockons</h6>
+        <p>Uniquement ce que vous fournissez pour jouer : votre nom, votre e-mail et un mot de passe haché en toute sécurité. Nous stockons aussi vos soldes virtuels et votre activité.</p>
+        <h6 class="fw-bold text-body">Utilisation</h6>
+        <p>Votre e-mail sert à vous connecter et à envoyer des avis de compte (comme l'approbation). Nous ne vendons ni ne partageons vos données — elles restent dans ce jeu.</p>
+        <h6 class="fw-bold text-body">Sécurité</h6>
+        <p>Les mots de passe sont stockés hachés (jamais en clair). Néanmoins, comme c'est un jeu, ne réutilisez pas un mot de passe important ici.</p>
+        <h6 class="fw-bold text-body">Suppression</h6>
+        <p>Demandez à l'admin de supprimer votre compte à tout moment et vos données seront effacées.</p>
+      <% } else { %>
+        <p>This is a small private game. We keep things simple.</p>
+        <h6 class="fw-bold text-body">What we store</h6>
+        <p>Only what you provide to play: your name, email, and a securely hashed password. We also store your in-game virtual balances and activity.</p>
+        <h6 class="fw-bold text-body">How it's used</h6>
+        <p>Your email is used to log you in and to send account notices (like approval). We don't sell or share your data — it stays within this game.</p>
+        <h6 class="fw-bold text-body">Security</h6>
+        <p>Passwords are stored hashed (never in plain text). Still, since this is a hobby game, please don't reuse an important password here.</p>
+        <h6 class="fw-bold text-body">Removal</h6>
+        <p>Ask the admin to delete your account at any time and your data will be removed.</p>
+      <% } %>
+      <p class="small">2026.</p>
+    </div>
+  </div>
+</section>

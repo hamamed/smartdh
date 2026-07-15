@@ -1,0 +1,126 @@
+<% const c = settings.campaign; %>
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 680px;">
+    <%- include('_head', { heading: t('set_campaign_t'), back: '/admin/settings' }) %>
+    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div><% } %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <p class="text-muted small mb-3"><%= t('set_campaign_d') %></p>
+
+        <form action="/admin/settings/campaign" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <!-- Master switch -->
+          <div class="d-flex align-items-center gap-3 p-3 rounded-3 <%= c.enabled ? 'wallet wallet-mint' : 'bg-body-secondary' %> mb-4">
+            <span class="tile-icon <%= c.enabled ? 'ti-mint' : 'ti-navy' %>" style="width:46px;height:46px;font-size:1.2rem"><i data-lucide="party-popper"></i></span>
+            <div class="flex-grow-1">
+              <div class="fw-bold"><%= t('camp_enable') %></div>
+              <div class="small"><%= c.enabled ? t('camp_on') : t('camp_off') %></div>
+            </div>
+            <div class="form-check form-switch fs-4 mb-0">
+              <input class="form-check-input" type="checkbox" name="enabled" id="enabled" value="1" <%= c.enabled ? 'checked' : '' %>>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><%= t('camp_title_label') %> <span class="text-muted small"><%= t('opt') %></span></label>
+            <input name="title" class="form-control" placeholder="<%= t('camp_title') %>" value="<%= c.title %>">
+          </div>
+
+          <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('camp_rules') %></h6>
+          <div class="row g-3 mb-2">
+            <div class="col-md-6">
+              <label class="form-label"><%= t('camp_goal') %></label>
+              <div class="input-group">
+                <span class="input-group-text"><i data-lucide="users"></i></span>
+                <input name="inviteGoal" type="number" min="1" class="form-control" value="<%= c.inviteGoal %>">
+              </div>
+              <div class="form-text"><%= t('camp_goal_hint') %></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><%= t('camp_mindeposit') %></label>
+              <div class="input-group">
+                <input name="minDeposit" type="number" min="0" class="form-control" value="<%= c.minDeposit %>">
+                <span class="input-group-text"><%= settings.currency %></span>
+              </div>
+              <div class="form-text"><%= t('camp_mindeposit_hint') %></div>
+            </div>
+          </div>
+          <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" name="requireActive" id="requireActive" value="1" <%= c.requireActive ? 'checked' : '' %>>
+            <label class="form-check-label small" for="requireActive"><%= t('camp_requireactive') %></label>
+          </div>
+
+          <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('camp_perinvite') %></h6>
+          <div class="row g-3 mb-2">
+            <div class="col-md-6">
+              <label class="form-label"><%= t('camp_coinsperinvite') %></label>
+              <div class="input-group">
+                <input name="coinsPerInvite" type="number" min="0" class="form-control" value="<%= c.coinsPerInvite %>">
+                <span class="input-group-text"><%= settings.currency %></span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><%= t('camp_xpperinvite') %></label>
+              <div class="input-group">
+                <input name="xpPerInvite" type="number" min="0" class="form-control" value="<%= c.xpPerInvite %>">
+                <span class="input-group-text">XP</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-text mb-4"><%= t('camp_perinvite_hint') %></div>
+
+          <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('camp_reward') %></h6>
+          <div class="form-text mb-2"><%= t('camp_reward_hint') %></div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label"><%= t('camp_rewardcoins') %></label>
+              <div class="input-group">
+                <input name="rewardCoins" type="number" min="0" class="form-control" value="<%= c.rewardCoins %>">
+                <span class="input-group-text"><%= settings.currency %></span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><%= t('camp_rewardxp') %></label>
+              <div class="input-group">
+                <input name="rewardXp" type="number" min="0" class="form-control" value="<%= c.rewardXp %>">
+                <span class="input-group-text">XP</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"><%= t('camp_maxclaims') %></label>
+              <input name="maxClaims" type="number" min="0" class="form-control" value="<%= c.maxClaims %>">
+              <div class="form-text"><%= t('camp_maxclaims_hint') %></div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('camp_counting') %></h6>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="resetCount" id="resetCount" value="1">
+            <label class="form-check-label small" for="resetCount"><%= t('camp_reset_count') %></label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="resetProgress" id="resetProgress" value="1">
+            <label class="form-check-label small" for="resetProgress"><%= t('camp_reset_progress') %></label>
+          </div>
+          <% if (c.countFrom) { %>
+            <p class="small text-muted"><i data-lucide="info" class="me-1"></i><%= t('camp_counting_since', { date: new Date(c.countFrom).toLocaleString() }) %></p>
+          <% } %>
+
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- What players will see -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <div class="small text-muted mb-2"><%= t('ann_preview') %></div>
+        <div class="p-3 rounded-3 bg-body-secondary">
+          <div class="fw-bold mb-1"><%= c.title || t('camp_title') %></div>
+          <div class="small text-muted"><%= t('camp_desc', { goal: c.inviteGoal, min: money(c.minDeposit), coins: money(c.rewardCoins), xp: c.rewardXp }) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

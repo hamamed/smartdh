@@ -1,0 +1,48 @@
+<section class="py-5">
+  <div class="container" style="max-width: 760px;">
+    <h2 class="fw-bold mb-4"><%= t('footer_terms') %></h2>
+    <div class="text-muted lh-lg">
+      <% if (lang === 'ar') { %>
+        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
+          <strong>هذه لعبة.</strong> كل العملات والأرصدة والأرباح والسحوبات هي <strong>أموال افتراضية</strong>. لا يوجد أي مال حقيقي أو استثمار حقيقي أو عوائد مالية حقيقية.</div>
+        <h6 class="fw-bold text-body">1. ما هذا</h6>
+        <p><%= settings.siteName %> هو محاكي ترفيهي خاص بين الأصدقاء والعائلة، موجود للمتعة فقط. ليس بنكاً ولا وسيطاً ولا منصة استثمار ولا خدمة مالية.</p>
+        <h6 class="fw-bold text-body">2. لا مال حقيقي</h6>
+        <p>أي «أرباح» أو «معدلات» أو «عوائد» تظهر هي جزء من اللعبة وليست لها قيمة حقيقية. لا يمكنك إيداع أو سحب أموال حقيقية، والأرقام ليست نصيحة مالية ولا وعداً بربح.</p>
+        <h6 class="fw-bold text-body">3. الحسابات</h6>
+        <p>تتطلب الحسابات موافقة المشرف. احتفظ بكلمة مرورك سرية. يجوز للمشرف تعديل الأرصدة والموافقة أو الرفض وتغيير قواعد اللعبة في أي وقت.</p>
+        <h6 class="fw-bold text-body">4. اللعب النزيه</h6>
+        <p>لا تُسئ الاستخدام أو تحاول اختراق اللعبة. يجوز للمشرف إزالة أي حساب.</p>
+        <h6 class="fw-bold text-body">5. بلا ضمان</h6>
+        <p>تُقدَّم اللعبة «كما هي» للمتعة، دون أي ضمانات.</p>
+      <% } else if (lang === 'fr') { %>
+        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
+          <strong>Ceci est un jeu.</strong> Toutes les pièces, soldes, gains et retraits sont de l'<strong>argent fictif</strong>. Rien n'implique d'argent réel, d'investissement réel ou de rendement réel.</div>
+        <h6 class="fw-bold text-body">1. Ce que c'est</h6>
+        <p><%= settings.siteName %> est un simulateur de divertissement privé entre amis et famille. Il existe uniquement pour s'amuser. Ce n'est ni une banque, ni un courtier, ni une plateforme d'investissement, ni un service financier.</p>
+        <h6 class="fw-bold text-body">2. Pas d'argent réel</h6>
+        <p>Tout « gain », « taux » ou « rendement » affiché fait partie du jeu et n'a aucune valeur réelle. Vous ne pouvez ni déposer ni retirer de l'argent réel ; les chiffres ne sont ni un conseil financier ni une promesse de profit.</p>
+        <h6 class="fw-bold text-body">3. Comptes</h6>
+        <p>Les comptes nécessitent l'approbation de l'admin. Gardez votre mot de passe secret. L'admin peut ajuster les soldes, approuver ou rejeter des comptes et modifier les règles à tout moment.</p>
+        <h6 class="fw-bold text-body">4. Fair-play</h6>
+        <p>N'abusez pas et n'essayez pas de pirater le jeu. L'admin peut supprimer tout compte.</p>
+        <h6 class="fw-bold text-body">5. Aucune garantie</h6>
+        <p>Le jeu est fourni « tel quel » pour le plaisir, sans aucune garantie.</p>
+      <% } else { %>
+        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
+          <strong>This is a game.</strong> All coins, balances, earnings and withdrawals are <strong>virtual play money</strong>. Nothing here involves real money, real investing, or real financial returns.</div>
+        <h6 class="fw-bold text-body">1. What this is</h6>
+        <p><%= settings.siteName %> is a private entertainment simulator shared between friends and family. It exists purely for fun. It is not a bank, broker, investment platform, or financial service.</p>
+        <h6 class="fw-bold text-body">2. No real money</h6>
+        <p>Any "earnings", "rates", or "returns" shown are part of the game and have no real-world value. You cannot deposit or withdraw real currency, and the numbers are not financial advice or a promise of profit.</p>
+        <h6 class="fw-bold text-body">3. Accounts</h6>
+        <p>Accounts require admin approval. Keep your password private. The admin may adjust balances, approve or reject accounts, and change game rules at any time.</p>
+        <h6 class="fw-bold text-body">4. Fair play</h6>
+        <p>Don't abuse, hack, or attempt to break the game. The admin may remove any account.</p>
+        <h6 class="fw-bold text-body">5. No warranty</h6>
+        <p>The game is provided "as is" for fun, with no guarantees of any kind.</p>
+      <% } %>
+      <p class="small">2026.</p>
+    </div>
+  </div>
+</section>

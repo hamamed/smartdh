@@ -1,0 +1,32 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 640px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('activity_title') %></h3>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <% if (txns.length === 0) { %>
+          <p class="text-muted small mb-0"><%= t('no_activity') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% txns.forEach(tx => { const m = TX[tx.type] || TX.admin_adjust; %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-3 bg-transparent">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-<%= m.cls %>-subtle text-<%= m.cls %>"
+                     style="width:40px;height:40px;flex:0 0 40px;font-size:1.05rem"><i data-lucide="<%= m.icon %>"></i></div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold small"><%= txLabel(tx.type) %></div>
+                  <div class="text-muted" style="font-size:.78rem"><%= tx.note %> · <%= new Date(tx.at).toLocaleString() %></div>
+                </div>
+                <% if (tx.amount) { %>
+                  <div class="fw-bold text-<%= m.cls %> text-nowrap"><%= m.sign %><%= money(tx.amount) %></div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

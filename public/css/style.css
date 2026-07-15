@@ -1,0 +1,340 @@
+/* ==========================================================================
+   DirhamVest — SHINY SUMMER theme  (coral sunset · turquoise · sunny yellow)
+   with playful "jelly" interactions
+   ========================================================================== */
+
+:root,
+[data-bs-theme="light"] {
+  --brand: #ff5f6d;             /* coral — primary */
+  --brand-2: #ff9d4d;           /* mango */
+  --sunset: linear-gradient(135deg, #ffb03a 0%, #ff6a6a 55%, #ff5f8f 100%);
+  --ocean: linear-gradient(145deg, #24d3c4 0%, #12b1d6 100%);
+  --accent: #ffd23f;            /* sunny yellow */
+  --page-1: #fff7ef;
+  --page-2: #eefcfa;
+  --radius: 1.5rem;
+  --jelly: cubic-bezier(.34, 1.56, .64, 1);
+
+  --bs-primary: #ff5f6d;
+  --bs-primary-rgb: 255, 95, 109;
+  --bs-primary-bg-subtle: #ffe4e2;
+  --bs-primary-border-subtle: #ffc7c3;
+  --bs-primary-text-emphasis: #e83e57;
+  --bs-body-color: #34313a;
+  --bs-border-color: #f2e7dd;
+  --bs-border-radius: 1rem;
+  --bs-border-radius-lg: 1.5rem;
+  --bs-border-radius-xl: 1.9rem;
+
+  --bs-success: #16c79a; --bs-success-rgb: 22, 199, 154;
+  --bs-danger:  #ff5964; --bs-danger-rgb: 255, 89, 100;
+  --bs-warning: #ffb020; --bs-warning-rgb: 255, 176, 32;
+  --bs-info:    #23c4e6; --bs-info-rgb: 35, 196, 230;
+}
+
+[data-bs-theme="dark"] {
+  --brand: #ff7a86;
+  --brand-2: #ffb257;
+  --page-1: #14101c;
+  --page-2: #101a22;
+  --bs-primary: #ff7a86;
+  --bs-primary-rgb: 255, 122, 134;
+  --bs-primary-bg-subtle: #3a1f28;
+  --bs-primary-border-subtle: #5c2e39;
+  --bs-primary-text-emphasis: #ff9ba4;
+}
+
+* { scroll-behavior: smooth; }
+
+/* Playful summer confetti-dot pattern tile (SVG data URI) */
+:root {
+  --pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Ccircle cx='12' cy='14' r='3' fill='%23ff5f6d' opacity='.16'/%3E%3Ccircle cx='58' cy='30' r='2.2' fill='%2317c3d4' opacity='.18'/%3E%3Ccircle cx='30' cy='58' r='2.6' fill='%23ffd23f' opacity='.22'/%3E%3Ccircle cx='76' cy='72' r='2' fill='%23ff9d4d' opacity='.18'/%3E%3Ccircle cx='80' cy='10' r='1.6' fill='%2316c79a' opacity='.16'/%3E%3Ccircle cx='6' cy='80' r='1.8' fill='%238a63e0' opacity='.14'/%3E%3Cpath d='M44 6 v6 M41 9 h6' stroke='%23ff5f6d' stroke-width='1.4' opacity='.13' stroke-linecap='round'/%3E%3Cpath d='M70 46 v6 M67 49 h6' stroke='%2317c3d4' stroke-width='1.4' opacity='.13' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+body {
+  min-height: 100vh;
+  color: var(--bs-body-color);
+  /* Open Sans for Latin; Arabic falls back to system Arabic faces (Open Sans has no Arabic script). */
+  font-family: "Open Sans", "Segoe UI", system-ui, -apple-system, Tahoma, "Noto Sans Arabic", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    var(--pattern),
+    radial-gradient(1100px 720px at 8% -10%, #ffe08a 0%, rgba(255,224,138,0) 52%),
+    radial-gradient(1000px 720px at 100% -6%, #a5f3e6 0%, rgba(165,243,230,0) 52%),
+    radial-gradient(1000px 900px at 92% 108%, #ffc7dd 0%, rgba(255,199,221,0) 52%),
+    radial-gradient(900px 800px at 0% 112%, #bfe9ff 0%, rgba(191,233,255,0) 52%),
+    linear-gradient(180deg, var(--page-1) 0%, var(--page-2) 100%);
+  background-size: 90px 90px, auto, auto, auto, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+}
+[data-bs-theme="dark"] body {
+  background:
+    var(--pattern),
+    radial-gradient(1000px 700px at 8% -10%, #3a2536 0%, rgba(58,37,54,0) 55%),
+    radial-gradient(900px 700px at 100% 0%, #123842 0%, rgba(18,56,66,0) 55%),
+    linear-gradient(180deg, #14101c 0%, #101a22 100%);
+  background-size: 90px 90px, auto, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+}
+
+a { text-decoration: none; }
+
+/* ---------- Navbar / footer ---------- */
+.navbar.bg-body, footer.bg-body {
+  background: rgba(255, 255, 255, .70) !important;
+  backdrop-filter: blur(12px);
+  border-color: rgba(0, 0, 0, .05) !important;
+}
+[data-bs-theme="dark"] .navbar.bg-body,
+[data-bs-theme="dark"] footer.bg-body {
+  background: rgba(20, 16, 28, .72) !important;
+  border-color: rgba(255, 255, 255, .06) !important;
+}
+.navbar-brand { font-size: 1.2rem; letter-spacing: -.02em; }
+.navbar-brand.text-primary { background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.text-primary { color: var(--bs-primary) !important; }
+.nav-link { border-radius: 999px; padding-inline: .85rem !important; transition: background-color .2s, transform .2s var(--jelly); }
+.nav-link:hover { background: rgba(255, 122, 90, .10); transform: translateY(-1px); }
+
+/* ---------- Cards ---------- */
+.card {
+  background: #fff;
+  border: 0;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 16px 42px rgba(255, 120, 110, .10);
+  transition: transform .35s var(--jelly), box-shadow .35s ease;
+}
+[data-bs-theme="dark"] .card { background: #1c1626; box-shadow: 0 16px 42px rgba(0, 0, 0, .4); }
+.card:hover { transform: translateY(-4px); box-shadow: 0 24px 60px rgba(255, 120, 110, .18); }
+.rounded-4 { border-radius: var(--radius) !important; }
+.rounded-3 { border-radius: 1.05rem !important; }
+
+/* The big "total balance" card — shiny turquoise ocean */
+.card.bg-primary {
+  background: var(--ocean) !important;
+  box-shadow: 0 20px 48px rgba(18, 177, 214, .38);
+}
+
+/* Soft tinted surfaces */
+.bg-body-secondary { background: #fff4ec !important; }
+[data-bs-theme="dark"] .bg-body-secondary { background: #221a2e !important; }
+
+/* ---------- Buttons: shiny + jelly ---------- */
+.btn {
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  padding-inline: 1.2rem;
+  transition: transform .25s var(--jelly), box-shadow .25s ease, filter .2s;
+  will-change: transform;
+}
+.btn:hover { transform: translateY(-2px) scale(1.04); }
+.btn:active { transform: scale(.92); }
+.btn-sm { padding-inline: .8rem; }
+
+/* glossy sunset primary */
+.btn-primary {
+  --bs-btn-color: #fff; --bs-btn-hover-color: #fff; --bs-btn-active-color: #fff;
+  --bs-btn-border-color: transparent; --bs-btn-hover-border-color: transparent;
+  background-image: var(--sunset);
+  box-shadow: 0 10px 24px rgba(255, 106, 106, .40), inset 0 1px 0 rgba(255, 255, 255, .45);
+  border: 0;
+}
+.btn-primary:hover { filter: brightness(1.05) saturate(1.05); box-shadow: 0 14px 30px rgba(255, 106, 106, .5), inset 0 1px 0 rgba(255, 255, 255, .5); }
+
+.btn-success { background-image: linear-gradient(135deg, #2ee0a6, #12b98a); border: 0; box-shadow: 0 8px 20px rgba(22, 199, 154, .35), inset 0 1px 0 rgba(255,255,255,.4); }
+.btn-danger  { background-image: linear-gradient(135deg, #ff7a6b, #ff4d67); border: 0; box-shadow: 0 8px 20px rgba(255, 89, 100, .35), inset 0 1px 0 rgba(255,255,255,.4); }
+.btn-warning { background-image: linear-gradient(135deg, #ffd23f, #ffab1d); border: 0; color: #6a4a00; box-shadow: 0 8px 20px rgba(255, 176, 32, .35), inset 0 1px 0 rgba(255,255,255,.5); }
+.btn-info    { background-image: linear-gradient(135deg, #46d7ef, #1eb6d8); border: 0; color: #fff; box-shadow: 0 8px 20px rgba(35, 196, 230, .35), inset 0 1px 0 rgba(255,255,255,.4); }
+
+.btn-outline-secondary { --bs-btn-border-color: #f0d9cf; --bs-btn-color: #8a6f66; --bs-btn-hover-bg: #fff3ec; --bs-btn-hover-border-color: #f0c9bb; --bs-btn-hover-color: #7a5f56; }
+.btn-outline-primary { --bs-btn-color: var(--brand); --bs-btn-border-color: var(--brand); --bs-btn-hover-bg: var(--brand); --bs-btn-hover-border-color: var(--brand); --bs-btn-hover-color: #fff; }
+.btn-outline-success { --bs-btn-color: #12b98a; --bs-btn-border-color: #37d6a4; }
+.bg-primary { background-color: var(--brand) !important; }
+
+/* ---------- Jelly animations ---------- */
+@keyframes jelly {
+  0%   { transform: scale(1, 1); }
+  25%  { transform: scale(1.14, .86); }
+  45%  { transform: scale(.9, 1.1); }
+  65%  { transform: scale(1.06, .94); }
+  82%  { transform: scale(.98, 1.02); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+.feature-icon {
+  width: 64px; height: 64px; border-radius: 22px;
+  background: var(--sunset);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+  box-shadow: 0 10px 24px rgba(255, 106, 106, .35), inset 0 1px 0 rgba(255,255,255,.4);
+  transition: transform .3s var(--jelly);
+}
+.feature-icon:hover { animation: jelly .6s; }
+
+.rounded-circle,
+.card img,
+.list-group-item img { transition: transform .3s var(--jelly); }
+.rounded-circle:hover,
+.card img:hover,
+.list-group-item img:hover { animation: jelly .55s; }
+
+.card .fs-3, .card .fs-4 { display: inline-block; transition: transform .3s var(--jelly); }
+.card:hover .fs-3, .card:hover .fs-4 { animation: floaty 1.6s ease-in-out infinite; }
+
+/* ---------- Forms ---------- */
+.form-control, .form-select {
+  border-radius: .9rem;
+  border-color: #f2e2d7;
+  background: #fffaf5;
+  padding: .55rem .85rem;
+  transition: border-color .2s, box-shadow .2s, transform .15s var(--jelly);
+}
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select { background: #17111f; border-color: #3a2c3a; }
+.form-control:focus, .form-select:focus {
+  border-color: #ffb3ae;
+  box-shadow: 0 0 0 .22rem rgba(255, 95, 109, .16);
+  transform: translateY(-1px);
+}
+.input-group-text { border-radius: .9rem; background: #fff3ec; border-color: #f2e2d7; }
+[data-bs-theme="dark"] .input-group-text { background: #1c1626; border-color: #3a2c3a; }
+
+/* ---------- Badges & pills ---------- */
+.badge { border-radius: 999px; font-weight: 700; padding: .42em .72em; }
+
+/* ---------- Nav pills (admin tabs) ---------- */
+.nav-pills .nav-link {
+  color: #8a6f66; background: #fff; border: 1px solid var(--bs-border-color);
+  box-shadow: 0 4px 14px rgba(255, 120, 110, .08);
+}
+[data-bs-theme="dark"] .nav-pills .nav-link { background: #1c1626; color: #c8b3bb; }
+.nav-pills .nav-link.active { background-image: var(--sunset); border-color: transparent; color: #fff; box-shadow: 0 8px 18px rgba(255, 106, 106, .35); }
+
+/* ---------- Progress (XP bar) — shiny sunset ---------- */
+.progress { border-radius: 999px; background: #ffe6dc; height: 13px !important; overflow: hidden; }
+[data-bs-theme="dark"] .progress { background: #33232f; }
+.progress-bar { border-radius: 999px; background-image: var(--sunset) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+
+/* ---------- Misc ---------- */
+.hero { background: transparent; }
+.list-group-item { border-color: rgba(0, 0, 0, .05); background: transparent; }
+[data-bs-theme="dark"] .list-group-item { border-color: rgba(255, 255, 255, .06); }
+.live-counter { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.table > :not(caption) > * > * { padding: .65rem .55rem; }
+
+/* ---------- Lucide icons ---------- */
+.lucide, svg.lucide { width: 1em; height: 1em; vertical-align: -.14em; stroke-width: 2.1; }
+
+/* ---------- Tinted wallet cards (coral / mint / yellow) ---------- */
+.wallet { border: 0; }
+.wallet .small { opacity: .72; }
+.wallet-coral  { background: linear-gradient(150deg, #fff1ec 0%, #ffd8cd 100%) !important; color: #7a3b2e; }
+.wallet-mint   { background: linear-gradient(150deg, #eafbf3 0%, #c6f2e0 100%) !important; color: #1c6b52; }
+.wallet-yellow { background: linear-gradient(150deg, #fff8df 0%, #ffe7a6 100%) !important; color: #7a5c15; }
+[data-bs-theme="dark"] .wallet-coral  { background: linear-gradient(150deg, #3a221d 0%, #4a2820 100%) !important; color: #ffcdbf; }
+[data-bs-theme="dark"] .wallet-mint   { background: linear-gradient(150deg, #123027 0%, #164034 100%) !important; color: #a7ecd0; }
+[data-bs-theme="dark"] .wallet-yellow { background: linear-gradient(150deg, #322a12 0%, #43380f 100%) !important; color: #ffe093; }
+
+/* ---------- Home grid menu ---------- */
+.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }
+@media (max-width: 400px) { .menu-grid { grid-template-columns: repeat(2, 1fr); } }
+.menu-tile {
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  padding: 1.1rem .5rem; text-align: center; text-decoration: none;
+  background: #fff; border-radius: 1.25rem; color: var(--bs-body-color);
+  box-shadow: 0 10px 26px rgba(255, 120, 110, .09);
+  transition: transform .28s var(--jelly), box-shadow .28s;
+}
+[data-bs-theme="dark"] .menu-tile { background: #1c1626; }
+.menu-tile:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 18px 40px rgba(255, 120, 110, .18); }
+.menu-tile:active { transform: scale(.95); }
+.menu-tile:hover .tile-icon { animation: jelly .6s; }
+.menu-tile .tile-label { font-weight: 700; font-size: .82rem; line-height: 1.15; }
+
+/* Icon tile — used in the grid menu, app cards, daily bonus, tour, referral… */
+.tile-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; flex: 0 0 auto;
+  border-radius: 18px; font-size: 1.5rem; line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+  transition: transform .3s var(--jelly);
+}
+.tile-icon:hover { animation: jelly .55s; }
+.tile-icon > svg { width: 1em; height: 1em; vertical-align: middle; }
+
+/* tinted tile icon variants */
+.ti-coral  { background: #ffe1d9; color: #ff5f6d; }
+.ti-mint   { background: #d3f6e7; color: #12b98a; }
+.ti-yellow { background: #ffeeb5; color: #e69a12; }
+.ti-sky    { background: #d5eefd; color: #1eb6d8; }
+.ti-lilac  { background: #ece0ff; color: #8a63e0; }
+.ti-navy   { background: #dfe4f5; color: #3a4d80; }
+[data-bs-theme="dark"] .ti-coral{background:#3a221d} [data-bs-theme="dark"] .ti-mint{background:#123027}
+[data-bs-theme="dark"] .ti-yellow{background:#322a12} [data-bs-theme="dark"] .ti-sky{background:#0f2c38}
+[data-bs-theme="dark"] .ti-lilac{background:#251c3a} [data-bs-theme="dark"] .ti-navy{background:#1a2135}
+
+/* ---------- Landing step numbers ---------- */
+.step-num {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; font-weight: 800; font-size: .85rem;
+  background-image: var(--sunset); color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 106, 106, .3);
+}
+
+/* ---------- Chart ---------- */
+/* Chart.js runs with maintainAspectRatio:false, so its canvas fills the parent.
+   The parent MUST have a fixed height or the two grow each other forever. */
+.chart-box { position: relative; height: 220px; width: 100%; }
+@media (max-width: 575px) { .chart-box { height: 180px; } }
+.chart-box > canvas { display: block; }
+
+/* ---------- FAQ accordion ---------- */
+.accordion-item { background: #fff; border-radius: 1.1rem !important; }
+[data-bs-theme="dark"] .accordion-item { background: #1c1626; }
+.accordion-button { background: transparent; border-radius: 1.1rem !important; }
+.accordion-button:not(.collapsed) { background: transparent; color: var(--brand); box-shadow: none; }
+.accordion-button:focus { box-shadow: none; }
+.accordion-button::after { transition: transform .3s var(--jelly); }
+
+/* ---------- Announcement bar ---------- */
+.announcement-bar {
+  background-image: var(--sunset);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(255, 106, 106, .28);
+}
+.announcement-bar .lucide { flex: 0 0 auto; }
+
+/* ---------- Welcome tour dots ---------- */
+.tour-dot { width: 8px; height: 8px; border-radius: 999px; background: #e7ddd0; transition: width .25s var(--jelly), background-color .25s; }
+[data-bs-theme="dark"] .tour-dot { background: #3a2c3a; }
+.tour-dot.active { width: 22px; background-image: var(--sunset); }
+
+/* round icon buttons (back button etc.) */
+.btn-icon { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; }
+
+/* ---------- Shiny animated shimmer on primary buttons ---------- */
+.btn-primary {
+  background-image:
+    linear-gradient(115deg, rgba(255,255,255,0) 38%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 62%),
+    var(--sunset);
+  background-size: 250% 100%, 100% 100%;
+  background-position: 150% 0, 0 0;
+  animation: shimmer 3.2s linear infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 150% 0, 0 0; }
+  100% { background-position: -60% 0, 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, .btn, .card, .feature-icon, .btn-primary, .menu-tile { animation: none !important; transition: none !important; }
+}

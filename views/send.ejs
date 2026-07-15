@@ -1,0 +1,26 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 560px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('send_title') %></h3>
+    </div>
+
+    <div id="flash"></div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="text-muted small mb-3 d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('opt_earnings') %>: <strong><%= money(currentUser.earnings) %></strong></div>
+        <form method="post" action="/transfer"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input name="to" class="form-control mb-2" placeholder="<%= t('send_ph') %>" required>
+          <div class="input-group mb-2">
+            <span class="input-group-text"><i data-lucide="gift"></i></span>
+            <input name="amount" type="number" min="<%= settings.minTransfer %>" step="1" class="form-control" placeholder="<%= t('amount_ph') %>" required>
+            <span class="input-group-text"><%= settings.currency %></span>
+          </div>
+          <button class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="send"></i><%= t('btn_send') %></button>
+          <p class="small text-muted mt-2 mb-0"><%= t('send_note', { min: money(settings.minTransfer) }) %></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

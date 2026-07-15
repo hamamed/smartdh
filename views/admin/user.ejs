@@ -1,0 +1,204 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 900px;">
+    <%- include('_head', { heading: u.name, back: '/admin/users' }) %>
+
+    <div class="row g-3">
+      <!-- Identity -->
+      <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body text-center">
+            <% if (u.avatar) { %>
+              <img src="<%= u.avatar %>" class="rounded-circle mb-3" style="width:88px;height:88px;object-fit:cover" alt="">
+            <% } else { %>
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold mx-auto mb-3"
+                   style="width:88px;height:88px;font-size:2rem"><%= u.name.charAt(0).toUpperCase() %></div>
+            <% } %>
+            <h5 class="fw-bold mb-1"><%= u.name %>
+              <% if (u.isAdmin) { %><span class="badge bg-primary-subtle text-primary"><%= t('badge_admin') %></span><% } %>
+            </h5>
+            <div class="text-muted small mb-2"><%= u.email %></div>
+            <% const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
+            <span class="badge bg-<%= sc %>-subtle text-<%= sc %> mb-3"><%= statusLabel(u.status) %></span>
+
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('th_joined') %></span><span><%= new Date(u.createdAt).toLocaleDateString() %></span></div>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('your_code') %></span><span class="fw-semibold text-uppercase"><%= u.referralCode %></span></div>
+            <% if (referrer) { %>
+              <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_by') %></span>
+                <a href="/admin/users/<%= referrer.id %>"><%= referrer.name %></a></div>
+            <% } %>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_count') %></span><span class="fw-semibold"><%= invitees.length %></span></div>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('db_title') %></span><span class="fw-semibold"><%= u.streak.count %></span></div>
+
+            <div class="d-flex gap-1 mt-3">
+              <% if (u.status === 'pending') { %>
+                <form action="/admin/approve/<%= u.id %>" method="post" class="flex-grow-1"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn-sm btn-success w-100"><i data-lucide="check" class="me-1"></i><%= t('btn_approve') %></button></form>
+              <% } %>
+              <form action="/admin/toggle-admin/<%= u.id %>" method="post" class="flex-grow-1"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1"
+                  <%= u.id === currentUser.id ? 'disabled' : '' %>><i data-lucide="user-cog"></i><%= u.isAdmin ? t('make_player') : t('make_admin') %></button></form>
+              <form action="/admin/delete/<%= u.id %>" method="post" onsubmit="return confirm('<%= t('confirm_delete') %>')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-outline-danger" <%= u.id === currentUser.id ? 'disabled' : '' %>><i data-lucide="trash-2"></i></button></form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Balances + level -->
+      <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 mb-3">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="wallet" class="text-primary"></i><%= t('c_total') %></h6>
+            <div class="row g-2 text-center mb-3">
+              <div class="col-4"><div class="p-2 rounded-3 wallet wallet-coral">
+                <div class="small"><%= t('c_invested') %></div><div class="fw-bold"><%= money(invested) %></div></div></div>
+              <div class="col-4"><div class="p-2 rounded-3 wallet wallet-mint">
+                <div class="small"><%= t('c_earnings') %></div><div class="fw-bold"><%= money(u.earnings) %></div></div></div>
+              <div class="col-4"><div class="p-2 rounded-3 wallet wallet-yellow">
+                <div class="small"><%= t('c_total') %></div><div class="fw-bold"><%= money(total) %></div></div></div>
+            </div>
+
+            <div class="small text-muted mb-1"><%= t('level_label') %> <%= level %> · <%= t('xp_progress', { have: (u.xp - xpCur), need: (xpNext - xpCur) }) %></div>
+            <div class="progress mb-3"><div class="progress-bar" style="width: <%= Math.min(100, Math.round((u.xp - xpCur)/(xpNext - xpCur)*100)) %>%"></div></div>
+
+            <!-- per-app holdings -->
+            <div class="small fw-semibold mb-2"><%= t('plans_title') %></div>
+            <% plans.forEach(p => { const held = (u.invested && u.invested[p.id]) || 0; %>
+              <div class="d-flex justify-content-between border-bottom py-1 small">
+                <span class="d-flex align-items-center gap-2"><i data-lucide="<%= p.icon %>" class="text-<%= p.color %>"></i><%= planName(p) %></span>
+                <span class="fw-semibold"><%= money(held) %></span>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+
+        <!-- Admin actions -->
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="sliders-horizontal" class="text-primary"></i><%= t('th_adjust') %></h6>
+
+            <form action="/admin/adjust/<%= u.id %>" method="post" class="mb-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_earnings') %></label>
+                  <input name="earnings" type="number" step="1" class="form-control form-control-sm" placeholder="<%= Math.round(u.earnings) %>">
+                </div>
+                <% plans.forEach(p => { %>
+                  <div class="col-6">
+                    <label class="form-label small mb-1"><%= planName(p) %></label>
+                    <input name="plan_<%= p.id %>" type="number" step="1" class="form-control form-control-sm" placeholder="<%= Math.round((u.invested && u.invested[p.id]) || 0) %>">
+                  </div>
+                <% }) %>
+              </div>
+              <button class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+              <div class="form-text"><%= t('adjust_hint') %></div>
+            </form>
+
+            <hr>
+            <form action="/admin/users/<%= u.id %>/xp" method="post" class="mb-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <label class="form-label small mb-1"><%= t('set_xp') %></label>
+              <div class="input-group input-group-sm" style="max-width:260px">
+                <input name="xp" type="number" min="0" class="form-control" value="<%= u.xp %>">
+                <span class="input-group-text">XP</span>
+                <button class="btn btn-outline-primary"><i data-lucide="save"></i></button>
+              </div>
+              <div class="form-text"><%= t('set_xp_hint') %></div>
+            </form>
+
+            <hr>
+            <form action="/admin/users/<%= u.id %>/password" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <label class="form-label small mb-1"><%= t('set_password') %></label>
+              <div class="input-group input-group-sm" style="max-width:320px">
+                <input name="password" type="text" minlength="4" class="form-control" placeholder="<%= t('pw_new') %>" required>
+                <button class="btn btn-outline-primary"><i data-lucide="key-round"></i></button>
+              </div>
+              <div class="form-text"><%= t('set_password_hint') %></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payout -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="banknote" class="text-primary"></i><%= t('payout_details') %></h6>
+        <% if (payoutAccount) { %>
+          <div class="row g-2 small">
+            <div class="col-md-4"><span class="text-muted"><%= t('payout_method') %></span><div class="fw-semibold"><%= u.payout.method === 'bank' ? t('payout_bank') : t('payout_paypal') %></div></div>
+            <div class="col-md-4"><span class="text-muted"><%= t('payout_name') %></span><div class="fw-semibold"><%= u.payout.name || '—' %></div></div>
+            <div class="col-md-4"><span class="text-muted"><%= u.payout.method === 'bank' ? t('payout_rib') : t('payout_paypal_email') %></span><div class="fw-semibold" dir="ltr"><%= payoutAccount %></div></div>
+          </div>
+        <% } else { %>
+          <p class="text-muted small mb-0"><%= t('payout_none') %></p>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="trophy" class="text-warning"></i><%= t('ach_title') %>
+          <span class="text-muted small">(<%= u.achievements.length %>/<%= Object.keys(ACH).length %>)</span></h6>
+        <div class="d-flex flex-wrap gap-2">
+          <% Object.keys(ACH).forEach(id => { const got = u.achievements.includes(id); %>
+            <span class="badge <%= got ? 'bg-warning-subtle text-warning' : 'bg-body-secondary text-muted opacity-50' %> d-inline-flex align-items-center gap-1 p-2">
+              <i data-lucide="<%= ACH[id].icon %>"></i><%= achName(id) %></span>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="row g-3 mt-0">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="receipt" class="text-primary"></i><%= t('tab_deposits') %></h6>
+          <% if (!deposits.length) { %><p class="text-muted small mb-0"><%= t('dv_none') %></p><% } else { %>
+            <table class="table table-sm align-middle mb-0"><tbody>
+              <% deposits.slice(0,6).forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
+                <tr><td class="fw-semibold"><%= money(d.amount) %></td><td class="small"><%= d.planLabel %></td>
+                    <td><span class="badge bg-<%= dc %>-subtle text-<%= dc %>"><%= statusLabel(d.status) %></span></td></tr>
+              <% }) %>
+            </tbody></table>
+          <% } %>
+        </div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="banknote" class="text-primary"></i><%= t('tab_withdrawals') %></h6>
+          <% if (!withdrawals.length) { %><p class="text-muted small mb-0"><%= t('wd_none') %></p><% } else { %>
+            <table class="table table-sm align-middle mb-0"><tbody>
+              <% withdrawals.slice(0,6).forEach(w => { const wc = w.status==='paid'?'success':(w.status==='rejected'?'danger':'warning'); %>
+                <tr><td class="fw-semibold"><%= money(w.amount) %></td><td class="small"><%= w.fromLabel || w.from %></td>
+                    <td><span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize"><%= w.status %></span></td></tr>
+              <% }) %>
+            </tbody></table>
+          <% } %>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="history" class="text-primary"></i><%= t('activity_title') %></h6>
+        <% if (!txns.length) { %><p class="text-muted small mb-0"><%= t('no_activity') %></p><% } else { %>
+          <div class="list-group list-group-flush">
+            <% txns.forEach(tx => { const m = TX[tx.type] || TX.admin_adjust; %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-3 bg-transparent">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-<%= m.cls %>-subtle text-<%= m.cls %>"
+                     style="width:34px;height:34px;flex:0 0 34px"><i data-lucide="<%= m.icon %>"></i></div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold small"><%= txLabel(tx.type) %></div>
+                  <div class="text-muted" style="font-size:.75rem"><%= tx.note %> · <%= new Date(tx.at).toLocaleString() %></div>
+                </div>
+                <% if (tx.amount) { %><div class="fw-bold text-<%= m.cls %> text-nowrap small"><%= m.sign %><%= money(tx.amount) %></div><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

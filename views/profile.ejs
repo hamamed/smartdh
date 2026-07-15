@@ -1,0 +1,83 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('profile_title') %></h3>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= error %></div>
+    <% } %>
+    <% if (ok) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div>
+    <% } %>
+
+    <!-- Identity -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="user" class="text-primary"></i><%= t('profile_identity') %></h6>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <% if (currentUser.avatar) { %>
+            <img src="<%= currentUser.avatar %>" alt="" class="rounded-circle" style="width:64px;height:64px;object-fit:cover">
+          <% } else { %>
+            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
+                 style="width:64px;height:64px;font-size:1.5rem"><%= currentUser.name.charAt(0).toUpperCase() %></div>
+          <% } %>
+          <div class="small text-muted"><%= currentUser.email %><br><span class="text-uppercase"><%= currentUser.referralCode %></span></div>
+        </div>
+        <%# token also in the query so it can be verified before the file is written %>
+        <form method="post" action="/profile?_csrf=<%= csrfToken %>" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('lbl_name') %></label>
+            <input name="name" class="form-control" value="<%= currentUser.name %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><%= t('profile_photo') %> <span class="text-muted small"><%= t('opt') %></span></label>
+            <!-- accept="image/*" lets phones offer Camera or Gallery -->
+            <input type="file" name="photo" id="photoInput" class="form-control" accept="image/*">
+            <input type="hidden" name="hasPhoto" id="hasPhoto" value="0">
+            <div class="form-text"><%= t('photo_hint') %></div>
+            <img id="photoPreview" class="rounded-3 mt-2 d-none" style="width:96px;height:96px;object-fit:cover" alt="">
+          </div>
+          <% if (currentUser.avatar) { %>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="removePhoto" id="removePhoto" value="1">
+              <label class="form-check-label small" for="removePhoto"><%= t('photo_remove') %></label>
+            </div>
+          <% } %>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Payout details -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="banknote" class="text-primary"></i><%= t('payout_details') %></h6>
+        <p class="text-muted small mb-3"><%= t('payout_intro') %></p>
+        <form method="post" action="/profile/payout"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('partials/payout-fields') %>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="lock" class="text-primary"></i><%= t('profile_password') %></h6>
+        <form method="post" action="/profile/password"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('pw_current') %></label>
+            <input name="current" type="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><%= t('pw_new') %></label>
+            <input name="next" type="password" class="form-control" minlength="4" required>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('pw_change') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
