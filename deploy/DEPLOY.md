@@ -96,7 +96,13 @@ Then fix ownership (the app writes to `data/` and `public/uploads/`):
 mkdir -p /var/www/smartdh/data /var/www/smartdh/public/uploads
 chown -R smartdh:smartdh /var/www/smartdh
 chmod 600 /var/www/smartdh/.env
+
+# the files now belong to `smartdh` but you run git as root — allow it
+git config --global --add safe.directory /var/www/smartdh
 ```
+
+> Skipping that last line gives you:
+> `fatal: detected dubious ownership in repository at '/var/www/smartdh'`
 
 ## 7. Run it as a service
 

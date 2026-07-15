@@ -7,6 +7,10 @@ APP_USER=smartdh
 
 cd "$APP_DIR"
 
+# The files are owned by $APP_USER but we run as root — git refuses that unless told
+# the directory is trusted.
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+
 echo "==> Backing up data first"
 cp -r data "/root/smartdh-data-$(date +%F-%H%M)" 2>/dev/null || echo "    (no data yet, skipping)"
 
