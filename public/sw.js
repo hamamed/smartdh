@@ -1,7 +1,10 @@
 // Minimal service worker: caches static assets, always fetches pages from the
 // network (balances must never be stale), falls back to cache when offline.
-const CACHE = 'dv-static-v1';
-const ASSETS = ['/css/style.css', '/js/app.js', '/icons/icon-192.png', '/icons/icon-512.png', '/manifest.webmanifest'];
+const CACHE = 'dv-static-v2';
+// css/js are NOT precached: they carry a ?v= stamp, so a new build is simply a new
+// URL that misses the cache and gets fetched. Precaching the bare paths would pin
+// a stale copy forever.
+const ASSETS = ['/icons/icon-192.png', '/icons/icon-512.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

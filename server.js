@@ -52,6 +52,21 @@ if (!SESSION_SECRET) {
   console.warn('⚠  No SESSION_SECRET in .env — using a random one (logins reset on restart).');
 }
 
+// Cache-busting stamp for /css/style.css and /js/app.js. nginx caches them for days
+// and the service worker caches them cache-first, so without a changing URL a deploy
+// would never reach browsers that already loaded the old files.
+const ASSET_V = (() => {
+  try {
+    const h = crypto.createHash('sha1');
+    for (const f of ['public/css/style.css', 'public/js/app.js']) {
+      h.update(fs.readFileSync(path.join(__dirname, f)));
+    }
+    return h.digest('hex').slice(0, 8);
+  } catch (e) {
+    return String(Date.now()); // worst case: bust on every restart
+  }
+})();
+
 // Who becomes admin. On a public URL "first signup wins" is dangerous — a stranger
 // could claim admin before you. Set ADMIN_EMAIL in .env and only that address does.
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
@@ -121,6 +136,7 @@ app.use(session({
 app.use((req, res, next) => {
   if (!req.session.csrf) req.session.csrf = crypto.randomBytes(24).toString('hex');
   res.locals.csrfToken = req.session.csrf;
+  res.locals.assetV = ASSET_V;
   next();
 });
 // (validation runs after the locals middleware below, so the error page can render)
