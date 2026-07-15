@@ -63,6 +63,28 @@
   </div>
 </section>
 
+<!-- ============ LIVE STATS (real data, hidden until there are players) ============ -->
+<% if (stats) { %>
+  <section class="py-4 bg-body border-top">
+    <div class="container">
+      <div class="row g-3 text-center">
+        <% [
+             ['users', 'ti-coral',  stats.players.toLocaleString(), 'stat_players'],
+             ['coins', 'ti-mint',   money(stats.coins),             'stat_total'],
+             ['layers','ti-sky',    stats.apps,                     'plans_title'],
+             ['banknote','ti-yellow', stats.payouts.toLocaleString(), 'lp_stat_payouts']
+           ].forEach(([icon, tint, value, key]) => { %>
+          <div class="col-6 col-lg-3">
+            <span class="tile-icon <%= tint %> mx-auto mb-2" style="width:46px;height:46px;font-size:1.2rem"><i data-lucide="<%= icon %>"></i></span>
+            <div class="h5 fw-bold mb-0"><%= value %></div>
+            <div class="small text-muted"><%= t(key) %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+<% } %>
+
 <!-- ============ WHAT IS IT ============ -->
 <section class="py-5 bg-body border-top">
   <div class="container">
@@ -160,7 +182,10 @@
 <!-- ============ LEVELS & WITHDRAWALS ============ -->
 <section class="py-5">
   <div class="container">
-    <h2 class="fw-bold text-center mb-5"><%= t('lp_more_t') %></h2>
+    <h2 class="fw-bold text-center mb-2"><%= t('lp_more_t') %></h2>
+    <p class="text-center mb-5">
+      <a href="/guide" class="d-inline-flex align-items-center gap-1"><i data-lucide="book-open"></i><%= t('guide_title') %></a>
+    </p>
     <div class="row g-3 justify-content-center">
       <div class="col-md-6">
         <div class="card border-0 shadow-sm rounded-4 h-100">

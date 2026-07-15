@@ -492,8 +492,21 @@ function requireAdmin(req, res, next) {
 // Logged-in players don't need the landing page — send them to their dashboard.
 app.get('/', (req, res) => {
   if (req.currentUser) return res.redirect('/dashboard');
-  res.render('landing', { title: req.t('hero_title') });
+  const db = req.db;
+  const players = db.users.filter(u => u.status === 'active' && !u.isAdmin);
+  // Real numbers only — and hidden entirely until there's something worth showing,
+  // because "1 player" reads worse than no stats at all.
+  const stats = players.length >= 3 ? {
+    players: players.length,
+    coins: players.reduce((s, u) => s + totalBalance(u), 0),
+    apps: db.settings.plans.length,
+    payouts: db.withdrawals.filter(w => w.status === 'paid').length
+  } : null;
+  res.render('landing', { title: req.t('hero_title'), stats });
 });
+// Public on purpose: new players can read it before signing up.
+app.get('/guide', (req, res) => res.render('guide', { title: req.t('guide_title') }));
+
 app.get('/terms', (req, res) => res.render('terms', { title: req.t('footer_terms') }));
 app.get('/privacy', (req, res) => res.render('privacy', { title: req.t('footer_privacy') }));
 

@@ -1,0 +1,285 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 860px;">
+
+    <!-- header -->
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <a href="<%= currentUser ? '/dashboard' : '/' %>" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h2 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="book-open" class="text-primary"></i><%= t('guide_title') %></h2>
+    </div>
+    <p class="text-muted mb-4"><%= t('guide_sub') %></p>
+
+    <!-- contents -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="list" class="text-primary"></i><%= t('guide_toc') %></h6>
+        <div class="d-flex flex-wrap gap-2">
+          <%
+            const toc = [
+              ['start', 'g_start_t'], ['home', 'g_home_t'], ['menu', 'g_menu_t'], ['invest', 'g_invest_t'],
+              ['withdraw', 'g_wd_t'], ['earn', 'howto_earn_t'], ['xp', 'g_xp_t'], ['ref', 'g_ref_t'],
+              ['ach', 'g_ach_t'], ['activity', 'g_act_t'], ['status', 'g_status_t'], ['icons', 'g_icons_t']
+            ];
+          %>
+          <% toc.forEach(([id, key]) => { %>
+            <a href="#<%= id %>" class="badge bg-body-secondary text-body text-decoration-none p-2"><%= t(key) %></a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. getting started -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="start">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">1</span><%= t('g_start_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_start_d') %></p>
+        <% [['user-plus','g_start_1_t','g_start_1_d'], ['hourglass','g_start_2_t','g_start_2_d'], ['log-in','g_start_3_t','g_start_3_d']].forEach(([icon, tk, dk]) => { %>
+          <div class="d-flex align-items-start gap-3 border-bottom py-2">
+            <span class="tile-icon ti-navy" style="width:36px;height:36px;font-size:1rem"><i data-lucide="<%= icon %>"></i></span>
+            <div><div class="fw-semibold small"><%= t(tk) %></div><div class="text-muted small"><%= t(dk) %></div></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 2. home screen -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="home">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">2</span><%= t('g_home_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_home_d') %></p>
+        <% [['gift','ti-yellow','g_home_bonus'], ['piggy-bank','ti-coral','g_home_w1'], ['coins','ti-mint','g_home_w2'],
+            ['wallet','ti-yellow','g_home_w3'], ['star','ti-lilac','g_home_level'], ['chart-line','ti-sky','g_home_chart'],
+            ['layout-grid','ti-navy','g_home_menu']].forEach(([icon, tint, key]) => { %>
+          <div class="d-flex align-items-center gap-3 border-bottom py-2">
+            <span class="tile-icon <%= tint %>" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="<%= icon %>"></i></span>
+            <div class="text-muted small"><%= t(key) %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 3. the menu -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="menu">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">3</span><%= t('g_menu_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_menu_d') %></p>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <tbody>
+              <% [['layers','ti-coral','plans_title','g_m_invest'], ['arrow-down-to-line','ti-mint','withdraw_title','g_m_withdraw'],
+                  ['send','ti-sky','send_title','g_m_send'], ['gift','ti-yellow','db_title','g_m_rewards'],
+                  ['trophy','ti-lilac','ach_title','g_m_ach'], ['history','ti-navy','activity_title','g_m_activity'],
+                  ['medal','ti-coral','lb_title','g_m_board'], ['user-plus','ti-mint','invite_title','g_m_invite'],
+                  ['user','ti-sky','profile_title','g_m_profile']].forEach(([icon, tint, nameKey, descKey]) => { %>
+                <tr>
+                  <td style="width:44px"><span class="tile-icon <%= tint %>" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="<%= icon %>"></i></span></td>
+                  <td class="fw-semibold small text-nowrap"><%= t(nameKey) %></td>
+                  <td class="text-muted small"><%= t(descKey) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. investing -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="invest">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><span class="step-num">4</span><%= t('g_invest_t') %></h5>
+
+        <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('g_invest_apps') %></h6>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="text-muted small"><tr><th><%= t('th_app') %></th><th><%= t('th_rate') %></th><th><%= t('th_level') %></th></tr></thead>
+            <tbody>
+              <% plans.forEach(p => { %>
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="tile-icon ti-<%= p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))) %>" style="width:32px;height:32px;font-size:.9rem"><i data-lucide="<%= p.icon %>"></i></span>
+                      <div><div class="fw-semibold small"><%= planName(p) %></div><div class="text-muted" style="font-size:.75rem"><%= planDesc(p) %></div></div>
+                    </div>
+                  </td>
+                  <td><span class="badge bg-<%= p.color %>-subtle text-<%= p.color %>"><%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %></span></td>
+                  <td class="small"><%= (p.minLevel||1) > 1 ? t('locked_at', { n: p.minLevel }) : t('level_label') + ' 1' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('g_invest_flow') %></h6>
+        <ol class="text-muted small ps-3 mb-0">
+          <li class="mb-1"><%= t('g_invest_f1', { min: money(settings.minAddFunds) }) %></li>
+          <li class="mb-1"><%= t('g_invest_f2') %></li>
+          <li class="mb-1"><%= t('g_invest_f3') %></li>
+          <li><%= t('g_invest_f4') %></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 5. withdrawals -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="withdraw">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><span class="step-num">5</span><%= t('g_wd_t') %></h5>
+        <ol class="text-muted small ps-3 mb-0">
+          <li class="mb-1"><%= t('g_wd_1') %></li>
+          <li class="mb-1"><%= t('g_wd_2', { min: money(settings.minWithdraw), days: settings.withdrawEveryDays }) %></li>
+          <li class="mb-1"><%= t('g_wd_3') %></li>
+          <li><%= t('g_wd_4') %></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 6. ways to earn -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="earn">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><span class="step-num">6</span><%= t('howto_earn_t') %></h5>
+        <%
+          const earn = [
+            ['coins', 'ti-mint', 'howto_earn_1_t', t('howto_earn_1_d')],
+            ['gift', 'ti-yellow', 'howto_earn_2_t', t('howto_earn_2_d', { max: money(settings.dailyBonusBase * 7) })],
+            ['user-plus', 'ti-coral', 'howto_earn_3_t', t('howto_earn_3_d', { t1: settings.referralTiers[0]*100, t2: settings.referralTiers[1]*100, t3: settings.referralTiers[2]*100 })],
+            ['trophy', 'ti-lilac', 'howto_earn_4_t', t('howto_earn_4_d')]
+          ];
+        %>
+        <% earn.forEach(([icon, tint, tk, d]) => { %>
+          <div class="d-flex align-items-start gap-3 border-bottom py-2">
+            <span class="tile-icon <%= tint %>" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="<%= icon %>"></i></span>
+            <div><div class="fw-semibold small"><%= t(tk) %></div><div class="text-muted small"><%= d %></div></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 7. levels & xp -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="xp">
+      <div class="card-body">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><span class="step-num">7</span><%= t('g_xp_t') %></h5>
+        <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('g_xp_sources') %></h6>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm align-middle mb-0">
+            <tbody>
+              <% [['g_xp_deposit','+10 … +200 XP'], ['g_xp_bonus','+10 XP'], ['g_xp_send','+5 XP'], ['g_xp_ach','+25 XP']].forEach(([k, v]) => { %>
+                <tr><td class="small text-muted"><%= t(k) %></td><td class="text-end"><span class="badge bg-success-subtle text-success"><%= v %></span></td></tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted small mb-0"><i data-lucide="info" class="me-1"></i><%= t('g_xp_formula') %></p>
+      </div>
+    </div>
+
+    <!-- 8. referrals -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="ref">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">8</span><%= t('g_ref_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_ref_d') %></p>
+        <div class="row g-2">
+          <% ['coral','yellow','sky'].forEach((tint, i) => { %>
+            <div class="col-md-4">
+              <div class="p-3 rounded-3 bg-body-secondary h-100">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="tile-icon ti-<%= tint %>" style="width:30px;height:30px;font-size:.85rem"><i data-lucide="users"></i></span>
+                  <span class="fw-semibold small"><%= t('ref_tier', { n: i+1 }) %></span>
+                  <span class="badge bg-success-subtle text-success ms-auto"><%= settings.referralTiers[i]*100 %>%</span>
+                </div>
+                <div class="text-muted" style="font-size:.75rem"><%= t('ref_tier_' + (i+1) + '_d') %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <% if (settings.campaign && settings.campaign.enabled) { %>
+          <div class="alert alert-warning small mt-3 mb-0 d-flex align-items-center gap-2">
+            <i data-lucide="party-popper"></i>
+            <span><strong><%= settings.campaign.title || t('camp_title') %></strong> — <%= t('camp_desc', { goal: settings.campaign.inviteGoal, min: money(settings.campaign.minDeposit), coins: money(settings.campaign.rewardCoins), xp: settings.campaign.rewardXp }) %></span>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- 9. achievements -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="ach">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">9</span><%= t('g_ach_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_ach_d') %></p>
+        <div class="row g-2">
+          <% Object.keys(ACH).forEach(id => { %>
+            <div class="col-6 col-md-3">
+              <div class="text-center p-2 rounded-3 bg-warning-subtle h-100">
+                <div class="fs-4 text-warning"><i data-lucide="<%= ACH[id].icon %>"></i></div>
+                <div class="small fw-semibold"><%= achName(id) %></div>
+                <div class="text-muted" style="font-size:.7rem"><%= achDesc(id) %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. activity types -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="activity">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">10</span><%= t('g_act_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_act_d') %></p>
+        <div class="row g-2">
+          <% Object.keys(TX).forEach(type => { const m = TX[type]; %>
+            <div class="col-md-6">
+              <div class="d-flex align-items-center gap-2 border-bottom py-2">
+                <span class="rounded-circle d-flex align-items-center justify-content-center bg-<%= m.cls %>-subtle text-<%= m.cls %>"
+                      style="width:30px;height:30px;flex:0 0 30px;font-size:.85rem"><i data-lucide="<%= m.icon %>"></i></span>
+                <span class="small"><%= txLabel(type) %></span>
+                <% if (m.sign) { %><span class="badge bg-<%= m.cls %>-subtle text-<%= m.cls %> ms-auto"><%= m.sign %></span><% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. statuses -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="status">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">11</span><%= t('g_status_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_status_d') %></p>
+        <% [['warning','st_pending','g_st_pending'], ['success','st_active','g_st_active'], ['success','st_approved','g_st_approved'],
+            ['success','st_paid','g_st_paid'], ['danger','st_rejected','g_st_rejected']].forEach(([cls, badge, desc]) => { %>
+          <div class="d-flex align-items-center gap-3 border-bottom py-2">
+            <span class="badge bg-<%= cls %>-subtle text-<%= cls %>" style="min-width:90px"><%= t(badge) %></span>
+            <span class="text-muted small"><%= t(desc) %></span>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 12. buttons & icons -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3" id="icons">
+      <div class="card-body">
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2"><span class="step-num">12</span><%= t('g_icons_t') %></h5>
+        <p class="text-muted small mb-3"><%= t('g_icons_d') %></p>
+        <div class="row g-2">
+          <% [['arrow-left','g_i_back'], ['plus','g_i_plus'], ['copy','g_i_copy'], ['moon','g_i_theme'],
+              ['globe','g_i_lang'], ['circle-help','g_i_help'], ['lock','g_i_lock'], ['gift','g_i_gift']].forEach(([icon, key]) => { %>
+            <div class="col-md-6">
+              <div class="d-flex align-items-center gap-3 border-bottom py-2">
+                <span class="btn btn-sm btn-outline-secondary btn-icon rounded-circle pe-none"><i data-lucide="<%= icon %>"></i></span>
+                <span class="text-muted small"><%= t(key) %></span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- closing -->
+    <div class="alert alert-warning small d-flex align-items-center gap-2">
+      <i data-lucide="alert-triangle"></i><span><%= t('g_note') %></span>
+    </div>
+
+    <% if (!currentUser) { %>
+      <div class="text-center mt-4">
+        <a href="/signup" class="btn btn-primary px-4 d-inline-flex align-items-center gap-2"><i data-lucide="rocket"></i><%= t('btn_getstarted') %></a>
+      </div>
+    <% } %>
+  </div>
+</section>
