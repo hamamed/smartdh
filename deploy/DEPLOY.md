@@ -116,14 +116,12 @@ Logs: `journalctl -u smartdh -f`
 cp /var/www/smartdh/deploy/nginx.conf /etc/nginx/sites-available/smartdh.ma
 ln -sf /etc/nginx/sites-available/smartdh.ma /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
 ```
 
-The file already references certificates that don't exist yet, so get them first —
-certbot will write the SSL config itself:
+Now get the certificate — certbot edits the file to add TLS and the redirect itself:
 
 ```bash
-# temporarily comment out the whole 443 server block, then:
-nginx -t && systemctl reload nginx
 certbot --nginx -d smartdh.ma -d www.smartdh.ma --agree-tos -m your@email.com --redirect
 nginx -t && systemctl reload nginx
 ```

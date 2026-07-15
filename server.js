@@ -1324,5 +1324,6 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`\n🎮  Investment game running at ${APP_URL}`);
-  console.log('    The FIRST account you sign up with becomes the admin.\n');
+  if (ADMIN_EMAIL) console.log(`    Admin: sign up with ${ADMIN_EMAIL} to claim the admin account.\n`);
+  else console.log('    The FIRST account you sign up with becomes the admin.\n');
 });
