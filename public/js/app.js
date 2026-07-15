@@ -151,6 +151,40 @@ if ('serviceWorker' in navigator) {
   sync();
 })();
 
+// ---------- Admin: bulk select on the users list ----------
+(function () {
+  const all = document.getElementById('checkAll');
+  const bar = document.getElementById('bulkBar');
+  if (!all || !bar) return;
+  const boxes = () => [...document.querySelectorAll('.row-check:not([disabled])')];
+  const countEl = document.getElementById('bulkCount');
+
+  function sync() {
+    const picked = boxes().filter(b => b.checked).length;
+    countEl.textContent = picked;
+    bar.classList.toggle('d-none', picked === 0);
+    bar.classList.toggle('d-flex', picked > 0);
+    const total = boxes().length;
+    all.checked = picked > 0 && picked === total;
+    all.indeterminate = picked > 0 && picked < total;   // partial selection
+  }
+  all.addEventListener('change', () => { boxes().forEach(b => { b.checked = all.checked; }); sync(); });
+  boxes().forEach(b => b.addEventListener('change', sync));
+  sync();
+})();
+
+// Confirm destructive bulk actions. Returns false to block the submit.
+function dvConfirmBulk(form) {
+  const n = document.querySelectorAll('.row-check:checked').length;
+  const M = window.MSG || {};
+  if (!n) return false;
+  // the clicked button is the submitter; fall back to reading the form
+  const action = (document.activeElement && document.activeElement.value) || '';
+  if (action === 'delete') return confirm((M.bulk_confirm_delete || 'Delete {n} players?').replace('{n}', n));
+  if (action === 'reject') return confirm((M.bulk_confirm_reject || 'Reject {n} players?').replace('{n}', n));
+  return true;
+}
+
 // ---------- Referral copy ----------
 (function () {
   const btn = document.getElementById('copyRef');

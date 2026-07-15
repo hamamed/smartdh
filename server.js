@@ -985,6 +985,7 @@ app.get('/admin/users', requireAdmin, (req, res) => {
     totalUsersAll: db.users.length,
     statusCounts: countBy(db.users),
     counts: adminCounts(db),
+    done: req.query.done || null, doneN: parseInt(req.query.n) || 0,
     levelForXp, totalInvested, totalBalance
   });
 });
@@ -1359,15 +1360,70 @@ app.post('/admin/toggle-admin/:id', requireAdmin, (req, res) => {
   res.redirect('/admin/users/' + req.params.id);
 });
 
+// Remove a player and everything attached to them. Returns the deleted user or null.
+function deleteUserCascade(db, id) {
+  const u = db.users.find(x => x.id === id);
+  if (!u) return null;
+  deleteUpload(u.avatar);                                     // their photo file
+  db.users = db.users.filter(x => x.id !== id);
+  db.deposits = db.deposits.filter(d => d.userId !== id);     // was leaking orphans
+  db.withdrawals = db.withdrawals.filter(w => w.userId !== id);
+  db.users.forEach(x => { if (x.referredBy === id) x.referredBy = null; }); // no dangling upline
+  return u;
+}
+
 app.post('/admin/delete/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const id = Number(req.params.id);
-  if (id !== req.currentUser.id) {
-    db.users = db.users.filter(u => u.id !== id);
-    db.withdrawals = db.withdrawals.filter(w => w.userId !== id);
+  if (id !== req.currentUser.id) {   // never delete yourself
+    const gone = deleteUserCascade(db, id);
+    if (gone) logAudit(db, req.currentUser, 'user.delete', gone.name + ' <' + gone.email + '>');
     save(db);
   }
   res.redirect('/admin/users');
+});
+
+// ----- Bulk actions from the users list -----
+app.post('/admin/users/bulk', requireAdmin, async (req, res) => {
+  const db = req.db;
+  const action = req.body.action;
+  let ids = req.body.ids || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  // never let an admin act on their own account in bulk
+  ids = [...new Set(ids.map(Number))].filter(n => Number.isFinite(n) && n !== req.currentUser.id);
+
+  if (!ids.length) return res.redirect('/admin/users?done=none');
+
+  let n = 0;
+  if (action === 'approve') {
+    for (const id of ids) {
+      const u = db.users.find(x => x.id === id);
+      if (!u || u.status === 'active') continue;
+      u.status = 'active';
+      u.lastAccrual = Date.now();
+      maybePayInvite(db, u);
+      sendMail(u.email, 'Your account is approved',
+        `<p>Hi ${u.name},</p><p>Your account has been approved — you can log in and start playing.</p>`);
+      n++;
+    }
+  } else if (action === 'reject') {
+    for (const id of ids) {
+      const u = db.users.find(x => x.id === id);
+      if (!u || u.isAdmin) continue;           // admins are never rejected
+      u.status = 'rejected';
+      n++;
+    }
+  } else if (action === 'delete') {
+    for (const id of ids) {
+      if (deleteUserCascade(db, id)) n++;
+    }
+  } else {
+    return res.redirect('/admin/users');
+  }
+
+  logAudit(db, req.currentUser, 'user.bulk' + action.charAt(0).toUpperCase() + action.slice(1), n + ' players');
+  save(db);
+  res.redirect('/admin/users?done=' + action + '&n=' + n);
 });
 
 // Each settings page posts only its own fields, so handlers are split per section

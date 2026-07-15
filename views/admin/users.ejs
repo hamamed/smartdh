@@ -26,18 +26,54 @@
           </div>
         </div>
 
+        <% if (done) { %>
+          <div class="alert alert-<%= done === 'none' ? 'warning' : 'success' %> py-2 d-flex align-items-center gap-2">
+            <i data-lucide="<%= done === 'none' ? 'alert-triangle' : 'check' %>"></i>
+            <%= done === 'none' ? t('bulk_none') : t('bulk_done_' + done, { n: doneN }) %>
+          </div>
+        <% } %>
+
         <% if (users.length === 0) { %>
           <p class="text-muted mb-0"><%= t('no_results') %></p>
         <% } else { %>
+          <%# lives outside the table: the rows already contain their own forms,
+              and nesting forms is invalid — checkboxes link to it via form="bulkForm" %>
+          <form id="bulkForm" method="post" action="/admin/users/bulk"
+                onsubmit="return dvConfirmBulk(this)">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          </form>
+
+          <div id="bulkBar" class="d-none align-items-center gap-2 p-2 mb-2 rounded-3 bg-body-secondary">
+            <span class="small fw-semibold ms-2"><span id="bulkCount">0</span> <%= t('bulk_selected') %></span>
+            <div class="ms-auto d-flex gap-1 flex-wrap">
+              <button form="bulkForm" name="action" value="approve" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1">
+                <i data-lucide="check"></i><%= t('btn_approve') %></button>
+              <button form="bulkForm" name="action" value="reject" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1">
+                <i data-lucide="x"></i><%= t('bulk_reject') %></button>
+              <button form="bulkForm" name="action" value="delete" class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1">
+                <i data-lucide="trash-2"></i><%= t('bulk_delete') %></button>
+            </div>
+          </div>
+
           <div class="table-responsive">
-            <table class="table align-middle mb-0">
+            <table class="table align-middle mb-0" id="usersTable">
               <thead class="text-muted small">
-                <tr><th><%= t('th_user') %></th><th><%= t('th_status') %></th><th><%= t('level_label') %></th>
-                    <th><%= t('th_invested') %></th><th><%= t('th_earnings') %></th><th class="text-end"><%= t('th_action') %></th></tr>
+                <tr>
+                  <th style="width:34px">
+                    <input type="checkbox" class="form-check-input" id="checkAll" title="<%= t('bulk_selectall') %>">
+                  </th>
+                  <th><%= t('th_user') %></th><th><%= t('th_status') %></th><th><%= t('level_label') %></th>
+                  <th><%= t('th_invested') %></th><th><%= t('th_earnings') %></th><th class="text-end"><%= t('th_action') %></th>
+                </tr>
               </thead>
               <tbody>
                 <% users.forEach(u => { const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
                   <tr>
+                    <td>
+                      <input type="checkbox" class="form-check-input row-check" form="bulkForm"
+                             name="ids" value="<%= u.id %>"
+                             <%= u.id === currentUser.id ? 'disabled title="' + t('bulk_notyou') + '"' : '' %>>
+                    </td>
                     <td>
                       <div class="d-flex align-items-center gap-2">
                         <% if (u.avatar) { %>
