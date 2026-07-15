@@ -33,7 +33,12 @@ const cell = (v) => {
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
 
-const rows = [['name', 'email', 'status', 'xp', 'earnings', 'password']];
+// Default app ids. Change these if you renamed/added apps in the admin panel —
+// the import only fills columns whose app actually exists.
+const APPS = (process.argv[4] || 'safe,balanced,risky').split(',');
+const LEVEL3_XP = 200; // level = floor(sqrt(xp/50))+1, so 200xp = level 3
+
+const rows = [['name', 'email', 'status', 'xp', 'earnings', 'password', ...APPS.map(a => 'invested_' + a)]];
 const seen = new Set();
 
 while (rows.length <= COUNT) {
@@ -51,13 +56,26 @@ while (rows.length <= COUNT) {
   const r = Math.random();
   const status = r < 0.70 ? 'active' : r < 0.95 ? 'pending' : 'rejected';
 
-  // active players have progress; pending ones are fresh
+  // active players have progress; pending/rejected ones are fresh
   const xp = status === 'active' ? int(0, 2500) : 0;
   const earnings = status === 'active' ? int(0, 40000) : 0;
 
-  rows.push([name, email, status, xp, earnings, PASSWORD]);
+  // Investments: only active players hold anything, and each holds a random
+  // subset of apps. 'risky' is level-3 locked in the game, so only give it to
+  // players whose XP would actually have unlocked it.
+  const invested = APPS.map(app => {
+    if (status !== 'active') return 0;
+    if (app === 'risky' && xp < LEVEL3_XP) return 0;
+    if (Math.random() < 0.35) return 0;              // not everyone holds every app
+    return int(1, 40) * 500;                          // 500 .. 20,000 in round numbers
+  });
+  // make sure an active player isn't left with nothing invested
+  if (status === 'active' && invested.every(v => v === 0)) invested[0] = int(1, 20) * 500;
+
+  rows.push([name, email, status, xp, earnings, PASSWORD, ...invested]);
 }
 
 fs.writeFileSync(OUT, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'utf8');
 console.log(`Wrote ${COUNT} users -> ${OUT}`);
 console.log(`Every account's password is: ${PASSWORD}`);
+console.log(`Apps: ${APPS.join(', ')} (override: node scripts/make-test-users.js 100 out.csv safe,balanced,risky,app1)`);

@@ -1115,11 +1115,18 @@ app.get('/admin/settings', requireAdmin, (req, res) => {
 // ----- CSV exports -----
 app.get('/admin/export/users.csv', requireAdmin, (req, res) => {
   const db = req.db;
-  const rows = [['id', 'name', 'email', 'status', 'admin', 'level', 'xp', 'invested', 'earnings', 'total', 'referralCode', 'referredBy', 'joined']];
+  const apps = db.settings.plans;
+  // per-app columns mean an export can be edited and imported straight back
+  const rows = [[
+    'id', 'name', 'email', 'status', 'admin', 'level', 'xp', 'earnings',
+    ...apps.map(p => 'invested_' + p.id),
+    'invested_total', 'total', 'referralCode', 'referredBy', 'joined'
+  ]];
   db.users.forEach(u => rows.push([
     u.id, u.name, u.email, u.status, u.isAdmin ? 'yes' : 'no',
-    levelForXp(u.xp), u.xp || 0,
-    totalInvested(u).toFixed(2), (u.earnings || 0).toFixed(2), totalBalance(u).toFixed(2),
+    levelForXp(u.xp), u.xp || 0, (u.earnings || 0).toFixed(2),
+    ...apps.map(p => ((u.invested && u.invested[p.id]) || 0).toFixed(2)),
+    totalInvested(u).toFixed(2), totalBalance(u).toFixed(2),
     u.referralCode, u.referredBy || '', new Date(u.createdAt).toISOString()
   ]));
   csvReply(res, 'users.csv', rows);
@@ -1160,10 +1167,11 @@ app.get('/admin/export/backup.json', requireAdmin, (req, res) => {
 
 // A ready-to-fill template so the expected columns are obvious.
 app.get('/admin/export/users-template.csv', requireAdmin, (req, res) => {
+  const apps = req.db.settings.plans;
   csvReply(res, 'users-template.csv', [
-    ['name', 'email', 'status', 'xp', 'earnings', 'password'],
-    ['Yassine', 'yassine@example.com', 'active', '0', '0', 'changeme'],
-    ['Amine', 'amine@example.com', 'pending', '', '', '']
+    ['name', 'email', 'status', 'xp', 'earnings', 'password', ...apps.map(p => 'invested_' + p.id)],
+    ['Yassine', 'yassine@example.com', 'active', '250', '500', 'changeme', ...apps.map(() => '1000')],
+    ['Amine', 'amine@example.com', 'pending', '', '', '', ...apps.map(() => '')]
   ]);
 });
 
@@ -1213,6 +1221,20 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
       if (earnings !== '') u.earnings = Math.max(0, Number(earnings) || 0);
       created.push({ email: u.email, password: password ? null : pass });
     }
+
+    // per-app holdings: one optional column per app, e.g. invested_safe
+    let touchedInvested = false;
+    for (const p of db.settings.plans) {
+      const c = col('invested_' + p.id);
+      if (c === -1) continue;
+      const v = (r[c] || '').trim();
+      if (v === '') continue;
+      u.invested[p.id] = Math.max(0, Number(v) || 0);
+      touchedInvested = true;
+    }
+    // start earning from now, not from their (imported) creation time
+    if (touchedInvested) u.lastAccrual = Date.now();
+    checkState(u); // balance-based achievements
   }
 
   logAudit(db, req.currentUser, 'data.importUsers', created.length + ' created, ' + updated.length + ' updated, ' + errors.length + ' errors');
