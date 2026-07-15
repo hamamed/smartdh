@@ -203,4 +203,14 @@ function save(db) {
   maybeBackup(cache, false);
 }
 
-module.exports = { load, save, refCode, listBackups };
+// Replace the entire database (restore from a backup file).
+// Snapshots the current data first, then swaps the in-memory instance so the very
+// next request sees the restored data.
+function replaceAll(newData) {
+  if (cache) maybeBackup(cache, true); // force a snapshot of what we're about to drop
+  cache = migrate(newData);
+  writeAtomic(cache);
+  return cache;
+}
+
+module.exports = { load, save, refCode, listBackups, replaceAll };

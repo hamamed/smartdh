@@ -1,0 +1,111 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 760px;">
+    <%- include('_head', { heading: t('tab_data') }) %>
+
+    <!-- import result -->
+    <% if (result) { %>
+      <% if (!result.ok) { %>
+        <div class="alert alert-danger d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i><span><%= result.error %></span></div>
+      <% } else { %>
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="check" class="text-success"></i><%= t('imp_done') %></h6>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+              <span class="badge bg-success-subtle text-success p-2"><%= t('imp_created', { n: result.created.length }) %></span>
+              <span class="badge bg-primary-subtle text-primary p-2"><%= t('imp_updated', { n: result.updated.length }) %></span>
+              <% if (result.errors.length) { %><span class="badge bg-danger-subtle text-danger p-2"><%= t('imp_errors', { n: result.errors.length }) %></span><% } %>
+            </div>
+
+            <% const withPass = result.created.filter(c => c.password); %>
+            <% if (withPass.length) { %>
+              <div class="alert alert-warning small">
+                <div class="fw-semibold mb-2 d-flex align-items-center gap-1"><i data-lucide="key-round"></i><%= t('imp_passwords') %></div>
+                <table class="table table-sm mb-0">
+                  <tbody>
+                    <% withPass.forEach(c => { %>
+                      <tr><td><%= c.email %></td><td><code><%= c.password %></code></td></tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+
+            <% if (result.errors.length) { %>
+              <ul class="small text-danger mb-0 ps-3">
+                <% result.errors.forEach(e => { %><li><%= e %></li><% }) %>
+              </ul>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+    <% if (typeof query !== 'undefined') { } %>
+
+    <!-- EXPORT -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="download" class="text-primary"></i><%= t('data_export_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('data_export_d') %></p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href="/admin/export/users.csv"><i data-lucide="users"></i><%= t('export_users') %></a>
+          <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href="/admin/export/deposits.csv"><i data-lucide="receipt"></i><%= t('export_deposits') %></a>
+          <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href="/admin/export/withdrawals.csv"><i data-lucide="banknote"></i><%= t('export_withdrawals') %></a>
+          <a class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" href="/admin/export/backup.json"><i data-lucide="database"></i><%= t('export_backup') %></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT USERS -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="upload" class="text-primary"></i><%= t('data_import_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('data_import_d') %></p>
+
+        <div class="p-3 rounded-3 bg-body-secondary small mb-3">
+          <div class="fw-semibold mb-1"><%= t('imp_columns') %></div>
+          <code>name, email, status, xp, earnings, password</code>
+          <ul class="mb-0 mt-2 ps-3 text-muted">
+            <li><%= t('imp_col_email') %></li>
+            <li><%= t('imp_col_match') %></li>
+            <li><%= t('imp_col_pass') %></li>
+            <li><%= t('imp_col_admin') %></li>
+          </ul>
+          <a class="btn btn-sm btn-outline-secondary mt-2 d-inline-flex align-items-center gap-1" href="/admin/export/users-template.csv">
+            <i data-lucide="file-down"></i><%= t('imp_template') %>
+          </a>
+        </div>
+
+        <form action="/admin/import/users?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="input-group">
+            <input type="file" name="file" class="form-control" accept=".csv,text/csv" required>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="upload"></i><%= t('imp_go') %></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- RESTORE -->
+    <div class="card border-0 shadow-sm rounded-4 border-danger">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="rotate-ccw" class="text-danger"></i><%= t('data_restore_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('data_restore_d') %></p>
+        <div class="alert alert-danger small d-flex align-items-center gap-2">
+          <i data-lucide="alert-triangle"></i><span><%= t('data_restore_warn') %></span>
+        </div>
+        <form action="/admin/restore?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data"
+              onsubmit="return confirm('<%= t('data_restore_confirm') %>')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-2">
+            <input type="file" name="file" class="form-control" accept=".json,application/json" required>
+          </div>
+          <div class="input-group">
+            <span class="input-group-text"><%= t('data_restore_type') %></span>
+            <input name="confirm" class="form-control" placeholder="RESTORE" required>
+            <button class="btn btn-danger d-inline-flex align-items-center gap-1"><i data-lucide="rotate-ccw"></i><%= t('data_restore_go') %></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

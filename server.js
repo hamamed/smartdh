@@ -6,7 +6,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const ejsLayouts = require('express-ejs-layouts');
-const { load, save, refCode } = require('./db');
+const { load, save, refCode, replaceAll } = require('./db');
 const { sendMail } = require('./email');
 const { locales, LANGS, DEFAULT_LANG, t } = require('./locales');
 const QRCode = require('qrcode');
@@ -348,6 +348,38 @@ function addXp(user, n) {
   return 0;
 }
 
+// The ONE place a user record is created — signup and CSV import both use it, so a
+// new field can never be added to one path and forgotten in the other.
+function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null }) {
+  const id = db.nextUserId++;
+  const user = {
+    id, name, email, passwordHash,
+    isAdmin, status,
+    invested: {},
+    earnings: 0,
+    xp: 0,
+    lastAccrual: Date.now(),
+    createdAt: Date.now(),
+    transactions: [],
+    achievements: [],
+    history: [],
+    streak: { count: 0, lastClaim: null },
+    payout: { method: 'paypal', name: '', paypal: '', rib: '' },
+    referralEarnings: 0,
+    refAccrued: 0,
+    refLastTx: 0,
+    campaignClaims: 0,
+    campaignRewarded: false,
+    avatar: '',
+    onboarded: false,
+    reset: null,
+    referralCode: refCode(id),
+    referredBy
+  };
+  db.users.push(user);
+  return user;
+}
+
 // ---------- Audit log ----------
 function logAudit(db, admin, action, details) {
   db.audit.push({
@@ -378,6 +410,26 @@ function csvCell(v) {
   const s = String(v === undefined || v === null ? '' : v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
+// Minimal RFC-4180 CSV parser: handles quoted cells, escaped "" and CRLF.
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cell = '', quoted = false;
+  text = String(text).replace(/^﻿/, ''); // strip Excel's BOM
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i++; } else quoted = false;
+      } else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+
 function csvReply(res, filename, rows) {
   const body = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -451,28 +503,12 @@ app.post('/signup', authLimiter, async (req, res) => {
   const isFirstUser = ADMIN_EMAIL
     ? email.trim().toLowerCase() === ADMIN_EMAIL
     : db.users.length === 0;
-  const id = db.nextUserId++;
-  const user = {
-    id, name, email,
-    passwordHash: hash,
+  const user = createUser(db, {
+    name, email, passwordHash: hash,
     isAdmin: isFirstUser,
     status: isFirstUser ? 'active' : 'pending',
-    invested: {},
-    earnings: 0,
-    lastAccrual: Date.now(),
-    createdAt: Date.now(),
-    transactions: [],
-    achievements: [],
-    history: [],
-    streak: { count: 0, lastClaim: null },
-    payout: { method: 'paypal', details: '' },
-    avatar: '',
-    onboarded: false,
-    reset: null,
-    referralCode: refCode(id),
     referredBy: referrer ? referrer.id : null
-  };
-  db.users.push(user);
+  });
   if (referrer) award(referrer, 'recruiter');
   save(db);
 
@@ -876,7 +912,7 @@ app.get('/leaderboard', requireActive, (req, res) => {
   save(db);
   const mask = (n) => n.slice(0, 1).toUpperCase() + '*'.repeat(Math.max(1, n.length - 1));
   const rows = db.users
-    .filter(x => x.status === 'active')
+    .filter(x => x.status === 'active' && !x.isAdmin) // admins run the game — they don't compete
     .map(x => ({ id: x.id, name: mask(x.name), total: totalBalance(x), isSelf: x.id === req.currentUser.id }))
     .sort((a, b) => b.total - a.total);
   res.render('leaderboard', { title: req.t('lb_title'), rows });
@@ -1057,6 +1093,108 @@ app.get('/admin/export/withdrawals.csv', requireAdmin, (req, res) => {
   req.db.withdrawals.forEach(w => rows.push([w.id, w.userName, w.amount, w.fromLabel || w.from, w.method || '',
     w.payoutName || '', w.payoutAccount || w.details || '', w.status, new Date(w.createdAt).toISOString()]));
   csvReply(res, 'withdrawals.csv', rows);
+});
+
+// ---------- Data: export / import ----------
+const uploadData = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 }
+});
+
+app.get('/admin/data', requireAdmin, (req, res) => {
+  res.render('admin/data', {
+    title: req.t('tab_data'), counts: adminCounts(req.db), result: null
+  });
+});
+
+// Whole database as JSON — the real "all data" backup.
+app.get('/admin/export/backup.json', requireAdmin, (req, res) => {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="smartdh-backup-${stamp}.json"`);
+  res.send(JSON.stringify(req.db, null, 2));
+});
+
+// A ready-to-fill template so the expected columns are obvious.
+app.get('/admin/export/users-template.csv', requireAdmin, (req, res) => {
+  csvReply(res, 'users-template.csv', [
+    ['name', 'email', 'status', 'xp', 'earnings', 'password'],
+    ['Yassine', 'yassine@example.com', 'active', '0', '0', 'changeme'],
+    ['Amine', 'amine@example.com', 'pending', '', '', '']
+  ]);
+});
+
+// Import/update players from CSV. Matches on email.
+app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file'), async (req, res) => {
+  const db = req.db;
+  const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(db), result });
+  if (!req.file) return render({ ok: false, error: req.t('imp_nofile') });
+
+  let rows;
+  try { rows = parseCsv(req.file.buffer.toString('utf8')); }
+  catch (e) { return render({ ok: false, error: req.t('imp_badcsv') }); }
+  if (rows.length < 2) return render({ ok: false, error: req.t('imp_empty') });
+
+  const head = rows[0].map(h => h.trim().toLowerCase());
+  const col = (n) => head.indexOf(n);
+  if (col('email') === -1) return render({ ok: false, error: req.t('imp_noemail') });
+
+  const created = [], updated = [], errors = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const get = (n) => { const c = col(n); return c === -1 ? '' : (r[c] || '').trim(); };
+    const email = get('email').toLowerCase();
+    if (!email || !email.includes('@')) { errors.push(req.t('imp_row', { n: i + 1 }) + ': ' + req.t('imp_bademail')); continue; }
+
+    const name = get('name');
+    const status = ['active', 'pending', 'rejected'].includes(get('status')) ? get('status') : 'pending';
+    const xp = get('xp'), earnings = get('earnings'), password = get('password');
+
+    let u = db.users.find(x => x.email.toLowerCase() === email);
+    if (u) {
+      if (name) u.name = name;
+      if (get('status')) u.status = status;
+      if (xp !== '') u.xp = Math.max(0, Number(xp) || 0);
+      if (earnings !== '') u.earnings = Math.max(0, Number(earnings) || 0);
+      if (password) u.passwordHash = await bcrypt.hash(password, 10);
+      updated.push(u.email);
+    } else {
+      if (!name) { errors.push(req.t('imp_row', { n: i + 1 }) + ': ' + req.t('imp_noname')); continue; }
+      // never import an admin by accident, and never store a blank password
+      const pass = password || crypto.randomBytes(6).toString('base64url');
+      u = createUser(db, {
+        name, email, passwordHash: await bcrypt.hash(pass, 10),
+        isAdmin: false, status
+      });
+      if (xp !== '') u.xp = Math.max(0, Number(xp) || 0);
+      if (earnings !== '') u.earnings = Math.max(0, Number(earnings) || 0);
+      created.push({ email: u.email, password: password ? null : pass });
+    }
+  }
+
+  logAudit(db, req.currentUser, 'data.importUsers', created.length + ' created, ' + updated.length + ' updated, ' + errors.length + ' errors');
+  save(db);
+  render({ ok: true, created, updated, errors });
+});
+
+// Restore the whole database from a backup JSON. Destructive.
+app.post('/admin/restore', requireAdmin, csrfGuard, uploadData.single('file'), (req, res) => {
+  const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(req.db), result });
+  if (!req.file) return render({ ok: false, error: req.t('imp_nofile') });
+  if (req.body.confirm !== 'RESTORE') return render({ ok: false, error: req.t('imp_noconfirm') });
+
+  let data;
+  try { data = JSON.parse(req.file.buffer.toString('utf8')); }
+  catch (e) { return render({ ok: false, error: req.t('imp_badjson') }); }
+  if (!data || !Array.isArray(data.users) || !data.settings) {
+    return render({ ok: false, error: req.t('imp_notbackup') });
+  }
+
+  const before = req.db.users.length;
+  const restored = replaceAll(data); // snapshots the current db first
+  logAudit(restored, req.currentUser, 'data.restore', before + ' users replaced with ' + restored.users.length);
+  save(restored);
+  res.redirect('/admin/data?restored=1');
 });
 
 // ----- Manage investable apps -----
