@@ -1218,6 +1218,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
     const xp = get('xp'), earnings = get('earnings'), password = get('password');
 
     let u = db.users.find(x => x.email.toLowerCase() === email);
+    let isNew = false;
     if (u) {
       if (name) u.name = name;
       if (get('status')) u.status = status;
@@ -1226,6 +1227,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
       if (password) u.passwordHash = await bcrypt.hash(password, 10);
       updated.push(u.email);
     } else {
+      isNew = true;
       if (!name) { errors.push(req.t('imp_row', { n: i + 1 }) + ': ' + req.t('imp_noname')); continue; }
       // never import an admin by accident, and never store a blank password
       const pass = password || crypto.randomBytes(6).toString('base64url');
@@ -1245,11 +1247,25 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
       if (c === -1) continue;
       const v = (r[c] || '').trim();
       if (v === '') continue;
-      u.invested[p.id] = Math.max(0, Number(v) || 0);
+      const amt = Math.max(0, Number(v) || 0);
+      u.invested[p.id] = amt;
       touchedInvested = true;
+      // For NEW players, back the holding with a real approved deposit + activity
+      // entry, so the deposits tab and their activity feed look genuine. Updates
+      // skip this so an export→import round-trip doesn't pile up duplicate history.
+      if (isNew && amt > 0) {
+        db.deposits.push({
+          id: db.nextDepositId++, userId: u.id, userName: u.name,
+          plan: p.id, planLabel: p.name, amount: amt,
+          status: 'approved', createdAt: Date.now()
+        });
+        addTx(u, 'deposit', amt, p.name);
+      }
     }
-    // start earning from now, not from their (imported) creation time
-    if (touchedInvested) u.lastAccrual = Date.now();
+    if (touchedInvested) {
+      u.lastAccrual = Date.now();     // start earning from import time
+      if (isNew) award(u, 'first_deposit');
+    }
     checkState(u); // balance-based achievements
   }
 
@@ -1346,18 +1362,32 @@ app.post('/admin/apps/edit/:id', requireAdmin, (req, res) => {
 app.post('/admin/apps/delete/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const id = req.params.id;
-  // Refund any coins invested in this app back to earnings so nothing is stranded.
+  const gone = db.settings.plans.find(x => x.id === id);
+  const remaining = db.settings.plans.filter(x => x.id !== id);
+  // Where holdings go: the most accessible remaining app (lowest minLevel).
+  // If it was the last app, there's nowhere to move to, so refund to earnings.
+  const dest = remaining.slice().sort((a, b) => (a.minLevel || 1) - (b.minLevel || 1))[0] || null;
+
+  let moved = 0, refunded = 0;
   db.users.forEach(u => {
-    if (u.invested && u.invested[id]) {
-      accrue(u, db);
-      u.earnings += u.invested[id];
-      addTx(u, 'admin_adjust', u.invested[id], 'App removed — refunded');
-      delete u.invested[id];
+    const amt = (u.invested && u.invested[id]) || 0;
+    if (amt <= 0) return;
+    accrue(u, db);
+    delete u.invested[id];
+    if (dest) {
+      u.invested[dest.id] = (u.invested[dest.id] || 0) + amt;   // keep them invested
+      addTx(u, 'admin_adjust', amt, 'App removed — moved to ' + dest.name);
+      moved++;
+    } else {
+      u.earnings += amt;                                        // no apps left
+      addTx(u, 'admin_adjust', amt, 'App removed — refunded');
+      refunded++;
     }
   });
-  const gone = db.settings.plans.find(x => x.id === id);
-  db.settings.plans = db.settings.plans.filter(x => x.id !== id);
-  logAudit(db, req.currentUser, 'app.delete', gone ? gone.name : id);
+
+  db.settings.plans = remaining;
+  logAudit(db, req.currentUser, 'app.delete',
+    (gone ? gone.name : id) + (dest ? ' → moved ' + moved + ' holders to ' + dest.name : ' → refunded ' + refunded));
   save(db);
   res.redirect('/admin/apps');
 });
