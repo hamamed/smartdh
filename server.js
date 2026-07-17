@@ -35,6 +35,16 @@ function deleteUpload(avatar) {
   fs.unlink(file, () => {});
 }
 
+// Product images for investment apps.
+const uploadAppImg = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, 'app-' + crypto.randomBytes(8).toString('hex') + (ALLOWED_IMAGES[file.mimetype] || '.jpg'))
+  }),
+  limits: { fileSize: 3 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
+});
+
 // Deposit receipt images (admin manual deposits).
 const uploadReceipt = multer({
   storage: multer.diskStorage({
@@ -1608,40 +1618,56 @@ app.post('/admin/restore', requireAdmin, csrfGuard, uploadData.single('file'), (
 });
 
 // ----- Manage investable apps -----
-app.post('/admin/apps/add', requireAdmin, (req, res) => {
-  const db = req.db;
-  const name = (req.body.name || '').trim();
-  if (name) {
-    db.settings.plans.push({
-      id: 'app' + (db.nextAppId++),
-      name,
-      icon: (req.body.icon || 'trending-up').trim() || 'trending-up',
-      imageUrl: (req.body.imageUrl || '').trim(),
-      ratePer15Days: Math.max(0, Number(req.body.rate) / 100 || 0),
-      color: req.body.color || 'primary',
-      desc: (req.body.desc || '').trim(),
-      minLevel: Math.max(1, Number(req.body.minLevel) || 1)
-    });
-    logAudit(db, req.currentUser, 'app.add', name);
-    save(db);
-  }
-  res.redirect('/admin/apps');
-});
+// image the app is invested in — an uploaded photo takes priority over a pasted URL
+function appImage(req) {
+  if (req.file) return '/uploads/' + req.file.filename;
+  return (req.body.imageUrl || '').trim();
+}
 
-app.post('/admin/apps/edit/:id', requireAdmin, (req, res) => {
-  const db = req.db;
-  const p = db.settings.plans.find(x => x.id === req.params.id);
-  if (p) {
-    if (req.body.name) p.name = req.body.name.trim();
-    if (req.body.icon !== undefined && req.body.icon.trim()) p.icon = req.body.icon.trim();
-    if (req.body.rate !== undefined && req.body.rate !== '') p.ratePer15Days = Math.max(0, Number(req.body.rate) / 100);
-    if (req.body.minLevel) p.minLevel = Math.max(1, Number(req.body.minLevel) || 1);
-    if (req.body.color) p.color = req.body.color;
-    logAudit(db, req.currentUser, 'app.edit', p.name + ' @ ' + (p.ratePer15Days * 100).toFixed(1) + '% / L' + p.minLevel);
-    save(db);
-  }
-  res.redirect('/admin/apps');
-});
+app.post('/admin/apps/add', requireAdmin, csrfGuard,
+  (req, res, next) => uploadAppImg.single('image')(req, res, () => next()),
+  (req, res) => {
+    const db = req.db;
+    const name = (req.body.name || '').trim();
+    if (name) {
+      db.settings.plans.push({
+        id: 'app' + (db.nextAppId++),
+        name,
+        icon: (req.body.icon || 'trending-up').trim() || 'trending-up',
+        imageUrl: appImage(req),
+        ratePer15Days: Math.max(0, Number(req.body.rate) / 100 || 0),
+        color: req.body.color || 'primary',
+        desc: (req.body.desc || '').trim(),
+        minLevel: Math.max(1, Number(req.body.minLevel) || 1)
+      });
+      logAudit(db, req.currentUser, 'app.add', name);
+      save(db);
+    }
+    res.redirect('/admin/apps');
+  });
+
+app.post('/admin/apps/edit/:id', requireAdmin, csrfGuard,
+  (req, res, next) => uploadAppImg.single('image')(req, res, () => next()),
+  (req, res) => {
+    const db = req.db;
+    const p = db.settings.plans.find(x => x.id === req.params.id);
+    if (p) {
+      if (req.body.name) p.name = req.body.name.trim();
+      if (req.body.icon !== undefined && req.body.icon.trim()) p.icon = req.body.icon.trim();
+      if (req.body.rate !== undefined && req.body.rate !== '') p.ratePer15Days = Math.max(0, Number(req.body.rate) / 100);
+      if (req.body.minLevel) p.minLevel = Math.max(1, Number(req.body.minLevel) || 1);
+      if (req.body.color) p.color = req.body.color;
+      if (req.body.desc !== undefined) p.desc = req.body.desc.trim();
+      if (req.body.removeImage === '1') { deleteUpload(p.imageUrl); p.imageUrl = ''; }
+      else if (req.file || (req.body.imageUrl && req.body.imageUrl.trim() !== p.imageUrl)) {
+        deleteUpload(p.imageUrl);            // drop the old uploaded file if any
+        p.imageUrl = appImage(req);
+      }
+      logAudit(db, req.currentUser, 'app.edit', p.name + ' @ ' + (p.ratePer15Days * 100).toFixed(1) + '% / L' + p.minLevel);
+      save(db);
+    }
+    res.redirect('/admin/apps');
+  });
 
 app.post('/admin/apps/delete/:id', requireAdmin, (req, res) => {
   const db = req.db;
@@ -1669,6 +1695,7 @@ app.post('/admin/apps/delete/:id', requireAdmin, (req, res) => {
     }
   });
 
+  if (gone) deleteUpload(gone.imageUrl);   // remove its product image file
   db.settings.plans = remaining;
   logAudit(db, req.currentUser, 'app.delete',
     (gone ? gone.name : id) + (dest ? ' → moved ' + moved + ' holders to ' + dest.name : ' → refunded ' + refunded));

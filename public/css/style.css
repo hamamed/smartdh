@@ -291,6 +291,23 @@ a { text-decoration: none; }
 
 .dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
 
+/* ---------- Product (app) cards ---------- */
+.product-media {
+  position: relative;
+  height: 150px;
+  background: #f4f1ea;
+  overflow: hidden;
+}
+[data-bs-theme="dark"] .product-media { background: #1b2440; }
+.product-media > img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s var(--jelly); }
+.product-card:hover .product-media > img { transform: scale(1.05); }
+.product-media-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem;
+}
+.product-media .badge { font-weight: 700; }
+
 /* ---------- Chart ---------- */
 /* Chart.js runs with maintainAspectRatio:false, so its canvas fills the parent.
    The parent MUST have a fixed height or the two grow each other forever. */

@@ -34,21 +34,18 @@
       <% plans.forEach(p => { const held = (currentUser.invested && currentUser.invested[p.id]) || 0;
            const locked = level < (p.minLevel || 1); %>
         <div class="col-md-4">
-          <div class="card border-0 shadow-sm rounded-4 h-100 <%= locked ? 'opacity-75' : '' %>">
+          <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden product-card <%= locked ? 'opacity-75' : '' %>">
+            <div class="product-media">
+              <% if (p.imageUrl) { %>
+                <img src="<%= p.imageUrl %>" alt="<%= planName(p) %>">
+              <% } else { %>
+                <div class="product-media-fallback ti-<%= p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))) %>"><i data-lucide="<%= p.icon %>"></i></div>
+              <% } %>
+              <span class="badge bg-<%= p.color %> position-absolute top-0 end-0 m-2"><%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %></span>
+              <% if (locked) { %><span class="badge bg-dark position-absolute top-0 start-0 m-2 d-inline-flex align-items-center gap-1"><i data-lucide="lock"></i><%= t('level_label') %> <%= p.minLevel %></span><% } %>
+            </div>
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <% if (p.imageUrl) { %>
-                    <img src="<%= p.imageUrl %>" alt="" style="width:40px;height:40px;object-fit:cover" class="rounded-3">
-                  <% } else { %>
-                    <span class="tile-icon ti-<%= p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))) %>" style="width:44px;height:44px;font-size:1.25rem"><i data-lucide="<%= p.icon %>"></i></span>
-                  <% } %>
-                  <h6 class="fw-bold mb-0"><%= planName(p) %></h6>
-                </div>
-                <span class="badge bg-<%= p.color %>-subtle text-<%= p.color %> rounded-pill">
-                  <%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %>
-                </span>
-              </div>
+              <h6 class="fw-bold mb-1"><%= planName(p) %></h6>
               <p class="text-muted small mb-2"><%= planDesc(p) %></p>
               <div class="small text-muted"><%= t('plan_youhave') %></div>
               <div class="fw-bold mb-3"><%= money(held) %></div>
