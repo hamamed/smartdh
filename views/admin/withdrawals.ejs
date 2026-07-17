@@ -6,6 +6,7 @@
       <div class="card-body">
         <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
           <form method="get" action="/admin/withdrawals" class="d-flex gap-2" style="max-width:320px">
+            <% if (per !== 10) { %><input type="hidden" name="per" value="<%= per %>"><% } %>
             <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i data-lucide="search"></i></span>
@@ -15,7 +16,7 @@
           </form>
           <div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
             <%- include('_filters', {
-                  base: '/admin/withdrawals', current: status, q: q,
+                  keep: (per !== 10 ? '&per=' + per : ''), base: '/admin/withdrawals', current: status, q: q,
                   options: [
                     { value: '',         label: t('filter_all'),  count: (statusCounts.pending||0)+(statusCounts.paid||0)+(statusCounts.rejected||0) },
                     { value: 'pending',  label: t('st_pending'),  count: statusCounts.pending  || 0, danger: true },
@@ -59,12 +60,11 @@
               </tbody>
             </table>
           </div>
+          <% const kept = (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : ''); %>
           <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
             <span class="small text-muted"><%= t('showing_n', { shown: withdrawals.length, total: total }) %></span>
-            <%- include('_pager', {
-                  base: '/admin/withdrawals', page: page, pages: pages,
-                  qs: (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : '')
-                }) %>
+            <%- include('_perpage', { base: '/admin/withdrawals', per: per, options: perOptions, qs: kept }) %>
+            <%- include('_pager', { base: '/admin/withdrawals', page: page, pages: pages, qs: kept + '&per=' + per }) %>
           </div>
         <% } %>
       </div>

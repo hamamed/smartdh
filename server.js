@@ -950,11 +950,16 @@ app.get('/leaderboard', requireActive, (req, res) => {
 // ---------- Admin ----------
 const PER_PAGE = 10;
 
-// Slice a list for the current page, clamping out-of-range page numbers.
-function paginate(list, page, per = PER_PAGE) {
+const PER_PAGE_OPTIONS = [10, 50, 100, 200];
+
+// Slice a list for the current page. `perReq` comes from the ?per query param and
+// is clamped to the allowed options. Returns the resolved `per` so the view can
+// mark the active choice and keep it in pager links.
+function paginate(list, page, perReq) {
+  const per = PER_PAGE_OPTIONS.includes(parseInt(perReq)) ? parseInt(perReq) : PER_PAGE;
   const pages = Math.max(1, Math.ceil(list.length / per));
   const p = Math.min(pages, Math.max(1, parseInt(page) || 1));
-  return { items: list.slice((p - 1) * per, p * per), page: p, pages, total: list.length };
+  return { items: list.slice((p - 1) * per, p * per), page: p, pages, per, total: list.length };
 }
 
 // { pending: 3, approved: 10, ... } for the filter-button badges
@@ -1006,10 +1011,10 @@ app.get('/admin/users', requireAdmin, (req, res) => {
     u.name.toLowerCase().includes(q) ||
     u.email.toLowerCase().includes(q) ||
     (u.referralCode || '').toLowerCase().includes(q));
-  const pg = paginate(list, req.query.page);
+  const pg = paginate(list, req.query.page, req.query.per);
   res.render('admin/users', {
     title: req.t('tab_users'),
-    users: pg.items, page: pg.page, pages: pg.pages, totalUsers: pg.total,
+    users: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, totalUsers: pg.total,
     q, status,
     totalUsersAll: db.users.length,
     statusCounts: countBy(db.users),
@@ -1079,11 +1084,11 @@ app.get('/admin/deposits', requireAdmin, (req, res) => {
   let list = db.deposits.slice().sort((a, b) => b.createdAt - a.createdAt);
   if (status) list = list.filter(d => d.status === status);
   if (q) list = list.filter(d => (d.userName || '').toLowerCase().includes(q));
-  const pg = paginate(list, req.query.page);
+  const pg = paginate(list, req.query.page, req.query.per);
   res.render('admin/deposits', {
     title: req.t('tab_deposits'),
     counts: adminCounts(db),
-    deposits: pg.items, page: pg.page, pages: pg.pages, total: pg.total,
+    deposits: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
     status, q, statusCounts: countBy(db.deposits)
   });
 });
@@ -1095,11 +1100,11 @@ app.get('/admin/withdrawals', requireAdmin, (req, res) => {
   let list = db.withdrawals.slice().sort((a, b) => b.createdAt - a.createdAt);
   if (status) list = list.filter(w => w.status === status);
   if (q) list = list.filter(w => (w.userName || '').toLowerCase().includes(q));
-  const pg = paginate(list, req.query.page);
+  const pg = paginate(list, req.query.page, req.query.per);
   res.render('admin/withdrawals', {
     title: req.t('tab_withdrawals'),
     counts: adminCounts(db),
-    withdrawals: pg.items, page: pg.page, pages: pg.pages, total: pg.total,
+    withdrawals: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
     status, q, statusCounts: countBy(db.withdrawals)
   });
 });

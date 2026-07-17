@@ -6,6 +6,7 @@
       <div class="card-body">
         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
           <form method="get" action="/admin/users" class="d-flex gap-2" style="max-width:420px">
+            <% if (per !== 10) { %><input type="hidden" name="per" value="<%= per %>"><% } %>
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i data-lucide="search"></i></span>
               <input name="q" class="form-control" placeholder="<%= t('search_users') %>" value="<%= q %>">
@@ -14,7 +15,7 @@
           </form>
           <div class="ms-auto d-flex gap-2 flex-wrap align-items-center">
             <%- include('_filters', {
-                  base: '/admin/users', current: status, q: q,
+                  keep: (per !== 10 ? '&per=' + per : ''), base: '/admin/users', current: status, q: q,
                   options: [
                     { value: '',         label: t('filter_all'),   count: totalUsersAll },
                     { value: 'pending',  label: t('st_pending'),   count: statusCounts.pending  || 0, danger: true },
@@ -112,12 +113,11 @@
             </table>
           </div>
 
+          <% const kept = (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : ''); %>
           <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
             <span class="small text-muted"><%= t('showing_n', { shown: users.length, total: totalUsers }) %></span>
-            <%- include('_pager', {
-                  base: '/admin/users', page: page, pages: pages,
-                  qs: (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : '')
-                }) %>
+            <%- include('_perpage', { base: '/admin/users', per: per, options: perOptions, qs: kept }) %>
+            <%- include('_pager', { base: '/admin/users', page: page, pages: pages, qs: kept + '&per=' + per }) %>
           </div>
         <% } %>
       </div>

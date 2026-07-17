@@ -3,9 +3,10 @@
     current – the active status ('' = all)
     q       – current search term (preserved across filters)
     options – [{ value:'pending', label:'Pending', count:3, danger:true }, ...] %>
+<% const extra = (typeof keep !== 'undefined' && keep) ? keep : ''; %>
 <div class="d-flex gap-1 flex-wrap">
   <% options.forEach(o => {
-       const href = base + (o.value ? '?status=' + o.value : '?') + (q ? '&q=' + encodeURIComponent(q) : '');
+       const href = base + (o.value ? '?status=' + o.value : '?') + (q ? '&q=' + encodeURIComponent(q) : '') + extra;
        const active = current === o.value; %>
     <a href="<%= href %>" class="btn btn-sm <%= active ? 'btn-primary' : 'btn-outline-secondary' %> d-inline-flex align-items-center gap-1">
       <%= o.label %>

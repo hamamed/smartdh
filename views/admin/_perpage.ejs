@@ -1,0 +1,14 @@
+<%# Rows-per-page selector.
+    base    – e.g. '/admin/users'
+    per     – current page size
+    options – [10, 50, 100, 200]
+    qs      – extra query to preserve (status/search), may be '' %>
+<div class="d-flex align-items-center gap-1 small text-muted">
+  <span><%= t('per_page') %></span>
+  <div class="btn-group btn-group-sm" role="group">
+    <% options.forEach(o => { %>
+      <a href="<%= base %>?per=<%= o %><%= qs %>"
+         class="btn <%= o === per ? 'btn-primary' : 'btn-outline-secondary' %>"><%= o %></a>
+    <% }) %>
+  </div>
+</div>
