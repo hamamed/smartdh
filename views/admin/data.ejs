@@ -6,6 +6,10 @@
     <% if (result) { %>
       <% if (!result.ok) { %>
         <div class="alert alert-danger d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i><span><%= result.error %></span></div>
+      <% } else if (result.wiped) { %>
+        <div class="alert alert-success d-flex align-items-center gap-2"><i data-lucide="check"></i><span><%= t('wipe_done') %></span></div>
+      <% } else if (result.restored) { %>
+        <div class="alert alert-success d-flex align-items-center gap-2"><i data-lucide="check"></i><span><%= t('f_restored') %></span></div>
       <% } else { %>
         <div class="card border-0 shadow-sm rounded-4 mb-4">
           <div class="card-body">
@@ -104,6 +108,49 @@
             <input name="confirm" class="form-control" placeholder="RESTORE" required>
             <button class="btn btn-danger d-inline-flex align-items-center gap-1"><i data-lucide="rotate-ccw"></i><%= t('data_restore_go') %></button>
           </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- WIPE -->
+    <div class="card border-0 shadow-sm rounded-4 border-danger mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="trash-2" class="text-danger"></i><%= t('data_wipe_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('data_wipe_d') %></p>
+
+        <div class="alert alert-danger small">
+          <div class="fw-semibold mb-1 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= t('wipe_removes') %></div>
+          <ul class="mb-2 ps-3">
+            <li><%= t('wipe_r1') %></li>
+            <li><%= t('wipe_r2') %></li>
+            <li><%= t('wipe_r3') %></li>
+          </ul>
+          <div class="d-flex align-items-center gap-1"><i data-lucide="database"></i><%= t('wipe_backup_note') %></div>
+        </div>
+
+        <form action="/admin/wipe" method="post" onsubmit="return confirm('<%= t('data_wipe_confirm') %>')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="keepAdmin" id="keepAdmin" value="1" checked>
+            <label class="form-check-label small" for="keepAdmin"><%= t('wipe_keepadmin') %></label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="keepSettings" id="keepSettings" value="1" checked>
+            <label class="form-check-label small" for="keepSettings"><%= t('wipe_keepsettings') %></label>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small"><%= t('wipe_type') %></label>
+              <input name="confirm" class="form-control" placeholder="WIPE" autocomplete="off" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small"><%= t('wipe_password') %></label>
+              <input name="password" type="password" class="form-control" autocomplete="current-password" required>
+            </div>
+          </div>
+          <button class="btn btn-danger mt-3 d-inline-flex align-items-center gap-1"><i data-lucide="trash-2"></i><%= t('data_wipe_go') %></button>
         </form>
       </div>
     </div>

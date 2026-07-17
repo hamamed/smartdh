@@ -213,4 +213,36 @@ function replaceAll(newData) {
   return cache;
 }
 
-module.exports = { load, save, refCode, listBackups, replaceAll };
+// Wipe the game back to a clean slate.
+//  keepUsers  – user ids to preserve (used to keep the admin logged in)
+//  keepSettings – keep apps/limits/payment info, only clear players and activity
+// Always snapshots first, so a wipe is recoverable from data/backups.
+function wipe({ keepUsers = [], keepSettings = true } = {}) {
+  if (cache) maybeBackup(cache, true);
+  const fresh = migrate(JSON.parse(JSON.stringify(DEFAULTS)));
+  if (keepSettings && cache) fresh.settings = cache.settings;
+
+  if (cache && keepUsers.length) {
+    for (const id of keepUsers) {
+      const u = cache.users.find(x => x.id === id);
+      if (!u) continue;
+      // keep who they are; drop everything they did
+      fresh.users.push(Object.assign({}, u, {
+        invested: {}, earnings: 0, xp: 0,
+        transactions: [], achievements: [], history: [],
+        streak: { count: 0, lastClaim: null },
+        referralEarnings: 0, refAccrued: 0, refLastTx: 0,
+        campaignClaims: 0, campaignRewarded: false,
+        referredBy: null, lastAccrual: Date.now()
+      }));
+    }
+    // don't reuse ids of deleted players
+    fresh.nextUserId = Math.max(cache.nextUserId || 1, ...fresh.users.map(u => u.id + 1));
+  }
+
+  cache = migrate(fresh);
+  writeAtomic(cache);
+  return cache;
+}
+
+module.exports = { load, save, refCode, listBackups, replaceAll, wipe };

@@ -6,7 +6,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const ejsLayouts = require('express-ejs-layouts');
-const { load, save, refCode, replaceAll } = require('./db');
+const { load, save, refCode, replaceAll, wipe } = require('./db');
 const { sendMail } = require('./email');
 const { locales, LANGS, DEFAULT_LANG, t } = require('./locales');
 const QRCode = require('qrcode');
@@ -1166,7 +1166,10 @@ const uploadData = multer({
 
 app.get('/admin/data', requireAdmin, (req, res) => {
   res.render('admin/data', {
-    title: req.t('tab_data'), counts: adminCounts(req.db), result: null
+    title: req.t('tab_data'), counts: adminCounts(req.db),
+    result: req.query.wiped ? { ok: true, wiped: true, created: [], updated: [], errors: [] }
+          : req.query.restored ? { ok: true, restored: true, created: [], updated: [], errors: [] }
+          : null
   });
 });
 
@@ -1253,6 +1256,35 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
   logAudit(db, req.currentUser, 'data.importUsers', created.length + ' created, ' + updated.length + ' updated, ' + errors.length + ' errors');
   save(db);
   render({ ok: true, created, updated, errors });
+});
+
+// Wipe everything and start over. The most destructive action in the app, so it
+// needs the typed phrase AND the admin's password — CSRF alone isn't enough here.
+app.post('/admin/wipe', requireAdmin, async (req, res) => {
+  const db = req.db;
+  const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(db), result });
+
+  if (req.body.confirm !== 'WIPE') return render({ ok: false, error: req.t('wipe_noconfirm') });
+  if (!(await bcrypt.compare(req.body.password || '', req.currentUser.passwordHash))) {
+    return render({ ok: false, error: req.t('wipe_badpass') });
+  }
+
+  const keepAdmin = req.body.keepAdmin !== '0';       // default: keep yourself
+  const keepSettings = req.body.keepSettings === '1'; // default: reset settings too
+  const me = req.currentUser;
+  const before = db.users.length;
+
+  // uploaded avatars belong to users that are about to vanish
+  db.users.forEach(u => { if (!(keepAdmin && u.id === me.id)) deleteUpload(u.avatar); });
+
+  const fresh = wipe({ keepUsers: keepAdmin ? [me.id] : [], keepSettings });
+  logAudit(fresh, keepAdmin ? me : null, 'data.wipe',
+    before + ' users removed · settings ' + (keepSettings ? 'kept' : 'reset') + ' · admin ' + (keepAdmin ? 'kept' : 'removed'));
+  save(fresh);
+
+  // if the admin deleted themselves there's no session to return to
+  if (!keepAdmin) return req.session.destroy(() => res.redirect('/'));
+  res.redirect('/admin/data?wiped=1');
 });
 
 // Restore the whole database from a backup JSON. Destructive.
