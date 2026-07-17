@@ -35,6 +35,11 @@
       </button>
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          <% if (currentUser && currentUser.isAdmin) { %>
+            <li class="nav-item">
+              <a href="/admin" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
+            </li>
+          <% } %>
           <li class="nav-item">
             <button id="themeToggle" class="btn btn-sm btn-outline-secondary btn-icon ms-lg-2" title="Theme"><i data-lucide="moon"></i></button>
           </li>
@@ -72,9 +77,6 @@
         <div class="d-flex flex-wrap align-items-center gap-3">
           <% if (currentUser && currentUser.status === 'active') { %>
             <a href="/dashboard?tour=1" class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="circle-help"></i><%= t('tour_help') %></a>
-          <% } %>
-          <% if (currentUser && currentUser.isAdmin) { %>
-            <a href="/admin" class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
           <% } %>
           <a href="/guide" class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="book-open"></i><%= t('nav_guide') %></a>
           <a href="/terms" class="text-muted"><%= t('footer_terms') %></a>
