@@ -67,6 +67,18 @@
     </div>
   <% } %>
 
+  <% if (impersonating) { %>
+    <div class="impersonate-bar">
+      <div class="container d-flex align-items-center gap-2 py-2 small">
+        <i data-lucide="eye" class="flex-shrink-0"></i>
+        <span class="flex-grow-1"><%= t('imp_viewing', { name: currentUser.name }) %></span>
+        <form action="/admin/stop-impersonate" method="post" class="mb-0"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-sm btn-light d-inline-flex align-items-center gap-1"><i data-lucide="log-out"></i><%= t('imp_exit') %></button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+
   <main class="flex-grow-1"><%- body %></main>
 
   <footer class="bg-body border-top py-4 mt-5">

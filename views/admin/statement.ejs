@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= t('statement') %> · <%= u.name %></title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, Tahoma, sans-serif; color: #222; margin: 0; padding: 32px; background: #fff; }
+    .sheet { max-width: 760px; margin: 0 auto; }
+    .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #ff5f6d; padding-bottom: 14px; margin-bottom: 20px; }
+    .brand { font-size: 1.4rem; font-weight: 800; color: #ff5f6d; }
+    .muted { color: #777; font-size: .85rem; }
+    .who { margin: 18px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: .9rem; }
+    .who div span { color: #777; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: 8px; }
+    th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid #eee; }
+    th { color: #777; font-weight: 600; text-transform: uppercase; font-size: .72rem; }
+    .amt { text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .in { color: #12a37a; } .out { color: #d63b46; }
+    .tag { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #f1efe9; color: #555; }
+    .totals { margin-top: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .totals .box { border: 1px solid #eee; border-radius: 12px; padding: 12px; text-align: center; }
+    .totals .box .v { font-size: 1.15rem; font-weight: 800; }
+    .foot { margin-top: 26px; font-size: .75rem; color: #999; text-align: center; }
+    .noprint { margin-bottom: 18px; }
+    @media print { .noprint { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="noprint">
+      <button onclick="window.print()" style="padding:8px 16px;border:0;border-radius:999px;background:#ff5f6d;color:#fff;font-weight:700;cursor:pointer">🖨 <%= t('stmt_print') %></button>
+      <a href="/admin/users/<%= u.id %>" style="margin-inline-start:8px;color:#777">← <%= t('nav_back') %></a>
+    </div>
+
+    <div class="head">
+      <div>
+        <div class="brand"><%= settings.siteName %></div>
+        <div class="muted"><%= t('stmt_title') %></div>
+      </div>
+      <div class="muted" style="text-align:end">
+        <%= t('stmt_generated') %><br><%= new Date(generatedAt).toLocaleString() %>
+      </div>
+    </div>
+
+    <div class="who">
+      <div><span><%= t('lbl_name') %>:</span> <strong><%= u.name %></strong></div>
+      <div><span><%= t('lbl_email') %>:</span> <%= u.email %></div>
+      <div><span><%= t('your_code') %>:</span> <%= u.referralCode %></div>
+      <div><span><%= t('th_status') %>:</span> <%= statusLabel(u.status) %></div>
+    </div>
+
+    <table>
+      <thead><tr><th><%= t('th_when') %></th><th><%= t('audit_action') %></th><th><%= t('th_details') %></th><th class="amt"><%= t('th_amount') %></th><th><%= t('th_status') %></th></tr></thead>
+      <tbody>
+        <% if (!rows.length) { %>
+          <tr><td colspan="5" class="muted"><%= t('no_activity') %></td></tr>
+        <% } %>
+        <% rows.forEach(r => { const inflow = r.kind === 'deposit'; %>
+          <tr>
+            <td><%= new Date(r.t).toLocaleDateString() %></td>
+            <td><%= inflow ? t('tx_deposit') : t('tab_withdrawals') %></td>
+            <td><%= r.label %><% if (r.note) { %> <span class="tag"><%= r.note %></span><% } %></td>
+            <td class="amt <%= inflow ? 'in' : 'out' %>"><%= inflow ? '+' : '−' %><%= money(r.amount) %></td>
+            <td><span class="tag"><%= statusLabel(r.status) || r.status %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="box"><span class="muted"><%= t('c_invested') %></span><div class="v"><%= money(invested) %></div></div>
+      <div class="box"><span class="muted"><%= t('c_earnings') %></span><div class="v"><%= money(u.earnings) %></div></div>
+      <div class="box"><span class="muted"><%= t('c_total') %></span><div class="v"><%= money(total) %></div></div>
+    </div>
+
+    <div class="foot"><%= t('footer_strong') %> <%= t('footer_rest') %></div>
+  </div>
+</body>
+</html>

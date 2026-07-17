@@ -35,6 +35,16 @@ function deleteUpload(avatar) {
   fs.unlink(file, () => {});
 }
 
+// Deposit receipt images (admin manual deposits).
+const uploadReceipt = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, 'rcpt-' + crypto.randomBytes(8).toString('hex') + (ALLOWED_IMAGES[file.mimetype] || '.jpg'))
+  }),
+  limits: { fileSize: 3 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
@@ -167,11 +177,16 @@ const authLimiter = rateLimit({
 
 app.use((req, res, next) => {
   const db = load();
-  let user = null;
-  if (req.session.userId) {
-    user = db.users.find(u => u.id === req.session.userId) || null;
-    if (user) { accrue(user, db); flushReferralTx(user); save(db); }
+  let user = req.session.userId ? (db.users.find(u => u.id === req.session.userId) || null) : null;
+  // Impersonation: an admin can view the game AS a player. currentUser becomes the
+  // target; realAdmin remembers who it really is. Writes are blocked below.
+  if (user && user.isAdmin && req.session.impersonate) {
+    const target = db.users.find(u => u.id === req.session.impersonate);
+    if (target) { res.locals.realAdmin = user; user = target; }
+    else delete req.session.impersonate;
   }
+  res.locals.impersonating = !!res.locals.realAdmin;
+  if (user) { accrue(user, db); flushReferralTx(user); save(db); }
   // Language
   const lang = LANGS.includes(req.session.lang) ? req.session.lang : DEFAULT_LANG;
   const tr = (key, vars) => t(lang, key, vars);
@@ -205,6 +220,18 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.is('multipart/form-data')) return next();
   csrfGuard(req, res, next);
+});
+
+// While impersonating, the session is read-only — the only write allowed is Exit.
+app.use((req, res, next) => {
+  if (res.locals.impersonating &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+      req.path !== '/admin/stop-impersonate') {
+    return res.status(403).render('error', {
+      title: req.t('imp_ro_t'), code: 403, heading: req.t('imp_ro_t'), body: req.t('imp_ro_d')
+    });
+  }
+  next();
 });
 
 app.get('/lang/:code', (req, res) => {
@@ -353,6 +380,31 @@ function addTx(user, type, amount, note, at) {
   // keep chronological even when a backdated entry is inserted
   user.transactions.sort((a, b) => a.at - b.at);
   if (user.transactions.length > 120) user.transactions = user.transactions.slice(-120);
+}
+
+// The one place a deposit is created + (optionally) credited. Manual entry, batch
+// and recurring schedules all go through it so the crediting logic can't drift.
+function creditDeposit(db, u, plan, amount, opts) {
+  opts = opts || {};
+  const status = opts.status === 'pending' ? 'pending' : 'approved';
+  const when = opts.when || Date.now();
+  const note = opts.note || '';
+  db.deposits.push({
+    id: db.nextDepositId++, userId: u.id, userName: u.name,
+    plan: plan.id, planLabel: plan.name, amount, status, note,
+    receipt: opts.receipt || '', byAdmin: true, createdAt: when
+  });
+  if (status === 'approved') {
+    accrue(u, db);
+    u.invested[plan.id] = (u.invested[plan.id] || 0) + amount;
+    addXp(u, Math.min(200, 10 + Math.floor(amount / 500)));
+    addTx(u, 'deposit', amount, plan.name + (note ? ' · ' + note : ''), when);
+    award(u, 'first_deposit');
+    maybePayInvite(db, u);
+    checkState(u);
+  } else {
+    addTx(u, 'deposit_request', amount, plan.name, when);
+  }
 }
 
 // A YYYY-MM-DD from a date input → timestamp (noon, to dodge timezone edges).
@@ -1077,6 +1129,7 @@ app.get('/admin/users/:id', requireAdmin, (req, res) => {
     withdrawals: db.withdrawals.filter(w => w.userId === u.id).sort((a, b) => b.createdAt - a.createdAt),
     txns: (u.transactions || []).slice().reverse().slice(0, 25),
     payoutAccount: payoutAccount(u.payout),
+    schedules: db.schedules.filter(s => s.userId === u.id),
     ok: req.query.ok || null, err: req.query.err || null
   });
 });
@@ -1096,38 +1149,30 @@ app.post('/admin/users/create', requireAdmin, async (req, res) => {
   res.redirect('/admin/users/' + u.id + '?ok=created');
 });
 
-// Record a deposit on a player's behalf — any app, any date, approved or pending.
-app.post('/admin/users/:id/deposit', requireAdmin, (req, res) => {
-  const db = req.db;
-  const u = db.users.find(x => x.id === Number(req.params.id));
-  if (!u) return res.redirect('/admin/users');
-  const amount = Math.floor(Number(req.body.amount));
-  const plan = db.settings.plans.find(p => p.id === req.body.plan);
-  const status = req.body.status === 'pending' ? 'pending' : 'approved';
-  const note = (req.body.note || '').trim();       // bank transfer / reference info
-  const when = parseWhen(req.body.date);
-  if (!plan || !amount || amount <= 0) return res.redirect('/admin/users/' + u.id + '?err=deposit');
+// Record a deposit on a player's behalf — any app, any date, approved or pending,
+// with an optional bank reference and receipt image. csrfGuard runs before multer
+// (token from the query) so a rejected upload never writes a file.
+app.post('/admin/users/:id/deposit', requireAdmin, csrfGuard,
+  (req, res, next) => uploadReceipt.single('receipt')(req, res, () => next()),
+  (req, res) => {
+    const db = req.db;
+    const u = db.users.find(x => x.id === Number(req.params.id));
+    if (!u) return res.redirect('/admin/users');
+    const amount = Math.floor(Number(req.body.amount));
+    const plan = db.settings.plans.find(p => p.id === req.body.plan);
+    const status = req.body.status === 'pending' ? 'pending' : 'approved';
+    const note = (req.body.note || '').trim();
+    const when = parseWhen(req.body.date);
+    if (!plan || !amount || amount <= 0) return res.redirect('/admin/users/' + u.id + '?err=deposit');
 
-  accrue(u, db);
-  db.deposits.push({
-    id: db.nextDepositId++, userId: u.id, userName: u.name,
-    plan: plan.id, planLabel: plan.name, amount, status, note,
-    byAdmin: true, createdAt: when
+    creditDeposit(db, u, plan, amount, {
+      status, note, when,
+      receipt: req.file ? '/uploads/' + req.file.filename : ''
+    });
+    logAudit(db, req.currentUser, 'admin.deposit', u.name + ' ' + amount + ' → ' + plan.name + ' (' + status + ')');
+    save(db);
+    res.redirect('/admin/users/' + u.id + '?ok=deposit');
   });
-  if (status === 'approved') {
-    u.invested[plan.id] = (u.invested[plan.id] || 0) + amount;
-    addXp(u, Math.min(200, 10 + Math.floor(amount / 500)));
-    addTx(u, 'deposit', amount, plan.name + (note ? ' · ' + note : ''), when);
-    award(u, 'first_deposit');
-    maybePayInvite(db, u);
-    checkState(u);
-  } else {
-    addTx(u, 'deposit_request', amount, plan.name, when);
-  }
-  logAudit(db, req.currentUser, 'admin.deposit', u.name + ' ' + amount + ' → ' + plan.name + ' (' + status + ')');
-  save(db);
-  res.redirect('/admin/users/' + u.id + '?ok=deposit');
-});
 
 // Record a withdrawal on a player's behalf — with bank/PayPal details and a date.
 app.post('/admin/users/:id/withdraw', requireAdmin, (req, res) => {
@@ -1164,6 +1209,120 @@ app.post('/admin/users/:id/withdraw', requireAdmin, (req, res) => {
   logAudit(db, req.currentUser, 'admin.withdraw', u.name + ' ' + amount + ' from ' + label + ' (' + status + ')');
   save(db);
   res.redirect('/admin/users/' + u.id + '?ok=withdraw');
+});
+
+// ----- Impersonation: view the game as a player (read-only) -----
+app.post('/admin/users/:id/impersonate', requireAdmin, (req, res) => {
+  const target = req.db.users.find(x => x.id === Number(req.params.id));
+  if (target && !target.isAdmin) {
+    req.session.impersonate = target.id;
+    logAudit(req.db, req.currentUser, 'admin.viewAs', target.name + ' <' + target.email + '>');
+    save(req.db);
+  }
+  res.redirect('/dashboard');
+});
+app.post('/admin/stop-impersonate', (req, res) => {
+  // req.currentUser is the target while impersonating; the real admin is session.userId
+  const id = req.session.impersonate;
+  delete req.session.impersonate;
+  res.redirect(id ? '/admin/users/' + id : '/admin');
+});
+
+// ----- Batch deposit to several selected players -----
+app.post('/admin/users/batch-deposit', requireAdmin, (req, res) => {
+  const db = req.db;
+  let ids = req.body.ids || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  ids = [...new Set(ids.map(Number))].filter(Number.isFinite);
+  const amount = Math.floor(Number(req.body.amount));
+  const plan = db.settings.plans.find(p => p.id === req.body.plan);
+  const status = req.body.status === 'pending' ? 'pending' : 'approved';
+  if (!plan || !amount || amount <= 0 || !ids.length) return res.redirect('/admin/users?created=err');
+
+  let n = 0;
+  for (const id of ids) {
+    const u = db.users.find(x => x.id === id);
+    if (!u) continue;
+    creditDeposit(db, u, plan, amount, { status, note: 'Batch', when: Date.now() });
+    n++;
+  }
+  logAudit(db, req.currentUser, 'admin.batchDeposit', n + ' players · ' + amount + ' → ' + plan.name + ' (' + status + ')');
+  save(db);
+  res.redirect('/admin/users?done=deposit&n=' + n);
+});
+
+// ----- Recurring / scheduled deposits (salary-style) -----
+const FREQ_MS = { daily: DAY, weekly: 7 * DAY, monthly: 30 * DAY };
+
+// Apply every schedule that is due. Returns how many payouts ran.
+function runSchedules(db) {
+  const now = Date.now();
+  let ran = 0;
+  for (const sc of db.schedules) {
+    if (!sc.active) continue;
+    const plan = db.settings.plans.find(p => p.id === sc.plan);
+    if (!plan) continue;
+    let guard = 0;
+    while (sc.nextRun <= now && guard++ < 60) {   // don't backfill a huge gap
+      const u = db.users.find(x => x.id === sc.userId);
+      if (u) { creditDeposit(db, u, plan, sc.amount, { status: 'approved', note: 'Recurring', when: now }); ran++; }
+      sc.lastRun = now;
+      sc.nextRun += (FREQ_MS[sc.frequency] || DAY);
+    }
+  }
+  return ran;
+}
+
+app.post('/admin/users/:id/schedule', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.redirect('/admin/users');
+  const amount = Math.floor(Number(req.body.amount));
+  const plan = db.settings.plans.find(p => p.id === req.body.plan);
+  const frequency = FREQ_MS[req.body.frequency] ? req.body.frequency : 'weekly';
+  if (!plan || !amount || amount <= 0) return res.redirect('/admin/users/' + u.id + '?err=deposit');
+  db.schedules.push({
+    id: db.nextScheduleId++, userId: u.id, userName: u.name,
+    amount, plan: plan.id, planLabel: plan.name, frequency,
+    active: true, lastRun: null, nextRun: Date.now() + FREQ_MS[frequency], createdAt: Date.now()
+  });
+  logAudit(db, req.currentUser, 'schedule.add', u.name + ' ' + amount + ' → ' + plan.name + ' / ' + frequency);
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=schedule');
+});
+
+app.post('/admin/schedules/:sid/delete', requireAdmin, (req, res) => {
+  const db = req.db;
+  const sc = db.schedules.find(s => s.id === Number(req.params.sid));
+  db.schedules = db.schedules.filter(s => s.id !== Number(req.params.sid));
+  if (sc) logAudit(db, req.currentUser, 'schedule.delete', sc.userName + ' ' + sc.amount + ' / ' + sc.frequency);
+  save(db);
+  res.redirect(sc ? '/admin/users/' + sc.userId : '/admin/users');
+});
+
+// Run all due schedules now (also runs automatically on a timer).
+app.post('/admin/schedules/run', requireAdmin, (req, res) => {
+  const db = req.db;
+  const n = runSchedules(db);
+  logAudit(db, req.currentUser, 'schedule.run', n + ' payouts');
+  save(db);
+  res.redirect((req.body.back || '/admin/users') + '?ok=ran&n=' + n);
+});
+
+// Printable per-user statement (browser print → PDF).
+app.get('/admin/users/:id/statement', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), body: req.t('err_404_d') });
+  accrue(u, db); save(db);
+  const rows = db.deposits.filter(d => d.userId === u.id).map(d => ({ t: d.createdAt, kind: 'deposit', label: d.planLabel, amount: d.amount, status: d.status, note: d.note }))
+    .concat(db.withdrawals.filter(w => w.userId === u.id).map(w => ({ t: w.createdAt, kind: 'withdraw', label: w.fromLabel || w.from, amount: w.amount, status: w.status, note: (w.method ? (w.method + ' ' + (w.payoutAccount || '')) : '') })))
+    .sort((a, b) => a.t - b.t);
+  res.render('admin/statement', {
+    layout: false, u, rows,
+    invested: totalInvested(u), total: totalBalance(u),
+    generatedAt: Date.now()
+  });
 });
 
 // Set a user's XP directly (level is derived from it).
@@ -1779,6 +1938,12 @@ app.use((err, req, res, next) => {
     detail: PROD ? null : (err && err.stack) // never leak stack traces in production
   });
 });
+
+// Run due recurring deposits on a timer (and once shortly after boot).
+setInterval(() => {
+  const db = load();
+  if (runSchedules(db)) save(db);
+}, 60 * 1000);
 
 app.listen(PORT, () => {
   console.log(`\n🎮  Investment game running at ${APP_URL}`);

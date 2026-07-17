@@ -15,6 +15,7 @@ const DEFAULTS = {
   withdrawals: [],
   deposits: [],
   audit: [],
+  schedules: [],
   settings: {
     siteName: 'DirhamVest',
     currency: 'DH',
@@ -90,9 +91,11 @@ function migrate(db) {
   db.deposits = db.deposits || [];
   db.withdrawals = db.withdrawals || [];
   db.audit = db.audit || [];
+  db.schedules = db.schedules || [];
   db.nextDepositId = db.nextDepositId || 1;
   db.nextAppId = db.nextAppId || 1;
   db.nextAuditId = db.nextAuditId || 1;
+  db.nextScheduleId = db.nextScheduleId || 1;
   db.settings.plans.forEach(p => {
     if (p.minLevel === undefined) p.minLevel = 1;
     if (p.imageUrl === undefined) p.imageUrl = '';

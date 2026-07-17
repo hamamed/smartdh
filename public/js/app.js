@@ -246,6 +246,19 @@ if ('serviceWorker' in navigator) {
   sync();
 })();
 
+// Batch-deposit modal: copy the currently checked user ids into the modal form.
+(function () {
+  const modal = document.getElementById('batchDepModal');
+  if (!modal) return;
+  modal.addEventListener('show.bs.modal', function () {
+    const ids = [...document.querySelectorAll('.row-check:checked')].map(b => b.value);
+    const box = document.getElementById('batchIds');
+    box.innerHTML = ids.map(id => '<input type="hidden" name="ids" value="' + id + '">').join('');
+    const c = document.getElementById('batchCount');
+    if (c) c.textContent = ids.length;
+  });
+})();
+
 // Confirm destructive bulk actions. Returns false to block the submit.
 function dvConfirmBulk(form) {
   const n = document.querySelectorAll('.row-check:checked').length;
