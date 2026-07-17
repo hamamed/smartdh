@@ -998,6 +998,28 @@ app.get('/admin', requireAdmin, (req, res) => {
   });
 });
 
+// Live totals + recent deposit/withdraw events for the admin activity chart.
+// Read-only and never saves — it projects each player's earnings forward from
+// their last accrual instead of mutating, so polling it every second is cheap.
+app.get('/admin/stats.json', requireAdmin, (req, res) => {
+  const db = req.db;
+  const now = Date.now();
+  let earnings = 0, invested = 0, perSecond = 0;
+  for (const u of db.users) {
+    if (u.status !== 'active' || u.isAdmin) continue;
+    const ps = earningPerSecond(u, db.settings);
+    const pending = ps * Math.max(0, (now - (u.lastAccrual || now)) / 1000);
+    earnings += (u.earnings || 0) + pending;
+    invested += totalInvested(u);
+    perSecond += ps;
+  }
+  const events = db.deposits.map(d => ({ id: 'd' + d.id, t: d.createdAt, type: 'deposit', amount: d.amount, name: d.userName, status: d.status }))
+    .concat(db.withdrawals.map(w => ({ id: 'w' + w.id, t: w.createdAt, type: 'withdraw', amount: w.amount, name: w.userName, status: w.status })))
+    .sort((a, b) => b.t - a.t)
+    .slice(0, 60);
+  res.json({ now, totalCoins: earnings + invested, totalEarnings: earnings, totalInvested: invested, perSecond, events });
+});
+
 // ---------- Users ----------
 app.get('/admin/users', requireAdmin, (req, res) => {
   const db = req.db;

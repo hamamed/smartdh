@@ -33,6 +33,24 @@
       </div>
     </div>
 
+    <!-- Live activity chart -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="activity" class="text-primary"></i><%= t('live_chart_t') %></h6>
+          <div class="d-flex gap-3 small">
+            <span class="d-inline-flex align-items-center gap-1"><span class="dot" style="background:#12b1d6"></span><%= t('stat_total') %>: <strong id="statCoins">—</strong></span>
+            <span class="d-inline-flex align-items-center gap-1"><i data-lucide="triangle" style="color:#16c79a;width:.8em;height:.8em"></i><%= t('live_deposit') %></span>
+            <span class="d-inline-flex align-items-center gap-1"><i data-lucide="triangle" style="color:#ff5964;width:.8em;height:.8em;transform:rotate(180deg)"></i><%= t('live_withdraw') %></span>
+          </div>
+        </div>
+        <p class="text-muted small mb-3"><%= t('live_chart_d') %></p>
+        <div class="chart-box">
+          <canvas id="adminChart" data-currency="<%= settings.currency %>"></canvas>
+        </div>
+      </div>
+    </div>
+
     <!-- Needs attention -->
     <% const todo = counts.pendingUsers + counts.pendingDeposits + counts.pendingWithdrawals; %>
     <div class="card border-0 shadow-sm rounded-4 mb-4">

@@ -56,6 +56,79 @@ if ('serviceWorker' in navigator) {
   });
 })();
 
+// ---------- Admin live activity chart ----------
+(function () {
+  const el = document.getElementById('adminChart');
+  if (!el || !window.Chart) return;
+  const cur = el.dataset.currency || '';
+  const ctx = el.getContext('2d');
+  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  const grid = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
+  const tick = dark ? '#8b8391' : '#9a8d86';
+
+  const fill = ctx.createLinearGradient(0, 0, 0, 240);
+  fill.addColorStop(0, 'rgba(18,177,214,.30)');
+  fill.addColorStop(1, 'rgba(18,177,214,0)');
+
+  const coins = { label: 'coins', data: [], borderColor: '#12b1d6', backgroundColor: fill, borderWidth: 2.5, fill: true, tension: .35, pointRadius: 0, order: 3 };
+  const dep = { label: 'deposit', type: 'scatter', data: [], backgroundColor: '#16c79a', borderColor: '#0e9d78', pointStyle: 'triangle', pointRadius: c => c.raw.r, pointHoverRadius: c => c.raw.r + 2, order: 1 };
+  const wd = { label: 'withdraw', type: 'scatter', data: [], backgroundColor: '#ff5964', borderColor: '#d63b46', pointStyle: 'triangle', rotation: 180, pointRadius: c => c.raw.r, pointHoverRadius: c => c.raw.r + 2, order: 1 };
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets: [coins, dep, wd] },
+    options: {
+      parsing: false, animation: false, responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: true },
+      scales: {
+        x: { type: 'linear', grid: { display: false },
+             ticks: { maxTicksLimit: 6, color: tick, callback: v => new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) } },
+        y: { grid: { color: grid }, ticks: { maxTicksLimit: 4, color: tick, callback: v => Math.round(v).toLocaleString() } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => {
+          if (c.dataset.label === 'coins') return c.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' ' + cur;
+          const e = c.raw;
+          return e.name + ': ' + (c.dataset.label === 'withdraw' ? '−' : '+') + e.amount.toLocaleString() + ' ' + cur;
+        } } }
+      }
+    }
+  });
+
+  const WINDOW = 120 * 1000;        // keep the last 2 minutes on screen
+  const seen = new Set();
+  const trim = (arr, minX) => { while (arr.length && arr[0].x < minX) arr.shift(); };
+
+  async function poll() {
+    let s;
+    try {
+      const res = await fetch('/admin/stats.json', { headers: { 'X-Requested-With': 'fetch' } });
+      if (!res.ok) return;
+      s = await res.json();
+    } catch (e) { return; }
+
+    const now = s.now, minX = now - WINDOW;
+    coins.data.push({ x: now, y: s.totalCoins });
+    trim(coins.data, minX);
+
+    s.events.forEach(e => {
+      if (seen.has(e.id) || e.t < minX) { seen.add(e.id); return; }
+      seen.add(e.id);
+      const r = Math.max(4, Math.min(13, 4 + Math.log10(Math.max(1, e.amount)) * 2.2));
+      (e.type === 'deposit' ? dep : wd).data.push({ x: e.t, y: s.totalCoins, r, name: e.name, amount: e.amount });
+    });
+    trim(dep.data, minX);
+    trim(wd.data, minX);
+
+    const c = document.getElementById('statCoins');
+    if (c) c.textContent = Math.round(s.totalCoins).toLocaleString() + ' ' + cur;
+    chart.update('none');
+  }
+  poll();
+  setInterval(poll, 1000);   // every second
+})();
+
 // ---------- Dark mode toggle ----------
 (function () {
   const btn = document.getElementById('themeToggle');

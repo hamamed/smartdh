@@ -289,6 +289,8 @@ a { text-decoration: none; }
   box-shadow: 0 4px 12px rgba(255, 106, 106, .3);
 }
 
+.dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+
 /* ---------- Chart ---------- */
 /* Chart.js runs with maintainAspectRatio:false, so its canvas fills the parent.
    The parent MUST have a fixed height or the two grow each other forever. */
