@@ -1,6 +1,40 @@
 <section class="py-4 py-lg-5">
   <div class="container">
-    <%- include('_head', { heading: t('tab_users') }) %>
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-4 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        <a href="/admin" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+        <h3 class="fw-bold mb-0"><%= t('tab_users') %></h3>
+      </div>
+      <button class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" type="button"
+              data-bs-toggle="collapse" data-bs-target="#createBox"><i data-lucide="user-plus"></i><%= t('create_user') %></button>
+    </div>
+
+    <% if (created) { %>
+      <div class="alert alert-<%= created === 'ok' ? 'success' : 'danger' %> py-2 d-flex align-items-center gap-2">
+        <i data-lucide="<%= created === 'ok' ? 'check' : 'alert-triangle' %>"></i>
+        <%= created === 'dup' ? t('create_dup') : created === 'err' ? t('create_err') : t('create_ok') %>
+      </div>
+    <% } %>
+
+    <div class="collapse mb-4" id="createBox">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="user-plus" class="text-primary"></i><%= t('create_user_t') %></h6>
+          <form method="post" action="/admin/users/create" class="row g-2">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="col-md-4"><label class="form-label small"><%= t('lbl_name') %></label><input name="name" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label small"><%= t('lbl_email') %></label><input name="email" type="email" class="form-control" required></div>
+            <div class="col-md-2"><label class="form-label small"><%= t('lbl_password') %></label><input name="password" type="text" minlength="4" class="form-control" required></div>
+            <div class="col-md-2"><label class="form-label small"><%= t('th_status') %></label>
+              <select name="status" class="form-select">
+                <option value="active"><%= t('st_active') %></option>
+                <option value="pending"><%= t('st_pending') %></option>
+              </select></div>
+            <div class="col-12"><button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="user-plus"></i><%= t('create_user') %></button></div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">

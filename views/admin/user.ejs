@@ -2,6 +2,17 @@
   <div class="container" style="max-width: 900px;">
     <%- include('_head', { heading: u.name, back: '/admin/users' }) %>
 
+    <% if (ok) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i>
+        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : t('profile_saved') %>
+      </div>
+    <% } %>
+    <% if (err) { %>
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i>
+        <%= err === 'insufficient' ? t('e_insufficient') : t('manual_err') %>
+      </div>
+    <% } %>
+
     <div class="row g-3">
       <!-- Identity -->
       <div class="col-md-5">
@@ -113,6 +124,98 @@
                 <button class="btn btn-outline-primary"><i data-lucide="key-round"></i></button>
               </div>
               <div class="form-text"><%= t('set_password_hint') %></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual deposit / withdrawal -->
+    <div class="row g-3 mt-0">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="receipt" class="text-primary"></i><%= t('manual_dep_t') %></h6>
+            <form action="/admin/users/<%= u.id %>/deposit" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_amount') %></label>
+                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= settings.currency %></span></div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('plans_title') %></label>
+                  <select name="plan" class="form-select form-select-sm">
+                    <% plans.forEach(p => { %><option value="<%= p.id %>"><%= planName(p) %></option><% }) %>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_status') %></label>
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="approved"><%= t('st_approved') %></option>
+                    <option value="pending"><%= t('st_pending') %></option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('manual_date') %></label>
+                  <input name="date" type="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-12">
+                  <label class="form-label small mb-1"><%= t('manual_bankref') %></label>
+                  <input name="note" class="form-control form-control-sm" placeholder="<%= t('manual_bankref_ph') %>">
+                </div>
+              </div>
+              <button class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="plus"></i><%= t('manual_dep_go') %></button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="banknote" class="text-primary"></i><%= t('manual_wd_t') %></h6>
+            <form action="/admin/users/<%= u.id %>/withdraw" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_amount') %></label>
+                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= settings.currency %></span></div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_from') %></label>
+                  <select name="from" class="form-select form-select-sm">
+                    <option value="earnings"><%= t('opt_earnings') %></option>
+                    <% plans.forEach(p => { %><option value="<%= p.id %>"><%= planName(p) %></option><% }) %>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('payout_method') %></label>
+                  <select name="method" class="form-select form-select-sm">
+                    <option value="paypal"><%= t('payout_paypal') %></option>
+                    <option value="bank"><%= t('payout_bank') %></option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('th_status') %></label>
+                  <select name="status" class="form-select form-select-sm">
+                    <option value="paid"><%= t('st_paid') %></option>
+                    <option value="pending"><%= t('st_pending') %></option>
+                    <option value="rejected"><%= t('st_rejected') %></option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('payout_name') %></label>
+                  <input name="payoutName" class="form-control form-control-sm" value="<%= u.payout.name %>">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small mb-1"><%= t('manual_account') %></label>
+                  <input name="account" class="form-control form-control-sm" dir="ltr" value="<%= payoutAccount %>">
+                </div>
+                <div class="col-12">
+                  <label class="form-label small mb-1"><%= t('manual_date') %></label>
+                  <input name="date" type="date" class="form-control form-control-sm">
+                </div>
+              </div>
+              <button class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="minus"></i><%= t('manual_wd_go') %></button>
             </form>
           </div>
         </div>

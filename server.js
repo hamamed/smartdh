@@ -347,10 +347,21 @@ function earningPerSecond(user, settings) {
   }
   return s;
 }
-function addTx(user, type, amount, note) {
+function addTx(user, type, amount, note, at) {
   user.transactions = user.transactions || [];
-  user.transactions.push({ type, amount, note: note || '', at: Date.now() });
+  user.transactions.push({ type, amount, note: note || '', at: at || Date.now() });
+  // keep chronological even when a backdated entry is inserted
+  user.transactions.sort((a, b) => a.at - b.at);
   if (user.transactions.length > 120) user.transactions = user.transactions.slice(-120);
+}
+
+// A YYYY-MM-DD from a date input → timestamp (noon, to dodge timezone edges).
+// Falls back to now, and never allows a future date.
+function parseWhen(v) {
+  if (!v) return Date.now();
+  const t = new Date(v + 'T12:00:00').getTime();
+  if (!Number.isFinite(t)) return Date.now();
+  return Math.min(t, Date.now());
 }
 // ---------- Levels & XP ----------
 function levelForXp(xp) { return Math.floor(Math.sqrt((xp || 0) / 50)) + 1; }
@@ -1042,6 +1053,7 @@ app.get('/admin/users', requireAdmin, (req, res) => {
     statusCounts: countBy(db.users),
     counts: adminCounts(db),
     done: req.query.done || null, doneN: parseInt(req.query.n) || 0,
+    created: req.query.created || null,
     levelForXp, totalInvested, totalBalance
   });
 });
@@ -1064,8 +1076,94 @@ app.get('/admin/users/:id', requireAdmin, (req, res) => {
     deposits: db.deposits.filter(d => d.userId === u.id).sort((a, b) => b.createdAt - a.createdAt),
     withdrawals: db.withdrawals.filter(w => w.userId === u.id).sort((a, b) => b.createdAt - a.createdAt),
     txns: (u.transactions || []).slice().reverse().slice(0, 25),
-    payoutAccount: payoutAccount(u.payout)
+    payoutAccount: payoutAccount(u.payout),
+    ok: req.query.ok || null, err: req.query.err || null
   });
+});
+
+// Create an account directly from the admin panel.
+app.post('/admin/users/create', requireAdmin, async (req, res) => {
+  const db = req.db;
+  const name = (req.body.name || '').trim();
+  const email = (req.body.email || '').trim().toLowerCase();
+  const password = req.body.password || '';
+  const status = ['active', 'pending', 'rejected'].includes(req.body.status) ? req.body.status : 'active';
+  if (!name || !email.includes('@') || password.length < 4) return res.redirect('/admin/users?created=err');
+  if (db.users.find(u => u.email.toLowerCase() === email)) return res.redirect('/admin/users?created=dup');
+  const u = createUser(db, { name, email, passwordHash: await bcrypt.hash(password, 10), isAdmin: false, status });
+  logAudit(db, req.currentUser, 'user.create', name + ' <' + email + '>');
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=created');
+});
+
+// Record a deposit on a player's behalf — any app, any date, approved or pending.
+app.post('/admin/users/:id/deposit', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.redirect('/admin/users');
+  const amount = Math.floor(Number(req.body.amount));
+  const plan = db.settings.plans.find(p => p.id === req.body.plan);
+  const status = req.body.status === 'pending' ? 'pending' : 'approved';
+  const note = (req.body.note || '').trim();       // bank transfer / reference info
+  const when = parseWhen(req.body.date);
+  if (!plan || !amount || amount <= 0) return res.redirect('/admin/users/' + u.id + '?err=deposit');
+
+  accrue(u, db);
+  db.deposits.push({
+    id: db.nextDepositId++, userId: u.id, userName: u.name,
+    plan: plan.id, planLabel: plan.name, amount, status, note,
+    byAdmin: true, createdAt: when
+  });
+  if (status === 'approved') {
+    u.invested[plan.id] = (u.invested[plan.id] || 0) + amount;
+    addXp(u, Math.min(200, 10 + Math.floor(amount / 500)));
+    addTx(u, 'deposit', amount, plan.name + (note ? ' · ' + note : ''), when);
+    award(u, 'first_deposit');
+    maybePayInvite(db, u);
+    checkState(u);
+  } else {
+    addTx(u, 'deposit_request', amount, plan.name, when);
+  }
+  logAudit(db, req.currentUser, 'admin.deposit', u.name + ' ' + amount + ' → ' + plan.name + ' (' + status + ')');
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=deposit');
+});
+
+// Record a withdrawal on a player's behalf — with bank/PayPal details and a date.
+app.post('/admin/users/:id/withdraw', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.redirect('/admin/users');
+  const amount = Math.floor(Number(req.body.amount));
+  const from = req.body.from; // 'earnings' or a plan id
+  const method = req.body.method === 'bank' ? 'bank' : 'paypal';
+  const payoutName = (req.body.payoutName || '').trim();
+  const account = (req.body.account || '').trim();
+  const status = ['paid', 'pending', 'rejected'].includes(req.body.status) ? req.body.status : 'paid';
+  const when = parseWhen(req.body.date);
+  if (!amount || amount <= 0) return res.redirect('/admin/users/' + u.id + '?err=withdraw');
+
+  accrue(u, db);
+  let label;
+  if (from === 'earnings') { label = 'Earnings'; }
+  else { const p = db.settings.plans.find(x => x.id === from); if (!p) return res.redirect('/admin/users/' + u.id + '?err=withdraw'); label = p.name; }
+
+  // paid/pending take the coins out now; rejected is just a record
+  if (status !== 'rejected') {
+    const have = from === 'earnings' ? u.earnings : (u.invested[from] || 0);
+    if (amount > have) return res.redirect('/admin/users/' + u.id + '?err=insufficient');
+    if (from === 'earnings') u.earnings -= amount; else u.invested[from] -= amount;
+  }
+  db.withdrawals.push({
+    id: db.nextWithdrawId++, userId: u.id, userName: u.name,
+    amount, from, fromLabel: label, method, payoutName, payoutAccount: account,
+    status, byAdmin: true, createdAt: when
+  });
+  addTx(u, status === 'paid' ? 'withdraw_paid' : (status === 'rejected' ? 'withdraw_rejected' : 'withdraw_request'),
+    amount, 'From ' + label, when);
+  logAudit(db, req.currentUser, 'admin.withdraw', u.name + ' ' + amount + ' from ' + label + ' (' + status + ')');
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=withdraw');
 });
 
 // Set a user's XP directly (level is derived from it).
