@@ -141,6 +141,8 @@ function migrate(db) {
     // opt-out flag honoured by admin broadcasts (account/security mails still send).
     if (!u.emailToken) u.emailToken = crypto.randomBytes(16).toString('hex');
     if (u.emailOptOut === undefined) u.emailOptOut = false;
+    // Preferred language (for the UI on their next visit and for their emails).
+    if (u.lang === undefined) u.lang = null;
   });
   return db;
 }

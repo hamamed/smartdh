@@ -245,7 +245,14 @@ app.use((req, res, next) => {
 });
 
 app.get('/lang/:code', (req, res) => {
-  if (LANGS.includes(req.params.code)) req.session.lang = req.params.code;
+  if (LANGS.includes(req.params.code)) {
+    req.session.lang = req.params.code;
+    // Remember it on the account too, so their emails go out in this language.
+    if (req.currentUser && req.currentUser.lang !== req.params.code) {
+      req.currentUser.lang = req.params.code;
+      save(req.db);
+    }
+  }
   const back = req.get('referer');
   res.redirect(back && !back.includes('/lang/') ? back : '/');
 });
@@ -439,11 +446,11 @@ function addXp(user, n) {
 
 // The ONE place a user record is created — signup and CSV import both use it, so a
 // new field can never be added to one path and forgotten in the other.
-function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null }) {
+function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null, lang = null }) {
   const id = db.nextUserId++;
   const user = {
     id, name, email, passwordHash,
-    isAdmin, status,
+    isAdmin, status, lang,
     invested: {},
     earnings: 0,
     xp: 0,
@@ -486,10 +493,24 @@ function logAudit(db, admin, action, details) {
 // One place that builds a branded, on-design email and sends it. `broadcast: true`
 // marks a non-essential message (admin newsletter) and is skipped for opted-out
 // users; account/security mails leave it false so they always go out.
-function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadcast = false, lang = DEFAULT_LANG }) {
+// The language an email should be written in: an explicit override (e.g. the
+// session language at signup) wins, else the account's saved preference, else EN.
+function langFor(user, override) {
+  if (LANGS.includes(override)) return override;
+  if (user && LANGS.includes(user.lang)) return user.lang;
+  return DEFAULT_LANG;
+}
+// A translator bound to a recipient's language — used to build localized subjects/bodies.
+function userT(user, override) {
+  const l = langFor(user, override);
+  return (k, v) => t(l, k, v);
+}
+
+function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadcast = false, lang }) {
   if (!user || !user.email) return Promise.resolve({ skipped: true });
   if (broadcast && user.emailOptOut) return Promise.resolve({ skipped: true, optOut: true });
-  const tr = (k, v) => t(lang, k, v);
+  const uLang = langFor(user, lang);
+  const tr = (k, v) => t(uLang, k, v);
   const settings = load().settings;
   const html = renderEmail({
     siteName: settings.siteName,
@@ -497,7 +518,7 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
     unsubscribeUrl: `${APP_URL}/unsubscribe/${user.emailToken}`,
     heading, intro: intro != null ? intro : tr('mail_hi', { name: user.name }),
     lines, bodyHtml, cta,
-    dir: (locales[lang] && locales[lang].dir) || 'ltr',
+    dir: (locales[uLang] && locales[uLang].dir) || 'ltr',
     labels: {
       disclaimer: tr('email_disclaimer'),
       tagline: tr('email_tagline'),
@@ -514,27 +535,30 @@ function emFmt(n) {
 }
 
 function notifyLevelUp(user, level) {
+  const tr = userT(user);
   mailUser(user, {
-    subject: `You reached level ${level}! 🎉`,
-    heading: `Level ${level} unlocked`,
-    lines: [`Congratulations — you just reached level ${level}. New apps may now be unlocked. Keep going!`],
-    cta: { text: 'Open the game', url: `${APP_URL}/dashboard` }
+    subject: tr('mail_lvl_subj', { level }),
+    heading: tr('mail_lvl_h', { level }),
+    lines: [tr('mail_lvl_b', { level })],
+    cta: { text: tr('email_visit'), url: `${APP_URL}/dashboard` }
   });
 }
 function notifyDeposit(user, amount, planLabel, approved) {
+  const tr = userT(user);
   mailUser(user, {
-    subject: approved ? 'Your deposit was approved ✅' : 'Your deposit was rejected',
-    heading: approved ? 'Deposit approved' : 'Deposit rejected',
-    lines: [`Your deposit of ${emFmt(amount)} into ${planLabel} was ${approved ? 'approved and credited to your account.' : 'rejected.'}`],
-    cta: { text: 'View your account', url: `${APP_URL}/dashboard` }
+    subject: approved ? tr('mail_dep_ok_subj') : tr('mail_dep_no_subj'),
+    heading: approved ? tr('mail_dep_ok_h') : tr('mail_dep_no_h'),
+    lines: [tr(approved ? 'mail_dep_ok_b' : 'mail_dep_no_b', { amount: emFmt(amount), app: planLabel })],
+    cta: { text: tr('mail_view_account'), url: `${APP_URL}/dashboard` }
   });
 }
 function notifyWithdrawal(user, w, status) {
+  const tr = userT(user);
   mailUser(user, {
-    subject: status === 'paid' ? 'Your withdrawal was paid ✅' : 'Your withdrawal was rejected',
-    heading: status === 'paid' ? 'Withdrawal paid' : 'Withdrawal rejected',
-    lines: [`Your withdrawal of ${emFmt(w.amount)} was ${status === 'paid' ? 'marked as paid.' : 'rejected and refunded to your balance.'}`],
-    cta: { text: 'Open the game', url: `${APP_URL}/dashboard` }
+    subject: status === 'paid' ? tr('mail_wd_ok_subj') : tr('mail_wd_no_subj'),
+    heading: status === 'paid' ? tr('mail_wd_ok_h') : tr('mail_wd_no_h'),
+    lines: [tr(status === 'paid' ? 'mail_wd_ok_b' : 'mail_wd_no_b', { amount: emFmt(w.amount) })],
+    cta: { text: tr('email_visit'), url: `${APP_URL}/dashboard` }
   });
 }
 
@@ -653,7 +677,8 @@ app.post('/signup', authLimiter, async (req, res) => {
     name, email, passwordHash: hash,
     isAdmin: isFirstUser,
     status: isFirstUser ? 'active' : 'pending',
-    referredBy: referrer ? referrer.id : null
+    referredBy: referrer ? referrer.id : null,
+    lang: res.locals.lang   // remember the language they signed up in
   });
   if (referrer) award(referrer, 'recruiter');
   save(db);
@@ -1508,9 +1533,10 @@ app.post('/admin/email/send', requireAdmin, csrfGuard, async (req, res) => {
   const broadcast = !testOnly && !specific; // audience blasts respect opt-out
   let sent = 0, skipped = 0;
   for (const u of recipients) {
+    // No `lang` override → each player's greeting/disclaimer/unsubscribe render in
+    // THEIR own language. The subject and body stay as the admin typed them.
     const r = await mailUser(u, {
-      lang: res.locals.lang,
-      subject, heading, intro: req.t('mail_hi', { name: u.name }),
+      subject, heading, intro: userT(u)('mail_hi', { name: u.name }),
       bodyHtml, cta, broadcast
     });
     if (r && r.skipped) skipped++; else sent++;
@@ -1902,11 +1928,12 @@ app.post('/admin/approve/:id', requireAdmin, async (req, res) => {
     maybePayInvite(db, u); // approving them may complete their referrer's invite
     logAudit(db, req.currentUser, 'user.approve', u.name + ' <' + u.email + '>');
     save(db);
+    const tr = userT(u);
     await mailUser(u, {
-      subject: 'Your account is approved ✅',
-      heading: 'Account approved',
-      lines: ['Good news — your account has been approved. You can now log in and start playing!'],
-      cta: { text: 'Log in & play', url: `${APP_URL}/login` }
+      subject: tr('mail_appr_subj'),
+      heading: tr('mail_appr_h'),
+      lines: [tr('mail_appr_b')],
+      cta: { text: tr('mail_login_play'), url: `${APP_URL}/login` }
     });
   }
   res.redirect('/admin/users');
@@ -1991,11 +2018,12 @@ app.post('/admin/users/bulk', requireAdmin, async (req, res) => {
       u.status = 'active';
       u.lastAccrual = Date.now();
       maybePayInvite(db, u);
+      const tr = userT(u);
       mailUser(u, {
-        subject: 'Your account is approved ✅',
-        heading: 'Account approved',
-        lines: ['Your account has been approved — you can log in and start playing.'],
-        cta: { text: 'Log in & play', url: `${APP_URL}/login` }
+        subject: tr('mail_appr_subj'),
+        heading: tr('mail_appr_h'),
+        lines: [tr('mail_appr_b')],
+        cta: { text: tr('mail_login_play'), url: `${APP_URL}/login` }
       });
       n++;
     }
