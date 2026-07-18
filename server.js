@@ -170,7 +170,7 @@ function csrfGuard(req, res, next) {
   if (!ok) {
     return res.status(403).render('error', {
       title: req.t('err_csrf_t'), code: 403,
-      heading: req.t('err_csrf_t'), body: req.t('err_csrf_d')
+      heading: req.t('err_csrf_t'), mBody: req.t('err_csrf_d')
     });
   }
   next();
@@ -238,7 +238,7 @@ app.use((req, res, next) => {
       ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
       req.path !== '/admin/stop-impersonate') {
     return res.status(403).render('error', {
-      title: req.t('imp_ro_t'), code: 403, heading: req.t('imp_ro_t'), body: req.t('imp_ro_d')
+      title: req.t('imp_ro_t'), code: 403, heading: req.t('imp_ro_t'), mBody: req.t('imp_ro_d')
     });
   }
   next();
@@ -556,7 +556,7 @@ function requireActive(req, res, next) {
 }
 function requireAdmin(req, res, next) {
   if (!req.currentUser || !req.currentUser.isAdmin) return res.status(403).render('message', {
-    title: req.t('forbidden_title'), heading: req.t('forbidden_h'), body: req.t('forbidden_b')
+    title: req.t('forbidden_title'), heading: req.t('forbidden_h'), mBody: req.t('forbidden_b')
   });
   next();
 }
@@ -619,7 +619,8 @@ app.post('/signup', authLimiter, async (req, res) => {
   await sendMail(email, 'Your account is pending approval',
     `<p>Hi ${name},</p><p>Thanks for joining! Your account is waiting for the admin to approve it. You'll be able to log in once approved.</p>`);
   res.render('message', {
-    title: req.t('msg_created_h'), heading: req.t('msg_created_h'), body: req.t('msg_created_b')
+    title: req.t('msg_created_h'), heading: req.t('msg_created_h'), mBody: req.t('msg_created_b'),
+    mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
   });
 });
 
@@ -879,7 +880,7 @@ app.post('/forgot', authLimiter, async (req, res) => {
 app.get('/reset/:token', (req, res) => {
   const u = req.db.users.find(x => x.reset && x.reset.token === req.params.token && x.reset.expires > Date.now());
   if (!u) return res.status(400).render('error', {
-    title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), body: req.t('reset_bad_d')
+    title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), mBody: req.t('reset_bad_d')
   });
   res.render('reset', { title: req.t('reset_title'), token: req.params.token, error: null });
 });
@@ -888,7 +889,7 @@ app.post('/reset/:token', authLimiter, async (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.reset && x.reset.token === req.params.token && x.reset.expires > Date.now());
   if (!u) return res.status(400).render('error', {
-    title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), body: req.t('reset_bad_d')
+    title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), mBody: req.t('reset_bad_d')
   });
   const pass = req.body.password || '';
   if (pass.length < 4)
@@ -897,7 +898,7 @@ app.post('/reset/:token', authLimiter, async (req, res) => {
   u.reset = null;
   save(db);
   res.render('message', {
-    title: req.t('reset_done_t'), heading: req.t('reset_done_t'), body: req.t('reset_done_d')
+    title: req.t('reset_done_t'), heading: req.t('reset_done_t'), mBody: req.t('reset_done_d')
   });
 });
 
@@ -1125,7 +1126,7 @@ app.get('/admin/users/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (!u) return res.status(404).render('error', {
-    title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), body: req.t('err_404_d')
+    title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d')
   });
   accrue(u, db); save(db);
   const lvl = levelForXp(u.xp);
@@ -1323,7 +1324,7 @@ app.post('/admin/schedules/run', requireAdmin, (req, res) => {
 app.get('/admin/users/:id/statement', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
-  if (!u) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), body: req.t('err_404_d') });
+  if (!u) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
   accrue(u, db); save(db);
   const rows = db.deposits.filter(d => d.userId === u.id).map(d => ({ t: d.createdAt, kind: 'deposit', label: d.planLabel, amount: d.amount, status: d.status, note: d.note }))
     .concat(db.withdrawals.filter(w => w.userId === u.id).map(w => ({ t: w.createdAt, kind: 'withdraw', label: w.fromLabel || w.from, amount: w.amount, status: w.status, note: (w.method ? (w.method + ' ' + (w.payoutAccount || '')) : '') })))
@@ -1952,7 +1953,7 @@ app.post('/admin/withdraw/:id/:action', requireAdmin, (req, res) => {
 app.use((req, res) => {
   res.status(404).render('error', {
     title: req.t('err_404_t'), code: 404,
-    heading: req.t('err_404_t'), body: req.t('err_404_d')
+    heading: req.t('err_404_t'), mBody: req.t('err_404_d')
   });
 });
 
@@ -1961,7 +1962,7 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).render('error', {
     title: req.t('err_500_t'), code: 500,
-    heading: req.t('err_500_t'), body: req.t('err_500_d'),
+    heading: req.t('err_500_t'), mBody: req.t('err_500_d'),
     detail: PROD ? null : (err && err.stack) // never leak stack traces in production
   });
 });

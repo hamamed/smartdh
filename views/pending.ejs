@@ -1,10 +1,29 @@
 <section class="py-5">
-  <div class="container text-center" style="max-width: 560px;">
-    <div class="feature-icon mb-3 mx-auto"><i data-lucide="hourglass"></i></div>
-    <h3 class="fw-bold"><%= t('pending_title') %></h3>
-    <p class="text-muted"><%= t('pending_body', { name: currentUser.name }) %></p>
-    <form action="/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <button class="btn btn-outline-secondary"><i data-lucide="log-out" class="me-1"></i><%= t('nav_logout') %></button>
-    </form>
+  <div class="container" style="max-width: 560px;">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-center">
+      <div class="msg-hero">
+        <span class="tile-icon ti-yellow"><i data-lucide="hourglass"></i></span>
+      </div>
+      <div class="card-body p-4 p-md-5 pt-4">
+        <h3 class="fw-bold mb-2"><%= t('pending_title') %></h3>
+        <p class="text-muted mb-0"><%= t('pending_body', { name: currentUser.name }) %></p>
+
+        <div class="msg-steps mt-4">
+          <% [['user-check','msg_pend_s1','mint'], ['shield-check','msg_pend_s2','yellow'], ['log-in','msg_pend_s3','sky']].forEach((s, i) => { %>
+            <div class="msg-step">
+              <span class="tile-icon ti-<%= s[2] %>"><i data-lucide="<%= s[0] %>"></i></span>
+              <span class="small fw-semibold mt-2"><%= t(s[1]) %></span>
+              <% if (i === 0) { %><span class="badge bg-success-subtle text-success mt-1"><i data-lucide="check"></i></span>
+              <% } else if (i === 1) { %><span class="badge bg-warning-subtle text-warning mt-1"><%= t('st_pending') %></span><% } %>
+            </div>
+            <% if (i < 2) { %><span class="msg-arrow"><i data-lucide="chevron-right"></i></span><% } %>
+          <% }) %>
+        </div>
+
+        <form action="/logout" method="post" class="mt-4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"><i data-lucide="log-out"></i><%= t('nav_logout') %></button>
+        </form>
+      </div>
+    </div>
   </div>
 </section>

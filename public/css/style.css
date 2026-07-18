@@ -323,6 +323,27 @@ a { text-decoration: none; }
 .accordion-button:focus { box-shadow: none; }
 .accordion-button::after { transition: transform .3s var(--jelly); }
 
+/* ---------- Message / status page ---------- */
+.msg-hero {
+  padding: 34px 0 44px;
+  background:
+    radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,.25), rgba(255,255,255,0)),
+    var(--sunset);
+  position: relative;
+}
+.msg-hero .tile-icon {
+  width: 82px; height: 82px; font-size: 2.1rem;
+  margin: 0 auto -46px; background: #fff; color: var(--brand);
+  box-shadow: 0 12px 28px rgba(0,0,0,.15);
+  position: relative; z-index: 2;
+}
+[data-bs-theme="dark"] .msg-hero .tile-icon { background: #16203a; }
+.msg-steps { display: flex; align-items: flex-start; justify-content: center; gap: .5rem; flex-wrap: wrap; }
+.msg-step { display: flex; flex-direction: column; align-items: center; width: 96px; }
+.msg-step .tile-icon { width: 46px; height: 46px; font-size: 1.15rem; }
+.msg-arrow { color: #cbb9ad; align-self: center; margin-top: 10px; }
+[data-bs-theme="dark"] .msg-arrow { color: #4a5568; }
+
 /* ---------- Impersonation bar ---------- */
 .impersonate-bar {
   background: #202b45; color: #fff; font-weight: 600;
