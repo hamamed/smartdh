@@ -29,6 +29,14 @@
               <label class="form-label"><%= t('set_wdevery') %></label>
               <input name="withdrawEveryDays" type="number" min="0" class="form-control" value="<%= settings.withdrawEveryDays %>">
             </div>
+            <div class="col-md-4">
+              <label class="form-label"><%= t('set_lockdays') %></label>
+              <div class="input-group">
+                <input name="depositLockDays" type="number" min="0" class="form-control" value="<%= settings.depositLockDays %>">
+                <span class="input-group-text"><%= t('days_unit') %></span>
+              </div>
+              <div class="form-text"><%= t('set_lockdays_hint') %></div>
+            </div>
           </div>
 
           <h6 class="fw-bold small text-uppercase text-muted mb-2"><%= t('set_tiers') %></h6>

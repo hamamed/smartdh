@@ -401,6 +401,49 @@ function earningPerSecond(user, settings) {
   }
   return s;
 }
+
+// ---------- Deposit lock (new deposits can't be withdrawn for N days) ----------
+function depositLockDays(db) { return Math.max(0, Number(db.settings.depositLockDays) || 0); }
+
+// When a deposit's funds became available. Manual/back-dated deposits use their
+// chosen date; self-service ones use the approval time; older records fall back
+// to createdAt.
+function maturedAt(d) { return d.approvedAt || d.createdAt || 0; }
+
+// How much of a player's holding in one app is still inside the lock window.
+function lockedInApp(db, user, planId) {
+  const days = depositLockDays(db);
+  if (days <= 0) return 0;
+  const cutoff = Date.now() - days * DAY;
+  let locked = 0;
+  for (const d of db.deposits) {
+    if (d.userId !== user.id || d.plan !== planId || d.status !== 'approved') continue;
+    if (maturedAt(d) > cutoff) locked += d.amount;
+  }
+  return Math.min(locked, (user.invested && user.invested[planId]) || 0);
+}
+
+function withdrawableInApp(db, user, planId) {
+  return Math.max(0, ((user.invested && user.invested[planId]) || 0) - lockedInApp(db, user, planId));
+}
+
+// Per-app funds breakdown for the UI: held, locked, available, and when the
+// earliest locked deposit unlocks.
+function appFunds(db, user, planId) {
+  const held = (user.invested && user.invested[planId]) || 0;
+  const locked = lockedInApp(db, user, planId);
+  let unlockAt = 0;
+  if (locked > 0) {
+    const days = depositLockDays(db);
+    const cutoff = Date.now() - days * DAY;
+    for (const d of db.deposits) {
+      if (d.userId !== user.id || d.plan !== planId || d.status !== 'approved') continue;
+      const m = maturedAt(d);
+      if (m > cutoff) { const u = m + days * DAY; if (!unlockAt || u < unlockAt) unlockAt = u; }
+    }
+  }
+  return { held, locked, available: Math.max(0, held - locked), unlockAt };
+}
 function addTx(user, type, amount, note, at) {
   user.transactions = user.transactions || [];
   user.transactions.push({ type, amount, note: note || '', at: at || Date.now() });
@@ -419,7 +462,8 @@ function creditDeposit(db, u, plan, amount, opts) {
   db.deposits.push({
     id: db.nextDepositId++, userId: u.id, userName: u.name,
     plan: plan.id, planLabel: plan.name, amount, status, note,
-    receipt: opts.receipt || '', byAdmin: true, createdAt: when
+    receipt: opts.receipt || '', byAdmin: true, createdAt: when,
+    approvedAt: status === 'approved' ? when : null
   });
   if (status === 'approved') {
     accrue(u, db);
@@ -793,11 +837,18 @@ app.get('/invest', requireActive, async (req, res) => {
 // ---------- Withdraw ----------
 app.get('/withdraw', requireActive, (req, res) => {
   const u = req.currentUser;
+  const db = req.db;
+  accrue(u, db);
+  // funds breakdown per app (held / locked / available) for the picker
+  const funds = {};
+  db.settings.plans.forEach(p => { funds[p.id] = appFunds(db, u, p.id); });
   res.render('withdraw', {
     title: req.t('withdraw_title'),
     payoutOk: !payoutMissing(u.payout),          // payout comes from the profile
     payoutAccount: payoutAccount(u.payout),
-    myWithdrawals: req.db.withdrawals.filter(w => w.userId === u.id).sort((a, b) => b.createdAt - a.createdAt)
+    lockDays: depositLockDays(db),
+    funds,
+    myWithdrawals: db.withdrawals.filter(w => w.userId === u.id).sort((a, b) => b.createdAt - a.createdAt)
   });
 });
 
@@ -1068,7 +1119,10 @@ app.post('/withdraw', requireActive, (req, res) => {
   else {
     const plan = s.plans.find(p => p.id === from);
     if (!plan) return res.redirect('/withdraw?err=wamount');
-    available = u.invested[plan.id] || 0; label = plan.name;
+    // Only funds past the lock window can be withdrawn from an app.
+    available = withdrawableInApp(db, u, plan.id); label = plan.name;
+    if (amount > available && lockedInApp(db, u, plan.id) > 0)
+      return res.redirect('/withdraw?err=wlocked');
   }
   if (amount > available) return res.redirect('/withdraw?err=insufficient');
 
@@ -1910,6 +1964,7 @@ app.post('/admin/deposit/:id/:action', requireAdmin, (req, res) => {
     const u = db.users.find(x => x.id === d.userId);
     if (req.params.action === 'approve') {
       d.status = 'approved';
+      d.approvedAt = Date.now(); // lock window starts when funds become available
       if (u) {
         accrue(u, db);
         u.invested[d.plan] = (u.invested[d.plan] || 0) + d.amount;
@@ -2099,6 +2154,7 @@ app.post('/admin/settings/economy', requireAdmin, (req, res) => {
   s.minWithdraw = Math.max(0, Number(req.body.minWithdraw) || 0);
   s.minTransfer = Math.max(0, Number(req.body.minTransfer) || 0);
   s.withdrawEveryDays = Math.max(0, Number(req.body.withdrawEveryDays) || 0);
+  s.depositLockDays = Math.max(0, Math.floor(Number(req.body.depositLockDays) || 0));
   s.referralTiers = [1, 2, 3].map(i => Math.max(0, Number(req.body['tier' + i]) / 100 || 0));
   s.dailyBonusBase = Math.max(0, Number(req.body.dailyBonusBase) || 0);
   logAudit(db, req.currentUser, 'settings.economy',

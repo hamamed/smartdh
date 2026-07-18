@@ -33,6 +33,9 @@ const DEFAULTS = {
     minWithdraw: 100,
     minTransfer: 10,
     withdrawEveryDays: 15,
+    // Deposited funds are locked (can't be withdrawn) for this many days after the
+    // deposit. 0 disables the lock. Earnings are never locked.
+    depositLockDays: 30,
     // Referral commission taken from what your team EARNS (not from their deposits).
     // [direct, 2nd level, 3rd level]
     referralTiers: [0.02, 0.01, 0.005],
@@ -85,6 +88,7 @@ function migrate(db) {
   db.settings = Object.assign({}, DEFAULTS.settings, db.settings || {});
   if (db.settings.logoUrl === undefined) db.settings.logoUrl = '';
   if (!['text', 'logo'].includes(db.settings.brandMode)) db.settings.brandMode = 'text';
+  if (db.settings.depositLockDays === undefined) db.settings.depositLockDays = 30;
   db.settings.depositInfo = Object.assign({}, DEFAULTS.settings.depositInfo, db.settings.depositInfo || {});
   db.settings.announcement = Object.assign({}, DEFAULTS.settings.announcement, db.settings.announcement || {});
   // migrate the old single deposit-based percent to the new earnings-based tiers

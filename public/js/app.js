@@ -310,7 +310,8 @@ function dvConfirmBulk(form) {
     'err=insufficient': ['danger', M.e_insufficient],
     'err=cadence': ['warning', M.e_cadence],
     'err=claimed': ['warning', M.e_claimed],
-    'err=locked': ['warning', M.e_locked]
+    'err=locked': ['warning', M.e_locked],
+    'err=wlocked': ['warning', M.e_wlocked]
   };
   for (const [key, [type, text]] of Object.entries(messages)) {
     const [k, v] = key.split('=');

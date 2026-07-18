@@ -338,6 +338,9 @@ const locales = {
 
  level_label: 'المستوى', xp_progress: '{have} / {need} نقطة خبرة', locked_at: 'يُفتح في المستوى {n}',
  e_locked: 'تحتاج مستوى أعلى للاستثمار في هذا التطبيق.',
+    e_wlocked: 'هذه الأموال ما زالت مقفلة. لا يمكن سحب الإيداعات الجديدة بعد.',
+    wd_locked_opt: '{amt} مقفلة', wd_lock_title: 'الإيداعات مقفلة لمدة {days} يوماً بعد إضافتها',
+    wd_unlocks: 'تُفتح {date}',
  tab_apps: 'التطبيقات', add_app_title: 'إضافة تطبيق',
  app_name: 'الاسم', app_icon: 'الأيقونة (اسم Lucide)', app_image: 'رابط الشعار (اختياري)', app_rate: 'الربح % / 15ي',
  app_color: 'اللون', app_minlevel: 'أدنى مستوى', app_desc: 'الوصف',
@@ -381,6 +384,8 @@ const locales = {
  set_gamename: 'اسم اللعبة', set_currency: 'رمز العملة', set_planrates: 'معدلات الخطط (% لكل 15 يوماً)',
  set_minadd: 'أدنى إضافة', set_minwd: 'أدنى سحب', set_mintransfer: 'أدنى تحويل',
  set_wdevery: 'السحب كل (أيام)', set_dailybase: 'أساس المكافأة اليومية',
+    set_lockdays: 'قفل الإيداع', days_unit: 'أيام',
+    set_lockdays_hint: 'عدد الأيام التي يبقى فيها الإيداع الجديد قبل إمكانية سحبه. 0 = بدون قفل. الأرباح لا تُقفل أبداً.',
  btn_save: 'حفظ الإعدادات',
  st_active: 'نشط', st_pending: 'قيد الانتظار', st_rejected: 'مرفوض', badge_admin: 'مشرف'
  },
@@ -724,6 +729,9 @@ const locales = {
 
  level_label: 'Niveau', xp_progress: '{have} / {need} XP', locked_at: 'Débloqué au niveau {n}',
  e_locked: "Vous avez besoin d'un niveau supérieur pour investir dans cette application.",
+    e_wlocked: 'Ces fonds sont encore bloqués. Les nouveaux dépôts ne peuvent pas encore être retirés.',
+    wd_locked_opt: '{amt} bloqués', wd_lock_title: 'Les dépôts sont bloqués {days} jours après leur ajout',
+    wd_unlocks: 'débloqué le {date}',
  tab_apps: 'Applications', add_app_title: 'Ajouter une application',
  app_name: 'Nom', app_icon: 'Icône (nom Lucide)', app_image: 'URL du logo (facultatif)', app_rate: 'Gain % / 15j',
  app_color: 'Couleur', app_minlevel: 'Niveau min', app_desc: 'Description',
@@ -767,6 +775,8 @@ const locales = {
  set_gamename: 'Nom du jeu', set_currency: 'Symbole monétaire', set_planrates: 'Taux des plans (% par 15 jours)',
  set_minadd: 'Ajout min', set_minwd: 'Retrait min', set_mintransfer: 'Transfert min',
  set_wdevery: 'Retrait tous les (jours)', set_dailybase: 'Base bonus quotidien',
+    set_lockdays: 'Blocage des dépôts', days_unit: 'jours',
+    set_lockdays_hint: 'Nombre de jours pendant lesquels un nouveau dépôt reste bloqué avant de pouvoir être retiré. 0 = aucun blocage. Les gains ne sont jamais bloqués.',
  btn_save: 'Enregistrer',
  st_active: 'Actif', st_pending: 'En attente', st_rejected: 'Rejeté', badge_admin: 'admin'
  },
@@ -1110,6 +1120,9 @@ const locales = {
 
  level_label: 'Level', xp_progress: '{have} / {need} XP', locked_at: 'Unlock at level {n}',
  e_locked: 'You need a higher level to invest in this app.',
+    e_wlocked: 'Those funds are still locked. New deposits can’t be withdrawn yet.',
+    wd_locked_opt: '{amt} locked', wd_lock_title: 'Deposits are locked for {days} days after you add them',
+    wd_unlocks: 'unlocks {date}',
  tab_apps: 'Apps', add_app_title: 'Add an app',
  app_name: 'Name', app_icon: 'Icon (Lucide name)', app_image: 'Logo URL (optional)', app_rate: 'Earn % / 15d',
  app_color: 'Color', app_minlevel: 'Min level', app_desc: 'Description',
@@ -1153,6 +1166,8 @@ const locales = {
  set_gamename: 'Game name', set_currency: 'Currency label', set_planrates: 'Plan rates (% per 15 days)',
  set_minadd: 'Min add coins', set_minwd: 'Min withdraw', set_mintransfer: 'Min transfer',
  set_wdevery: 'Withdraw every (days)', set_dailybase: 'Daily bonus base',
+    set_lockdays: 'Deposit lock', days_unit: 'days',
+    set_lockdays_hint: 'Days a new deposit must stay before it can be withdrawn. 0 = no lock. Earnings are never locked.',
  btn_save: 'Save settings',
  st_active: 'Active', st_pending: 'Pending', st_rejected: 'Rejected', badge_admin: 'admin'
  }

@@ -12,10 +12,23 @@
         <form method="post" action="/withdraw"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <select name="from" class="form-select mb-2">
             <option value="earnings"><%= t('opt_earnings') %> (<%= money(currentUser.earnings) %>)</option>
-            <% plans.forEach(p => { const held=(currentUser.invested&&currentUser.invested[p.id])||0; %>
-              <option value="<%= p.id %>"><%= planName(p) %> (<%= money(held) %>)</option>
+            <% plans.forEach(p => { const f = funds[p.id] || { held:0, locked:0, available:0 }; %>
+              <option value="<%= p.id %>"><%= planName(p) %> (<%= money(f.available) %><% if (f.locked > 0) { %> · <%= t('wd_locked_opt', { amt: money(f.locked) }) %><% } %>)</option>
             <% }) %>
           </select>
+
+          <% const lockedApps = plans.filter(p => (funds[p.id]||{}).locked > 0); %>
+          <% if (lockDays > 0 && lockedApps.length) { %>
+            <div class="alert alert-warning py-2 small mb-2">
+              <div class="d-flex align-items-center gap-1 fw-semibold mb-1"><i data-lucide="lock"></i><%= t('wd_lock_title', { days: lockDays }) %></div>
+              <% lockedApps.forEach(p => { const f = funds[p.id]; %>
+                <div class="d-flex justify-content-between">
+                  <span><%= planName(p) %>: <%= money(f.locked) %></span>
+                  <% if (f.unlockAt) { %><span class="text-muted"><%= t('wd_unlocks', { date: new Date(f.unlockAt).toLocaleDateString() }) %></span><% } %>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
           <div class="input-group mb-2">
             <span class="input-group-text"><i data-lucide="banknote"></i></span>
             <input name="amount" type="number" min="<%= settings.minWithdraw %>" step="1" class="form-control" placeholder="<%= t('amount_ph') %>" required>
