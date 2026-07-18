@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const ejsLayouts = require('express-ejs-layouts');
 const { load, save, refCode, replaceAll, wipe } = require('./db');
-const { sendMail } = require('./email');
+const { sendMail, renderEmail, textToHtml } = require('./email');
 const { locales, LANGS, DEFAULT_LANG, t } = require('./locales');
 const QRCode = require('qrcode');
 const multer = require('multer');
@@ -463,7 +463,9 @@ function createUser(db, { name, email, passwordHash, isAdmin = false, status = '
     onboarded: false,
     reset: null,
     referralCode: refCode(id),
-    referredBy
+    referredBy,
+    emailToken: crypto.randomBytes(16).toString('hex'),
+    emailOptOut: false
   };
   db.users.push(user);
   return user;
@@ -481,17 +483,59 @@ function logAudit(db, admin, action, details) {
 }
 
 // ---------- Notification emails ----------
+// One place that builds a branded, on-design email and sends it. `broadcast: true`
+// marks a non-essential message (admin newsletter) and is skipped for opted-out
+// users; account/security mails leave it false so they always go out.
+function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadcast = false, lang = DEFAULT_LANG }) {
+  if (!user || !user.email) return Promise.resolve({ skipped: true });
+  if (broadcast && user.emailOptOut) return Promise.resolve({ skipped: true, optOut: true });
+  const tr = (k, v) => t(lang, k, v);
+  const settings = load().settings;
+  const html = renderEmail({
+    siteName: settings.siteName,
+    appUrl: APP_URL,
+    unsubscribeUrl: `${APP_URL}/unsubscribe/${user.emailToken}`,
+    heading, intro: intro != null ? intro : tr('mail_hi', { name: user.name }),
+    lines, bodyHtml, cta,
+    dir: (locales[lang] && locales[lang].dir) || 'ltr',
+    labels: {
+      disclaimer: tr('email_disclaimer'),
+      tagline: tr('email_tagline'),
+      unsubscribe: tr('email_unsub'),
+      visit: tr('email_visit')
+    }
+  });
+  return sendMail(user.email, subject, html);
+}
+
+function emFmt(n) {
+  const s = load().settings;
+  return `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${s.currency}`;
+}
+
 function notifyLevelUp(user, level) {
-  sendMail(user.email, `You reached level ${level}!`,
-    `<p>Hi ${user.name},</p><p>Congratulations — you just reached <b>level ${level}</b>. New apps may now be unlocked. Keep going!</p>`);
+  mailUser(user, {
+    subject: `You reached level ${level}! 🎉`,
+    heading: `Level ${level} unlocked`,
+    lines: [`Congratulations — you just reached level ${level}. New apps may now be unlocked. Keep going!`],
+    cta: { text: 'Open the game', url: `${APP_URL}/dashboard` }
+  });
 }
 function notifyDeposit(user, amount, planLabel, approved) {
-  sendMail(user.email, approved ? 'Your deposit was approved' : 'Your deposit was rejected',
-    `<p>Hi ${user.name},</p><p>Your deposit of <b>${amount}</b> into <b>${planLabel}</b> was ${approved ? 'approved and credited' : 'rejected'}.</p>`);
+  mailUser(user, {
+    subject: approved ? 'Your deposit was approved ✅' : 'Your deposit was rejected',
+    heading: approved ? 'Deposit approved' : 'Deposit rejected',
+    lines: [`Your deposit of ${emFmt(amount)} into ${planLabel} was ${approved ? 'approved and credited to your account.' : 'rejected.'}`],
+    cta: { text: 'View your account', url: `${APP_URL}/dashboard` }
+  });
 }
 function notifyWithdrawal(user, w, status) {
-  sendMail(user.email, status === 'paid' ? 'Your withdrawal was paid' : 'Your withdrawal was rejected',
-    `<p>Hi ${user.name},</p><p>Your withdrawal of <b>${w.amount}</b> was ${status === 'paid' ? 'marked as paid' : 'rejected and refunded to your balance'}.</p>`);
+  mailUser(user, {
+    subject: status === 'paid' ? 'Your withdrawal was paid ✅' : 'Your withdrawal was rejected',
+    heading: status === 'paid' ? 'Withdrawal paid' : 'Withdrawal rejected',
+    lines: [`Your withdrawal of ${emFmt(w.amount)} was ${status === 'paid' ? 'marked as paid.' : 'rejected and refunded to your balance.'}`],
+    cta: { text: 'Open the game', url: `${APP_URL}/dashboard` }
+  });
 }
 
 // ---------- CSV ----------
@@ -616,8 +660,12 @@ app.post('/signup', authLimiter, async (req, res) => {
 
   if (isFirstUser) { req.session.userId = user.id; return res.redirect('/admin'); }
 
-  await sendMail(email, 'Your account is pending approval',
-    `<p>Hi ${name},</p><p>Thanks for joining! Your account is waiting for the admin to approve it. You'll be able to log in once approved.</p>`);
+  await mailUser(user, {
+    lang: res.locals.lang,
+    subject: req.t('mail_pending_subj'),
+    heading: req.t('mail_pending_h'),
+    lines: [req.t('mail_pending_b')]
+  });
   res.render('message', {
     title: req.t('msg_created_h'), heading: req.t('msg_created_h'), mBody: req.t('msg_created_b'),
     mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
@@ -869,9 +917,13 @@ app.post('/forgot', authLimiter, async (req, res) => {
     u.reset = { token, expires: Date.now() + 60 * 60 * 1000 }; // valid 1 hour
     save(db);
     const link = `${APP_URL}/reset/${token}`;
-    await sendMail(u.email, req.t('mail_reset_subject'),
-      `<p>${req.t('mail_hi', { name: u.name })}</p><p>${req.t('mail_reset_body')}</p>
-       <p><a href="${link}">${link}</a></p><p>${req.t('mail_reset_expire')}</p>`);
+    await mailUser(u, {
+      lang: res.locals.lang,
+      subject: req.t('mail_reset_subject'),
+      heading: req.t('mail_reset_subject'),
+      lines: [req.t('mail_reset_body'), req.t('mail_reset_expire')],
+      cta: { text: req.t('reset_save'), url: link }
+    });
   }
   // Always show the same message — never reveal which emails exist.
   res.render('forgot', { title: req.t('forgot_title'), sent: true });
@@ -899,6 +951,41 @@ app.post('/reset/:token', authLimiter, async (req, res) => {
   save(db);
   res.render('message', {
     title: req.t('reset_done_t'), heading: req.t('reset_done_t'), mBody: req.t('reset_done_d')
+  });
+});
+
+// ---------- Email unsubscribe / resubscribe ----------
+// One-click link from every email footer. GET flips the flag (mail clients
+// prefetch, so this is intentionally idempotent) and shows a confirmation with a
+// resubscribe button. No login needed — the per-user token is the credential.
+app.get('/unsubscribe/:token', (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.emailToken === req.params.token);
+  if (!u) return res.status(404).render('message', {
+    title: req.t('unsub_bad_t'), heading: req.t('unsub_bad_t'), mBody: req.t('unsub_bad_d'),
+    mIcon: 'mail-x', mTint: 'ti-coral'
+  });
+  if (!u.emailOptOut) { u.emailOptOut = true; save(db); }
+  res.render('message', {
+    title: req.t('unsub_ok_t'), heading: req.t('unsub_ok_t'),
+    mBody: req.t('unsub_ok_d', { email: u.email }),
+    mIcon: 'mail-x', mTint: 'ti-yellow',
+    mAction: { url: '/resubscribe/' + u.emailToken, text: req.t('unsub_resub'), icon: 'mail-check' }
+  });
+});
+
+app.get('/resubscribe/:token', (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.emailToken === req.params.token);
+  if (!u) return res.status(404).render('message', {
+    title: req.t('unsub_bad_t'), heading: req.t('unsub_bad_t'), mBody: req.t('unsub_bad_d'),
+    mIcon: 'mail-x', mTint: 'ti-coral'
+  });
+  if (u.emailOptOut) { u.emailOptOut = false; save(db); }
+  res.render('message', {
+    title: req.t('resub_ok_t'), heading: req.t('resub_ok_t'),
+    mBody: req.t('resub_ok_d', { email: u.email }),
+    mIcon: 'mail-check', mTint: 'ti-mint'
   });
 });
 
@@ -1362,6 +1449,79 @@ app.post('/admin/users/:id/password', requireAdmin, async (req, res) => {
   res.redirect('/admin/users/' + req.params.id + '?ok=1');
 });
 
+// ---------- Send email to players ----------
+// Pick who a broadcast goes to. Admins are never included (you are the sender),
+// and opted-out players are dropped unless you target them by exact email.
+function emailAudience(db, kind) {
+  const real = db.users.filter(u => !u.isAdmin && u.email && u.email.includes('@'));
+  if (kind === 'pending') return real.filter(u => u.status === 'pending');
+  if (kind === 'active') return real.filter(u => u.status === 'active');
+  return real; // 'all'
+}
+
+app.get('/admin/email', requireAdmin, (req, res) => {
+  const db = req.db;
+  const optedOut = db.users.filter(u => !u.isAdmin && u.emailOptOut).length;
+  res.render('admin/email', {
+    title: req.t('tab_email'),
+    counts: adminCounts(db),
+    audienceCounts: {
+      active: emailAudience(db, 'active').length,
+      pending: emailAudience(db, 'pending').length,
+      all: emailAudience(db, 'all').length
+    },
+    optedOut,
+    adminEmail: req.currentUser.email,
+    sent: req.query.sent ? parseInt(req.query.sent) : null,
+    skipped: parseInt(req.query.skipped) || 0,
+    err: req.query.err || null,
+    lang: res.locals.lang
+  });
+});
+
+app.post('/admin/email/send', requireAdmin, csrfGuard, async (req, res) => {
+  const db = req.db;
+  const subject = (req.body.subject || '').trim();
+  const heading = (req.body.heading || '').trim() || subject;
+  const message = (req.body.message || '').trim();
+  const ctaText = (req.body.ctaText || '').trim();
+  const ctaUrl = (req.body.ctaUrl || '').trim();
+  const audience = ['active', 'pending', 'all'].includes(req.body.audience) ? req.body.audience : 'active';
+  const specific = (req.body.specific || '').trim();
+  const testOnly = req.body.testOnly === '1';
+  if (!subject || !message) return res.redirect('/admin/email?err=empty');
+
+  // Build the recipient list.
+  let recipients;
+  if (testOnly) {
+    recipients = [req.currentUser];
+  } else if (specific) {
+    const wanted = specific.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    // targeting exact emails bypasses opt-out (you asked for these people specifically)
+    recipients = db.users.filter(u => wanted.includes(u.email.toLowerCase()));
+  } else {
+    recipients = emailAudience(db, audience);
+  }
+
+  const bodyHtml = textToHtml(message);
+  const cta = ctaUrl ? { text: ctaText || req.t('email_visit'), url: ctaUrl } : null;
+  const broadcast = !testOnly && !specific; // audience blasts respect opt-out
+  let sent = 0, skipped = 0;
+  for (const u of recipients) {
+    const r = await mailUser(u, {
+      lang: res.locals.lang,
+      subject, heading, intro: req.t('mail_hi', { name: u.name }),
+      bodyHtml, cta, broadcast
+    });
+    if (r && r.skipped) skipped++; else sent++;
+  }
+  logAudit(db, req.currentUser, 'email.broadcast',
+    `"${subject}" → ${sent} sent` + (skipped ? `, ${skipped} skipped` : '') +
+    (testOnly ? ' (test)' : specific ? ' (specific)' : ` (${audience})`));
+  save(db);
+  res.redirect('/admin/email?sent=' + sent + '&skipped=' + skipped);
+});
+
 // ---------- Section pages ----------
 app.get('/admin/apps', requireAdmin, (req, res) => {
   res.render('admin/apps', { title: req.t('tab_apps'), counts: adminCounts(req.db) });
@@ -1742,8 +1902,12 @@ app.post('/admin/approve/:id', requireAdmin, async (req, res) => {
     maybePayInvite(db, u); // approving them may complete their referrer's invite
     logAudit(db, req.currentUser, 'user.approve', u.name + ' <' + u.email + '>');
     save(db);
-    await sendMail(u.email, 'Your account is approved ✅',
-      `<p>Hi ${u.name},</p><p>Good news — your account has been approved. You can now log in and start playing!</p>`);
+    await mailUser(u, {
+      subject: 'Your account is approved ✅',
+      heading: 'Account approved',
+      lines: ['Good news — your account has been approved. You can now log in and start playing!'],
+      cta: { text: 'Log in & play', url: `${APP_URL}/login` }
+    });
   }
   res.redirect('/admin/users');
 });
@@ -1827,8 +1991,12 @@ app.post('/admin/users/bulk', requireAdmin, async (req, res) => {
       u.status = 'active';
       u.lastAccrual = Date.now();
       maybePayInvite(db, u);
-      sendMail(u.email, 'Your account is approved',
-        `<p>Hi ${u.name},</p><p>Your account has been approved — you can log in and start playing.</p>`);
+      mailUser(u, {
+        subject: 'Your account is approved ✅',
+        heading: 'Account approved',
+        lines: ['Your account has been approved — you can log in and start playing.'],
+        cta: { text: 'Log in & play', url: `${APP_URL}/login` }
+      });
       n++;
     }
   } else if (action === 'reject') {

@@ -3,6 +3,7 @@
 // concurrent requests. Atomic rename => a crash mid-write can never corrupt db.json.
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -136,6 +137,10 @@ function migrate(db) {
     if (u.reset === undefined) u.reset = null;
     if (!u.referralCode) u.referralCode = refCode(u.id);
     if (u.referredBy === undefined) u.referredBy = null;
+    // Email preferences: a per-user token for one-click unsubscribe links, and an
+    // opt-out flag honoured by admin broadcasts (account/security mails still send).
+    if (!u.emailToken) u.emailToken = crypto.randomBytes(16).toString('hex');
+    if (u.emailOptOut === undefined) u.emailOptOut = false;
   });
   return db;
 }
