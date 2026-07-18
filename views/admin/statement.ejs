@@ -36,7 +36,11 @@
 
     <div class="head">
       <div>
-        <div class="brand"><%= settings.siteName %></div>
+        <% if (settings.brandMode === 'logo' && settings.logoUrl) { %>
+          <img src="<%= settings.logoUrl %>" alt="<%= settings.siteName %>" style="height:40px;max-width:220px;object-fit:contain">
+        <% } else { %>
+          <div class="brand"><%= settings.siteName %></div>
+        <% } %>
         <div class="muted"><%= t('stmt_title') %></div>
       </div>
       <div class="muted" style="text-align:end">

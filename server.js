@@ -45,6 +45,16 @@ const uploadAppImg = multer({
   fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
 });
 
+// Site logo (admin branding).
+const uploadLogo = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, 'logo-' + crypto.randomBytes(8).toString('hex') + (ALLOWED_IMAGES[file.mimetype] || '.png'))
+  }),
+  limits: { fileSize: 3 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
+});
+
 // Deposit receipt images (admin manual deposits).
 const uploadReceipt = multer({
   storage: multer.diskStorage({
@@ -515,6 +525,8 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
   const html = renderEmail({
     siteName: settings.siteName,
     appUrl: APP_URL,
+    // Emails need an absolute URL for the logo (relative paths don't load in inboxes).
+    logoUrl: (settings.brandMode === 'logo' && settings.logoUrl) ? APP_URL + settings.logoUrl : '',
     unsubscribeUrl: `${APP_URL}/unsubscribe/${user.emailToken}`,
     heading, intro: intro != null ? intro : tr('mail_hi', { name: user.name }),
     lines, bodyHtml, cta,
@@ -2057,6 +2069,29 @@ app.post('/admin/settings/general', requireAdmin, (req, res) => {
   save(db);
   res.redirect('/admin/settings/general?ok=1');
 });
+
+// Branding: upload/replace/remove the logo image and choose whether the navbar
+// and emails show the logo or the text name. csrfGuard runs before multer.
+app.post('/admin/settings/logo', requireAdmin, csrfGuard,
+  (req, res, next) => uploadLogo.single('logo')(req, res, () => next()),
+  (req, res) => {
+    const db = req.db, s = db.settings;
+    if (req.body.remove === '1') {
+      if (s.logoUrl) deleteUpload(s.logoUrl);
+      s.logoUrl = '';
+      s.brandMode = 'text';
+    } else {
+      if (req.file) {
+        if (s.logoUrl) deleteUpload(s.logoUrl); // drop the previous file
+        s.logoUrl = '/uploads/' + req.file.filename;
+      }
+      // Only allow 'logo' mode if there is actually a logo to show.
+      s.brandMode = (req.body.brandMode === 'logo' && s.logoUrl) ? 'logo' : 'text';
+    }
+    logAudit(db, req.currentUser, 'settings.logo', s.brandMode + (s.logoUrl ? ' ' + s.logoUrl : ''));
+    save(db);
+    res.redirect('/admin/settings/general?ok=1');
+  });
 
 app.post('/admin/settings/economy', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;

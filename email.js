@@ -42,6 +42,7 @@ function renderEmail(opts = {}) {
   const {
     siteName = 'DirhamVest',
     appUrl = '#',
+    logoUrl = '',
     unsubscribeUrl = '',
     preview = '',
     heading = '',
@@ -90,8 +91,10 @@ function renderEmail(opts = {}) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(60,40,70,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
       <!-- Header -->
       <tr><td align="center" bgcolor="#ff6a6a" style="background:linear-gradient(135deg,#ffb03a 0%,#ff6a6a 55%,#ff5f8f 100%);padding:30px 24px;">
-        <div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.9);margin-top:4px;">${esc(L.tagline)}</div>
+        ${logoUrl
+          ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
+          : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}
+        <div style="font-size:12px;color:rgba(255,255,255,.9);margin-top:6px;">${esc(L.tagline)}</div>
       </td></tr>
       <!-- Body -->
       <tr><td align="${align}" dir="${dir}" style="padding:32px 30px 8px;">

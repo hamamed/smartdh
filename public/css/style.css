@@ -94,6 +94,7 @@ a { text-decoration: none; }
 }
 .navbar-brand { font-size: 1.2rem; letter-spacing: -.02em; }
 .navbar-brand.text-primary { background: var(--sunset); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-logo { height: 34px; max-width: 200px; width: auto; object-fit: contain; display: block; }
 .text-primary { color: var(--bs-primary) !important; }
 .nav-link { border-radius: 999px; padding-inline: .85rem !important; transition: background-color .2s, transform .2s var(--jelly); }
 .nav-link:hover { background: rgba(255, 122, 90, .10); transform: translateY(-1px); }

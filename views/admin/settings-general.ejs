@@ -20,5 +20,53 @@
         </form>
       </div>
     </div>
+
+    <!-- Branding: logo or text name -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1"><%= t('set_brand_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('set_brand_d') %></p>
+
+        <div class="mb-3">
+          <div class="small text-muted mb-1"><%= t('set_brand_preview') %></div>
+          <div class="d-inline-flex align-items-center gap-1 fw-bold text-primary border rounded-3 px-3 py-2 bg-body">
+            <% if (settings.brandMode === 'logo' && settings.logoUrl) { %>
+              <img src="<%= settings.logoUrl %>" alt="<%= settings.siteName %>" class="brand-logo">
+            <% } else { %>
+              <i data-lucide="trending-up"></i><%= settings.siteName %>
+            <% } %>
+          </div>
+        </div>
+
+        <form action="/admin/settings/logo?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="brandMode" id="bm-text" value="text" <%= settings.brandMode !== 'logo' ? 'checked' : '' %>>
+              <label class="form-check-label" for="bm-text"><%= t('set_brand_text') %></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="brandMode" id="bm-logo" value="logo" <%= settings.brandMode === 'logo' ? 'checked' : '' %>>
+              <label class="form-check-label" for="bm-logo"><%= t('set_brand_logo') %></label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small"><%= t('set_brand_upload') %></label>
+            <input type="file" name="logo" accept="image/*" class="form-control">
+            <div class="form-text"><%= t('set_brand_hint') %></div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+            <% if (settings.logoUrl) { %>
+              <button name="remove" value="1" class="btn btn-outline-danger d-inline-flex align-items-center gap-1"
+                      onclick="return confirm('<%= t('set_brand_remove_c') %>')"><i data-lucide="trash-2"></i><%= t('set_brand_remove') %></button>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </section>

@@ -19,6 +19,9 @@ const DEFAULTS = {
   schedules: [],
   settings: {
     siteName: 'DirhamVest',
+    // Branding: show the text name, or an uploaded logo image, in the navbar/emails.
+    logoUrl: '',
+    brandMode: 'text',   // 'text' | 'logo'
     currency: 'DH',
     announcement: { text: '', enabled: false },
     plans: [
@@ -80,6 +83,8 @@ function refCode(id) {
 
 function migrate(db) {
   db.settings = Object.assign({}, DEFAULTS.settings, db.settings || {});
+  if (db.settings.logoUrl === undefined) db.settings.logoUrl = '';
+  if (!['text', 'logo'].includes(db.settings.brandMode)) db.settings.brandMode = 'text';
   db.settings.depositInfo = Object.assign({}, DEFAULTS.settings.depositInfo, db.settings.depositInfo || {});
   db.settings.announcement = Object.assign({}, DEFAULTS.settings.announcement, db.settings.announcement || {});
   // migrate the old single deposit-based percent to the new earnings-based tiers
