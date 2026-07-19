@@ -38,7 +38,9 @@ const cell = (v) => {
 const APPS = (process.argv[4] || 'safe,balanced,risky').split(',');
 const LEVEL3_XP = 200; // level = floor(sqrt(xp/50))+1, so 200xp = level 3
 
-const rows = [['name', 'email', 'status', 'xp', 'earnings', 'password', ...APPS.map(a => 'invested_' + a)]];
+// is_test=yes so these import straight into the Test Lab, kept out of the real
+// dashboard, totals and leaderboard.
+const rows = [['name', 'email', 'status', 'is_test', 'xp', 'earnings', 'password', ...APPS.map(a => 'invested_' + a)]];
 const seen = new Set();
 
 while (rows.length <= COUNT) {
@@ -72,7 +74,7 @@ while (rows.length <= COUNT) {
   // make sure an active player isn't left with nothing invested
   if (status === 'active' && invested.every(v => v === 0)) invested[0] = int(1, 20) * 500;
 
-  rows.push([name, email, status, xp, earnings, PASSWORD, ...invested]);
+  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested]);
 }
 
 fs.writeFileSync(OUT, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'utf8');

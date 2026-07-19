@@ -278,6 +278,15 @@ function totalBalance(user) {
 function hasApprovedDeposit(db, user) {
   return db.deposits.some(d => d.userId === user.id && d.status === 'approved');
 }
+// Real (non-test) users. Test accounts are kept out of the live dashboard,
+// totals and leaderboard so they never mix with real players and real coins.
+function isRealUser(u) { return !u.isTest; }
+// Does a deposit/withdrawal belong to a test account? (used to keep test money
+// out of the live activity feed)
+function isTestActivity(db, row) {
+  const u = db.users.find(x => x.id === row.userId);
+  return !!(u && u.isTest);
+}
 function accrue(user, db) {
   const settings = db.settings;
   const now = Date.now();
@@ -504,11 +513,11 @@ function addXp(user, n) {
 
 // The ONE place a user record is created — signup and CSV import both use it, so a
 // new field can never be added to one path and forgotten in the other.
-function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null, lang = null }) {
+function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null, lang = null, isTest = false }) {
   const id = db.nextUserId++;
   const user = {
     id, name, email, passwordHash,
-    isAdmin, status, lang,
+    isAdmin, status, lang, isTest,
     invested: {},
     earnings: 0,
     xp: 0,
@@ -1203,7 +1212,7 @@ app.get('/leaderboard', requireActive, (req, res) => {
   save(db);
   const mask = (n) => n.slice(0, 1).toUpperCase() + '*'.repeat(Math.max(1, n.length - 1));
   const rows = db.users
-    .filter(x => x.status === 'active' && !x.isAdmin) // admins run the game — they don't compete
+    .filter(x => x.status === 'active' && !x.isAdmin && isRealUser(x)) // admins run the game; test accounts don't compete
     .map(x => ({ id: x.id, name: mask(x.name), total: totalBalance(x), isSelf: x.id === req.currentUser.id }))
     .sort((a, b) => b.total - a.total);
   res.render('leaderboard', { title: req.t('lb_title'), rows });
@@ -1231,11 +1240,14 @@ function countBy(list, key = 'status') {
 
 // Counts shown as badges on the admin hub tiles.
 function adminCounts(db) {
+  const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
   return {
-    pendingUsers: db.users.filter(u => u.status === 'pending').length,
-    pendingDeposits: db.deposits.filter(d => d.status === 'pending').length,
-    pendingWithdrawals: db.withdrawals.filter(w => w.status === 'pending').length,
-    users: db.users.length,
+    // real (non-test) users only, so the "needs attention" badges stay honest
+    pendingUsers: db.users.filter(u => u.status === 'pending' && isRealUser(u)).length,
+    pendingDeposits: db.deposits.filter(d => d.status === 'pending' && !testIds.has(d.userId)).length,
+    pendingWithdrawals: db.withdrawals.filter(w => w.status === 'pending' && !testIds.has(w.userId)).length,
+    users: db.users.filter(isRealUser).length,
+    testUsers: testIds.size,
     apps: db.settings.plans.length
   };
 }
@@ -1245,7 +1257,8 @@ app.get('/admin', requireAdmin, (req, res) => {
   const db = req.db;
   db.users.forEach(u => accrue(u, db));
   save(db);
-  const active = db.users.filter(u => u.status === 'active');
+  const active = db.users.filter(u => u.status === 'active' && isRealUser(u)); // real players only
+  const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
   res.render('admin/hub', {
     title: req.t('admin_title'),
     counts: adminCounts(db),
@@ -1254,8 +1267,8 @@ app.get('/admin', requireAdmin, (req, res) => {
       invested: active.reduce((s, u) => s + totalInvested(u), 0),
       earnings: active.reduce((s, u) => s + (u.earnings || 0), 0),
       total: active.reduce((s, u) => s + totalBalance(u), 0),
-      deposits: db.deposits.filter(d => d.status === 'approved').length,
-      paid: db.withdrawals.filter(w => w.status === 'paid').length
+      deposits: db.deposits.filter(d => d.status === 'approved' && !testIds.has(d.userId)).length,
+      paid: db.withdrawals.filter(w => w.status === 'paid' && !testIds.has(w.userId)).length
     }
   });
 });
@@ -1267,16 +1280,17 @@ app.get('/admin/stats.json', requireAdmin, (req, res) => {
   const db = req.db;
   const now = Date.now();
   let earnings = 0, invested = 0, perSecond = 0;
+  const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
   for (const u of db.users) {
-    if (u.status !== 'active' || u.isAdmin) continue;
+    if (u.status !== 'active' || u.isAdmin || u.isTest) continue; // exclude test accounts
     const ps = earningPerSecond(u, db.settings);
     const pending = ps * Math.max(0, (now - (u.lastAccrual || now)) / 1000);
     earnings += (u.earnings || 0) + pending;
     invested += totalInvested(u);
     perSecond += ps;
   }
-  const events = db.deposits.map(d => ({ id: 'd' + d.id, t: d.createdAt, type: 'deposit', amount: d.amount, name: d.userName, status: d.status }))
-    .concat(db.withdrawals.map(w => ({ id: 'w' + w.id, t: w.createdAt, type: 'withdraw', amount: w.amount, name: w.userName, status: w.status })))
+  const events = db.deposits.filter(d => !testIds.has(d.userId)).map(d => ({ id: 'd' + d.id, t: d.createdAt, type: 'deposit', amount: d.amount, name: d.userName, status: d.status }))
+    .concat(db.withdrawals.filter(w => !testIds.has(w.userId)).map(w => ({ id: 'w' + w.id, t: w.createdAt, type: 'withdraw', amount: w.amount, name: w.userName, status: w.status })))
     .sort((a, b) => b.t - a.t)
     .slice(0, 60);
   res.json({ now, totalCoins: earnings + invested, totalEarnings: earnings, totalInvested: invested, perSecond, events });
@@ -1289,7 +1303,9 @@ app.get('/admin/users', requireAdmin, (req, res) => {
   save(db);
   const q = (req.query.q || '').trim().toLowerCase();
   const status = req.query.status || '';
-  let list = db.users.slice().sort((a, b) => b.createdAt - a.createdAt);
+  // real players only — test accounts live on the Test Lab page
+  const realUsers = db.users.filter(isRealUser);
+  let list = realUsers.slice().sort((a, b) => b.createdAt - a.createdAt);
   if (status) list = list.filter(u => u.status === status);
   if (q) list = list.filter(u =>
     u.name.toLowerCase().includes(q) ||
@@ -1300,8 +1316,8 @@ app.get('/admin/users', requireAdmin, (req, res) => {
     title: req.t('tab_users'),
     users: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, totalUsers: pg.total,
     q, status,
-    totalUsersAll: db.users.length,
-    statusCounts: countBy(db.users),
+    totalUsersAll: realUsers.length,
+    statusCounts: countBy(realUsers),
     counts: adminCounts(db),
     done: req.query.done || null, doneN: parseInt(req.query.n) || 0,
     created: req.query.created || null,
@@ -1333,6 +1349,50 @@ app.get('/admin/users/:id', requireAdmin, (req, res) => {
   });
 });
 
+// ---------- Test Lab: a sandbox of test accounts kept out of the real game ----------
+app.get('/admin/test', requireAdmin, (req, res) => {
+  const db = req.db;
+  db.users.forEach(u => accrue(u, db));
+  save(db);
+  const testUsers = db.users.filter(u => u.isTest).sort((a, b) => b.createdAt - a.createdAt);
+  const stats = {
+    count: testUsers.length,
+    invested: testUsers.reduce((s, u) => s + totalInvested(u), 0),
+    earnings: testUsers.reduce((s, u) => s + (u.earnings || 0), 0),
+    total: testUsers.reduce((s, u) => s + totalBalance(u), 0)
+  };
+  res.render('admin/test', {
+    title: req.t('tab_test'),
+    counts: adminCounts(db),
+    testUsers, stats,
+    levelForXp, totalInvested, totalBalance,
+    created: req.query.created || null,
+    done: req.query.done || null, doneN: parseInt(req.query.n) || 0
+  });
+});
+
+// Flip a user between real and test.
+app.post('/admin/users/:id/toggle-test', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (u && !u.isAdmin) {           // never turn the admin into a test account
+    u.isTest = !u.isTest;
+    logAudit(db, req.currentUser, 'user.test', u.name + ' → ' + (u.isTest ? 'test' : 'real'));
+    save(db);
+  }
+  res.redirect(req.get('referer') && req.get('referer').includes('/admin/users/') ? '/admin/users/' + req.params.id : '/admin/test');
+});
+
+// Delete every test account in one click (cascades their deposits/withdrawals).
+app.post('/admin/test/delete-all', requireAdmin, (req, res) => {
+  const db = req.db;
+  const ids = db.users.filter(u => u.isTest && !u.isAdmin).map(u => u.id);
+  ids.forEach(id => deleteUserCascade(db, id));
+  logAudit(db, req.currentUser, 'test.deleteAll', ids.length + ' test users removed');
+  save(db);
+  res.redirect('/admin/test?done=deleted&n=' + ids.length);
+});
+
 // Create an account directly from the admin panel.
 app.post('/admin/users/create', requireAdmin, async (req, res) => {
   const db = req.db;
@@ -1340,10 +1400,12 @@ app.post('/admin/users/create', requireAdmin, async (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
   const password = req.body.password || '';
   const status = ['active', 'pending', 'rejected'].includes(req.body.status) ? req.body.status : 'active';
-  if (!name || !email.includes('@') || password.length < 4) return res.redirect('/admin/users?created=err');
-  if (db.users.find(u => u.email.toLowerCase() === email)) return res.redirect('/admin/users?created=dup');
-  const u = createUser(db, { name, email, passwordHash: await bcrypt.hash(password, 10), isAdmin: false, status });
-  logAudit(db, req.currentUser, 'user.create', name + ' <' + email + '>');
+  const isTest = req.body.isTest === '1';
+  const backBase = isTest ? '/admin/test' : '/admin/users';
+  if (!name || !email.includes('@') || password.length < 4) return res.redirect(backBase + '?created=err');
+  if (db.users.find(u => u.email.toLowerCase() === email)) return res.redirect(backBase + '?created=dup');
+  const u = createUser(db, { name, email, passwordHash: await bcrypt.hash(password, 10), isAdmin: false, status, isTest });
+  logAudit(db, req.currentUser, 'user.create', name + ' <' + email + '>' + (isTest ? ' [test]' : ''));
   save(db);
   res.redirect('/admin/users/' + u.id + '?ok=created');
 });
@@ -1688,12 +1750,12 @@ app.get('/admin/export/users.csv', requireAdmin, (req, res) => {
   const apps = db.settings.plans;
   // per-app columns mean an export can be edited and imported straight back
   const rows = [[
-    'id', 'name', 'email', 'status', 'admin', 'level', 'xp', 'earnings',
+    'id', 'name', 'email', 'status', 'admin', 'is_test', 'level', 'xp', 'earnings',
     ...apps.map(p => 'invested_' + p.id),
     'invested_total', 'total', 'referralCode', 'referredBy', 'joined'
   ]];
   db.users.forEach(u => rows.push([
-    u.id, u.name, u.email, u.status, u.isAdmin ? 'yes' : 'no',
+    u.id, u.name, u.email, u.status, u.isAdmin ? 'yes' : 'no', u.isTest ? 'yes' : 'no',
     levelForXp(u.xp), u.xp || 0, (u.earnings || 0).toFixed(2),
     ...apps.map(p => ((u.invested && u.invested[p.id]) || 0).toFixed(2)),
     totalInvested(u).toFixed(2), totalBalance(u).toFixed(2),
@@ -1762,6 +1824,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
   const head = rows[0].map(h => h.trim().toLowerCase());
   const col = (n) => head.indexOf(n);
   if (col('email') === -1) return render({ ok: false, error: req.t('imp_noemail') });
+  const markAllTest = req.body.markTest === '1'; // "import as test accounts" checkbox
 
   const created = [], updated = [], errors = [];
   for (let i = 1; i < rows.length; i++) {
@@ -1773,6 +1836,8 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
     const name = get('name');
     const status = ['active', 'pending', 'rejected'].includes(get('status')) ? get('status') : 'pending';
     const xp = get('xp'), earnings = get('earnings'), password = get('password');
+    const rowTest = ['yes', 'true', '1'].includes(get('is_test').toLowerCase());
+    const isTest = markAllTest || rowTest;
 
     let u = db.users.find(x => x.email.toLowerCase() === email);
     let isNew = false;
@@ -1782,6 +1847,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
       if (xp !== '') u.xp = Math.max(0, Number(xp) || 0);
       if (earnings !== '') u.earnings = Math.max(0, Number(earnings) || 0);
       if (password) u.passwordHash = await bcrypt.hash(password, 10);
+      if ((markAllTest || col('is_test') !== -1) && !u.isAdmin) u.isTest = isTest;
       updated.push(u.email);
     } else {
       isNew = true;
@@ -1790,7 +1856,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
       const pass = password || crypto.randomBytes(6).toString('base64url');
       u = createUser(db, {
         name, email, passwordHash: await bcrypt.hash(pass, 10),
-        isAdmin: false, status
+        isAdmin: false, status, isTest
       });
       if (xp !== '') u.xp = Math.max(0, Number(xp) || 0);
       if (earnings !== '') u.earnings = Math.max(0, Number(earnings) || 0);

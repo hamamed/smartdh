@@ -115,6 +115,11 @@
         <span class="tile-icon ti-navy"><i data-lucide="history"></i></span>
         <span class="tile-label"><%= t('tab_audit') %></span>
       </a>
+      <a class="menu-tile position-relative" href="/admin/test">
+        <span class="tile-icon ti-yellow"><i data-lucide="flask-conical"></i></span>
+        <span class="tile-label"><%= t('tab_test') %></span>
+        <% if (counts.testUsers) { %><span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2"><%= counts.testUsers %></span><% } %>
+      </a>
     </div>
   </div>
 </section>

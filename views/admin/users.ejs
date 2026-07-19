@@ -30,7 +30,13 @@
                 <option value="active"><%= t('st_active') %></option>
                 <option value="pending"><%= t('st_pending') %></option>
               </select></div>
-            <div class="col-12"><button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="user-plus"></i><%= t('create_user') %></button></div>
+            <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+              <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="user-plus"></i><%= t('create_user') %></button>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="isTest" id="isTest" value="1">
+                <label class="form-check-label small" for="isTest"><%= t('create_as_test') %></label>
+              </div>
+            </div>
           </form>
         </div>
       </div>

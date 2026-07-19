@@ -26,6 +26,7 @@
             <% } %>
             <h5 class="fw-bold mb-1"><%= u.name %>
               <% if (u.isAdmin) { %><span class="badge bg-primary-subtle text-primary"><%= t('badge_admin') %></span><% } %>
+              <% if (u.isTest) { %><span class="badge bg-warning-subtle text-warning"><%= t('badge_test') %></span><% } %>
             </h5>
             <div class="text-muted small mb-2"><%= u.email %></div>
             <% const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
@@ -51,6 +52,11 @@
               <form action="/admin/delete/<%= u.id %>" method="post" onsubmit="return confirm('<%= t('confirm_delete') %>')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-danger" <%= u.id === currentUser.id ? 'disabled' : '' %>><i data-lucide="trash-2"></i></button></form>
             </div>
+            <% if (!u.isAdmin) { %>
+              <form action="/admin/users/<%= u.id %>/toggle-test" method="post" class="mt-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 <%= u.isTest ? 'btn-outline-success' : 'btn-outline-warning' %>">
+                  <i data-lucide="flask-conical"></i><%= u.isTest ? t('test_make_real') : t('test_make_test') %></button></form>
+            <% } %>
             <div class="d-flex gap-1 mt-2">
               <form action="/admin/users/<%= u.id %>/impersonate" method="post" class="flex-grow-1"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1" <%= u.isAdmin ? 'disabled' : '' %>><i data-lucide="eye"></i><%= t('view_as') %></button></form>

@@ -152,6 +152,9 @@ function migrate(db) {
     if (u.emailOptOut === undefined) u.emailOptOut = false;
     // Preferred language (for the UI on their next visit and for their emails).
     if (u.lang === undefined) u.lang = null;
+    // Test accounts: excluded from the real dashboard, stats and leaderboard;
+    // managed on the admin Test Lab page instead.
+    if (u.isTest === undefined) u.isTest = false;
   });
   return db;
 }

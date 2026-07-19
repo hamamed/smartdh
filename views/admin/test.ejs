@@ -1,0 +1,138 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-4 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        <a href="/admin" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+        <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="flask-conical" class="text-primary"></i><%= t('tab_test') %></h3>
+      </div>
+      <button class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" type="button"
+              data-bs-toggle="collapse" data-bs-target="#createTest"><i data-lucide="user-plus"></i><%= t('test_create') %></button>
+    </div>
+
+    <div class="alert alert-warning d-flex align-items-start gap-2 rounded-4">
+      <i data-lucide="info" class="flex-shrink-0 mt-1"></i>
+      <div class="small"><%= t('test_intro') %></div>
+    </div>
+
+    <% if (created) { %>
+      <div class="alert alert-<%= created === 'ok' ? 'success' : 'danger' %> py-2 d-flex align-items-center gap-2">
+        <i data-lucide="<%= created === 'ok' ? 'check' : 'alert-triangle' %>"></i>
+        <%= created === 'dup' ? t('create_dup') : created === 'err' ? t('create_err') : t('create_ok') %>
+      </div>
+    <% } %>
+    <% if (done === 'deleted') { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i><%= t('test_deleted_n', { n: doneN }) %></div>
+    <% } %>
+
+    <!-- Create test user -->
+    <div class="collapse mb-4" id="createTest">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="user-plus" class="text-primary"></i><%= t('test_create_t') %></h6>
+          <form method="post" action="/admin/users/create" class="row g-2">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="isTest" value="1">
+            <div class="col-md-4"><label class="form-label small"><%= t('lbl_name') %></label><input name="name" class="form-control" value="Test user" required></div>
+            <div class="col-md-4"><label class="form-label small"><%= t('lbl_email') %></label><input name="email" type="email" class="form-control" placeholder="test1@demo.local" required></div>
+            <div class="col-md-2"><label class="form-label small"><%= t('lbl_password') %></label><input name="password" type="text" minlength="4" class="form-control" value="test1234" required></div>
+            <div class="col-md-2"><label class="form-label small"><%= t('th_status') %></label>
+              <select name="status" class="form-select">
+                <option value="active"><%= t('st_active') %></option>
+                <option value="pending"><%= t('st_pending') %></option>
+              </select></div>
+            <div class="col-12"><button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="flask-conical"></i><%= t('test_create') %></button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sandbox totals (test cohort only) -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-yellow rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="flask-conical"></i><%= t('test_stat_count') %></div>
+          <div class="h4 fw-bold mb-0 mt-1"><%= stats.count %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-mint rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="piggy-bank"></i><%= t('stat_invested') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.invested) %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-coral rounded-4 h-100"><div class="card-body">
+          <div class="small d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('stat_earnings') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.earnings) %></div>
+        </div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
+          <div class="small text-muted d-flex align-items-center gap-1"><i data-lucide="wallet"></i><%= t('stat_total') %></div>
+          <div class="h5 fw-bold mb-0 mt-1"><%= money(stats.total) %></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h6 class="fw-bold mb-0"><%= t('test_list') %></h6>
+          <% if (testUsers.length) { %>
+            <form method="post" action="/admin/test/delete-all" onsubmit="return confirm('<%= t('test_delall_c') %>')">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"><i data-lucide="trash-2"></i><%= t('test_delall') %></button>
+            </form>
+          <% } %>
+        </div>
+
+        <% if (testUsers.length === 0) { %>
+          <p class="text-muted mb-0"><%= t('test_empty') %></p>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="text-muted small">
+                <tr>
+                  <th><%= t('th_user') %></th><th><%= t('th_status') %></th><th><%= t('level_label') %></th>
+                  <th><%= t('th_invested') %></th><th><%= t('th_earnings') %></th><th class="text-end"><%= t('th_action') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% testUsers.forEach(u => { const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center fw-bold"
+                             style="width:36px;height:36px;flex:0 0 36px"><i data-lucide="flask-conical"></i></div>
+                        <div>
+                          <div class="fw-semibold"><%= u.name %> <span class="badge bg-warning-subtle text-warning ms-1"><%= t('badge_test') %></span></div>
+                          <div class="small text-muted"><%= u.email %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge bg-<%= sc %>-subtle text-<%= sc %>"><%= statusLabel(u.status) %></span></td>
+                    <td><span class="badge bg-body-secondary text-muted"><%= levelForXp(u.xp) %></span></td>
+                    <td class="fw-semibold"><%= money(totalInvested(u)) %></td>
+                    <td class="fw-semibold text-success"><%= money(u.earnings) %></td>
+                    <td class="text-end text-nowrap">
+                      <form action="/admin/users/<%= u.id %>/impersonate" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button class="btn btn-sm btn-outline-secondary" title="<%= t('view_as') %>"><i data-lucide="eye"></i></button>
+                      </form>
+                      <a href="/admin/users/<%= u.id %>" class="btn btn-sm btn-outline-primary"><i data-lucide="settings"></i></a>
+                      <form action="/admin/users/<%= u.id %>/toggle-test" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button class="btn btn-sm btn-outline-success" title="<%= t('test_make_real') %>"><i data-lucide="user-check"></i></button>
+                      </form>
+                      <form action="/admin/delete/<%= u.id %>" method="post" class="d-inline" onsubmit="return confirm('<%= t('confirm_delete') %>')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
