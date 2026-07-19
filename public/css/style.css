@@ -247,13 +247,25 @@ h1, h2, h3, h4, h5, h6,
 .form-control, .form-select {
   border-radius: var(--radius-sm);
   border-color: var(--line);
-  background: var(--surface);
+  background-color: var(--surface);   /* background-color, NOT background — keeps the select caret */
   color: var(--ink);
   padding: .55rem .8rem;
   transition: border-color .15s, box-shadow .15s;
 }
 [data-bs-theme="dark"] .form-control,
-[data-bs-theme="dark"] .form-select { background: var(--surface-2); border-color: var(--line); color: var(--ink); }
+[data-bs-theme="dark"] .form-select { background-color: var(--surface-2); border-color: var(--line); color: var(--ink); }
+/* custom select caret so the dropdown arrow always shows and matches the theme */
+.form-select {
+  padding-inline-end: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%235f6b62' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .8rem center;
+  background-size: 13px 9px;
+}
+[data-bs-theme="dark"] .form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%2393a099' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+[dir="rtl"] .form-select { background-position: left .8rem center; }
 .form-control::placeholder { color: var(--muted); opacity: .7; }
 .form-control:focus, .form-select:focus {
   border-color: var(--brand);
