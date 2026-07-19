@@ -426,8 +426,11 @@ html, body { overflow-x: clip; max-width: 100%; }
 @media (max-width: 575.98px) {
   .container { padding-inline: .9rem; }
 
-  /* header: tighter bar, brand can't overflow next to the toggler */
+  /* header: tighter bar, brand can't overflow next to the toggler.
+     nearly-opaque so scrolled content doesn't smear grey behind the blur */
   .navbar { padding-top: .45rem; padding-bottom: .45rem; }
+  .navbar.bg-body { background: rgba(255,255,255,.97) !important; }
+  [data-bs-theme="dark"] .navbar.bg-body { background: rgba(14,21,18,.97) !important; }
   .navbar-brand { font-size: 1.02rem; max-width: 62vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .brand-logo { height: 28px; max-width: 150px; }
 

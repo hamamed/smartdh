@@ -47,7 +47,7 @@
                 <div class="fw-semibold"><%= currentUser.payout.name %>
                   <span class="badge bg-primary-subtle text-primary ms-1"><%= currentUser.payout.method === 'bank' ? t('payout_bank') : t('payout_paypal') %></span>
                 </div>
-                <div class="text-muted" dir="ltr"><%= payoutAccount %></div>
+                <div class="text-muted" dir="ltr" style="overflow-wrap:anywhere;word-break:break-all"><%= payoutAccount %></div>
               </div>
               <a href="/profile" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
                 <i data-lucide="pencil"></i><%= t('payout_change') %>

@@ -158,36 +158,37 @@ if (window.Chart) {
     if (!events.length) { actEl.innerHTML = '<p class="text-muted small mb-0">' + esc(L.empty || 'No activity in this range.') + '</p>'; return; }
     const rows = events.map(e => {
       const when = new Date(e.at).toLocaleString();
-      let icon, tint, title, right;
+      let icon, tint, title, amountHtml = '';
       if (e.kind === 'signup') {
         icon = e.referred ? 'user-round-plus' : 'user-plus';
         tint = e.referred ? 'ti-lilac' : 'ti-yellow';
         title = esc(e.name) + ' · ' + esc(L.joined || 'joined');
         if (e.referred) title += ' · ' + esc(L.invited_by || 'invited by') + ' ' + esc(e.referrer || '');
-        right = '';
       } else {
         const dep = e.kind === 'deposit';
         icon = dep ? 'arrow-down-circle' : 'arrow-up-circle';
         tint = dep ? 'ti-mint' : 'ti-coral';
         title = esc(e.name) + (e.app ? ' · ' + esc(e.app) : '');
-        right = '<span class="fw-semibold text-' + (dep ? 'success' : 'danger') + '">' + (dep ? '+' : '−') + nf(e.amount) + ' ' + esc(cur) + '</span>';
+        amountHtml = '<div class="fw-semibold text-nowrap text-' + (dep ? 'success' : 'danger') + '">' + (dep ? '+' : '−') + nf(e.amount) + ' ' + esc(cur) + '</div>';
       }
       const statusTxt = L[e.status] || e.status || '';
       const badge = e.status ? '<span class="badge bg-' + statusClass(e.status) + '-subtle text-' + statusClass(e.status) + '">' + esc(statusTxt) + '</span>' : '';
       // whole row → the player's admin page; deposits/withdrawals also get an invoice button
       const userHref = e.userId != null ? '/admin/users/' + e.userId : '#';
       const invoice = (e.kind !== 'signup' && e.id != null)
-        ? '<a class="btn btn-sm btn-outline-secondary btn-icon" style="width:32px;height:32px" title="' + esc(L.invoice || 'Invoice') + '" '
+        ? '<a class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="' + esc(L.invoice || 'Invoice') + '" '
           + 'href="/admin/invoice/' + (e.kind === 'deposit' ? 'deposit' : 'withdraw') + '/' + e.id + '" target="_blank" rel="noopener">'
           + '<i data-lucide="file-text"></i></a>'
         : '';
       return '<div class="act-row d-flex align-items-center gap-2 py-2 border-top">'
         + '<a href="' + userHref + '" class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 text-reset" style="text-decoration:none">'
-        + '<span class="tile-icon ' + tint + '" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="' + icon + '"></i></span>'
+        + '<span class="tile-icon ' + tint + ' flex-shrink-0" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="' + icon + '"></i></span>'
         + '<span class="flex-grow-1 min-w-0"><span class="d-block small fw-semibold text-truncate">' + title + '</span>'
-        + '<span class="d-block text-muted" style="font-size:.75rem">' + esc(when) + '</span></span></a>'
-        + '<div class="text-end d-flex flex-column align-items-end gap-1">' + right + badge + '</div>'
-        + invoice
+        + '<span class="d-block text-muted text-truncate" style="font-size:.75rem">' + esc(when) + '</span></span></a>'
+        + '<div class="d-flex align-items-center gap-2 flex-shrink-0">'
+        +   '<div class="text-end lh-sm">' + amountHtml + badge + '</div>'
+        +   invoice
+        + '</div>'
         + '</div>';
     }).join('');
     actEl.innerHTML = rows;
