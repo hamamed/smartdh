@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= typeof title !== 'undefined' ? title + ' · ' : '' %><%= settings.siteName %></title>
+  <script>try{var th=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',th);}catch(e){}</script>
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#ff5f6d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="<%= settings.siteName %>">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <% if (dir === 'rtl') { %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <% } else { %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <% } %>
+  <link href="/css/style.css?v=<%= assetV %>" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary d-flex align-items-center gap-1" href="/">
+        <% if (settings.brandMode === 'logo' && settings.logoUrl) { %>
+          <img src="<%= settings.logoUrl %>" alt="<%= settings.siteName %>" class="brand-logo">
+        <% } else { %>
+          <i data-lucide="trending-up"></i><%= settings.siteName %>
+        <% } %>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          <% if (currentUser && currentUser.isAdmin) { %>
+            <li class="nav-item">
+              <a href="/admin" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
+            </li>
+          <% } %>
+          <li class="nav-item">
+            <button id="themeToggle" class="btn btn-sm btn-outline-secondary btn-icon ms-lg-2" title="Theme"><i data-lucide="moon"></i></button>
+          </li>
+          <% if (currentUser) { %>
+            <li class="nav-item ms-lg-1">
+              <form action="/logout" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"><i data-lucide="log-out"></i><%= t('nav_logout') %></button>
+              </form>
+            </li>
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/login"><%= t('nav_login') %></a></li>
+            <li class="nav-item ms-lg-2"><a class="btn btn-sm btn-primary px-3" href="/signup"><%= t('nav_getstarted') %></a></li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <% if (settings.announcement && settings.announcement.enabled && settings.announcement.text) { %>
+    <div class="announcement-bar">
+      <div class="container d-flex align-items-center gap-2 py-2 small">
+        <i data-lucide="megaphone" class="flex-shrink-0"></i>
+        <span class="flex-grow-1"><%= settings.announcement.text %></span>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (impersonating) { %>
+    <div class="impersonate-bar">
+      <div class="container d-flex align-items-center gap-2 py-2 small">
+        <i data-lucide="eye" class="flex-shrink-0"></i>
+        <span class="flex-grow-1"><%= t('imp_viewing', { name: currentUser.name }) %></span>
+        <form action="/admin/stop-impersonate" method="post" class="mb-0"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-sm btn-light d-inline-flex align-items-center gap-1"><i data-lucide="log-out"></i><%= t('imp_exit') %></button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+
+  <main class="flex-grow-1"><%- body %></main>
+
+  <footer class="bg-body border-top py-4 mt-5">
+    <div class="container small text-muted">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-1"><i data-lucide="info"></i><strong><%= t('footer_strong') %></strong> <%= t('footer_rest') %></div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3">
+          <% if (currentUser && currentUser.status === 'active') { %>
+            <a href="/dashboard?tour=1" class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="circle-help"></i><%= t('tour_help') %></a>
+          <% } %>
+          <a href="/guide" class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="book-open"></i><%= t('nav_guide') %></a>
+          <a href="/terms" class="text-muted"><%= t('footer_terms') %></a>
+          <a href="/privacy" class="text-muted"><%= t('footer_privacy') %></a>
+          <span class="d-inline-flex align-items-center gap-2">
+            <i data-lucide="globe"></i>
+            <% LANGS.forEach((l, i) => { %>
+              <a href="/lang/<%= l %>" class="<%= l===lang ? 'fw-bold text-primary' : 'text-muted' %>"><%= locales[l].name %></a>
+              <% if (i < LANGS.length - 1) { %><span class="opacity-50">·</span><% } %>
+            <% }) %>
+          </span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    window.MSG = {
+      f_funds: "<%= t('f_funds') %>", f_withdraw: "<%= t('f_withdraw') %>",
+      f_bonus: "<%= t('f_bonus') %>", f_sent: "<%= t('f_sent') %>",
+      f_deprequested: "<%= t('f_deprequested') %>", f_campaign: "<%= t('f_campaign') %>", e_campaign: "<%= t('e_campaign') %>", e_payout: "<%= t('e_payout') %>",
+      e_amount: "<%= t('e_amount') %>", e_plan: "<%= t('e_plan') %>",
+      e_wamount: "<%= t('e_wamount') %>", e_tamount: "<%= t('e_tamount') %>",
+      e_recipient: "<%= t('e_recipient') %>", e_insufficient: "<%= t('e_insufficient') %>",
+      e_cadence: "<%= t('e_cadence') %>", e_claimed: "<%= t('e_claimed') %>", e_locked: "<%= t('e_locked') %>", e_wlocked: "<%= t('e_wlocked') %>", e_needdeposit: "<%= t('e_needdeposit') %>",
+      bulk_confirm_delete: "<%= t('bulk_confirm_delete') %>", bulk_confirm_reject: "<%= t('bulk_confirm_reject') %>",
+      copied: "<%= t('copied') %>", copy: "<%= t('btn_copy') %>",
+      cur: "<%= settings.currency %>", earn30: "<%= t('earn_30d') %>"
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>window.renderIcons = () => window.lucide && lucide.createIcons({ attrs: { width: '1em', height: '1em' } }); renderIcons();</script>
+  <script src="/js/app.js?v=<%= assetV %>"></script>
+</body>
+</html>
