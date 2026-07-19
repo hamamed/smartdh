@@ -5,6 +5,36 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ---------- Chart theme (reads the Daylight CSS tokens so charts match + adapt) ----------
+function dvTheme() {
+  const s = getComputedStyle(document.documentElement);
+  const v = (n, f) => (s.getPropertyValue(n).trim() || f);
+  return {
+    brand:       v('--brand', '#0e9f6e'),
+    brandStrong: v('--brand-strong', '#0b7d57'),
+    brandRgb:    v('--bs-primary-rgb', '14,159,110'),
+    accent:      v('--accent', '#f4a62a'),
+    danger:      v('--bs-danger', '#e5484d') || '#e5484d',
+    ink:         v('--ink', '#14261c'),
+    muted:       v('--muted', '#5f6b62'),
+    line:        v('--line', '#e5eae2')
+  };
+}
+// Re-run a chart's restyle() whenever the light/dark theme flips.
+function dvOnThemeChange(fn) {
+  new MutationObserver(fn).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+}
+if (window.Chart) {
+  Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = dvTheme().muted;
+  Object.assign(Chart.defaults.plugins.tooltip, {
+    backgroundColor: 'rgba(18,29,23,.94)', padding: 11, cornerRadius: 12,
+    titleColor: '#fff', bodyColor: '#e7efe9', displayColors: false,
+    titleFont: { weight: '700' }, bodyFont: { family: "'JetBrains Mono', monospace" }
+  });
+}
+
 // ---------- Balance history chart ----------
 (function () {
   const el = document.getElementById('balanceChart');
@@ -13,46 +43,44 @@ if ('serviceWorker' in navigator) {
   try { pts = JSON.parse(el.dataset.points || '[]'); } catch (e) { return; }
   if (pts.length < 2) return;
   const currency = el.dataset.currency || '';
-  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
   const ctx = el.getContext('2d');
+  const areaFill = (T) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${T.brandRgb},.20)`); g.addColorStop(1, `rgba(${T.brandRgb},0)`); return g; };
 
-  const fill = ctx.createLinearGradient(0, 0, 0, 220);
-  fill.addColorStop(0, 'rgba(255,95,109,.35)');
-  fill.addColorStop(1, 'rgba(255,95,109,0)');
-
-  new Chart(ctx, {
+  let T = dvTheme();
+  const chart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: pts.map(p => new Date(p.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
       datasets: [{
         data: pts.map(p => p.v),
-        borderColor: '#ff5f6d',
-        backgroundColor: fill,
-        borderWidth: 3,
-        fill: true,
-        tension: .38,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#ff5f6d'
+        borderColor: T.brand,
+        backgroundColor: areaFill(T),
+        borderWidth: 2.5, fill: true, tension: .38,
+        pointRadius: 0, pointHoverRadius: 5,
+        pointHoverBackgroundColor: T.brand, pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: { label: (c) => c.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency }
-        }
+        tooltip: { callbacks: { label: (c) => c.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency } }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 6, color: dark ? '#8b8391' : '#9a8d86' } },
-        y: {
-          grid: { color: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)' },
-          ticks: { maxTicksLimit: 4, color: dark ? '#8b8391' : '#9a8d86' }
-        }
+        x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 6, color: T.muted } },
+        y: { grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 4, color: T.muted } }
       }
     }
+  });
+  dvOnThemeChange(() => {
+    T = dvTheme();
+    const d = chart.data.datasets[0];
+    d.borderColor = T.brand; d.backgroundColor = areaFill(T); d.pointHoverBackgroundColor = T.brand;
+    chart.options.scales.x.ticks.color = T.muted;
+    chart.options.scales.y.ticks.color = T.muted;
+    chart.options.scales.y.grid.color = T.line;
+    chart.update('none');
   });
 })();
 
@@ -63,40 +91,34 @@ if ('serviceWorker' in navigator) {
   const cur = el.dataset.currency || '';
   const ctx = el.getContext('2d');
   const nf = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
-  const OCEAN = '#12b1d6';   // app info/ocean — the "new players" line
-  const isDark = () => document.documentElement.getAttribute('data-bs-theme') === 'dark';
-  const themeColors = () => ({
-    grid: isDark() ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)',
-    tick: isDark() ? '#8b8391' : '#9a8d86'
-  });
 
-  // Vertical gradient fills so the bars read like the app's jelly buttons.
-  const grad = (top, bottom) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, top); g.addColorStop(1, bottom); return g; };
-  const depFill = grad('#2ee0a6', '#12b98a');   // success gradient
-  const wdFill = grad('#ff7a6b', '#ff4d67');    // danger gradient
+  // Deposits = emerald (brand), withdrawals = danger red, new players = amber accent.
+  // Soft vertical gradient on the bars, keyed to the theme.
+  const softBar = (rgb) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${rgb},.95)`); g.addColorStop(1, `rgba(${rgb},.55)`); return g; };
+  const dangerRgb = '229,72,77';
+  const palette = () => { const T = dvTheme(); return { T, dep: softBar(T.brandRgb), wd: softBar(dangerRgb) }; };
 
-  let tc = themeColors();
+  let P = palette();
   const chart = new Chart(ctx, {
     data: {
       labels: [],
       datasets: [
-        { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: depFill, borderRadius: 6, borderSkipped: false, order: 2 },
-        { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: wdFill, borderRadius: 6, borderSkipped: false, order: 2 },
-        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: OCEAN, backgroundColor: OCEAN, pointBackgroundColor: OCEAN, yAxisID: 'y1', tension: .35, pointRadius: 2, borderWidth: 2.5, order: 1 }
+        { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: P.dep, borderRadius: 7, borderSkipped: false, maxBarThickness: 34, order: 2 },
+        { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: P.wd, borderRadius: 7, borderSkipped: false, maxBarThickness: 34, order: 2 },
+        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: P.T.accent, backgroundColor: P.T.accent, pointBackgroundColor: P.T.accent, pointBorderColor: '#fff', pointBorderWidth: 1.5, yAxisID: 'y1', tension: .4, pointRadius: 3, borderWidth: 2.5, order: 1 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: tc.tick, autoSkip: true } },
-        y: { beginAtZero: true, grid: { color: tc.grid }, ticks: { maxTicksLimit: 5, color: tc.tick, callback: v => nf(v) } },
-        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { maxTicksLimit: 5, color: OCEAN, precision: 0 } }
+        x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 12, color: P.T.muted, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: P.T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: P.T.muted, callback: v => nf(v) } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, color: P.T.accent, precision: 0 } }
       },
       plugins: {
-        legend: { display: true, labels: { color: tc.tick, usePointStyle: true, boxWidth: 8,
-          // solid swatches (bars use gradients, which don't render well in the legend box)
-          generateLabels: (ch) => { const solids = ['#16c79a', '#ff5964', OCEAN];
+        legend: { display: true, labels: { color: P.T.muted, usePointStyle: true, boxWidth: 8, padding: 16,
+          generateLabels: (ch) => { const T = dvTheme(); const solids = [T.brand, '#e5484d', T.accent];
             return ch.data.datasets.map((ds, i) => ({ text: ds.label, fillStyle: solids[i], strokeStyle: solids[i], pointStyle: 'circle', datasetIndex: i })); } } },
         tooltip: { callbacks: { label: (c) => {
           const ds = c.dataset;
@@ -108,15 +130,21 @@ if ('serviceWorker' in navigator) {
     }
   });
 
-  // Re-theme grid/tick/legend colours when the user flips dark mode.
-  new MutationObserver(() => {
-    tc = themeColors();
-    chart.options.scales.x.ticks.color = tc.tick;
-    chart.options.scales.y.ticks.color = tc.tick;
-    chart.options.scales.y.grid.color = tc.grid;
-    chart.options.plugins.legend.labels.color = tc.tick;
+  // Re-key every colour to the theme when the user flips dark mode.
+  dvOnThemeChange(() => {
+    P = palette();
+    chart.data.datasets[0].backgroundColor = P.dep;
+    chart.data.datasets[1].backgroundColor = P.wd;
+    chart.data.datasets[2].borderColor = P.T.accent;
+    chart.data.datasets[2].backgroundColor = P.T.accent;
+    chart.data.datasets[2].pointBackgroundColor = P.T.accent;
+    chart.options.scales.x.ticks.color = P.T.muted;
+    chart.options.scales.y.ticks.color = P.T.muted;
+    chart.options.scales.y.grid.color = P.T.line;
+    chart.options.scales.y1.ticks.color = P.T.accent;
+    chart.options.plugins.legend.labels.color = P.T.muted;
     chart.update('none');
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+  });
 
   // ----- Activity list under the chart (same time window as the chart) -----
   const actEl = document.getElementById('trendActivity');
@@ -133,7 +161,7 @@ if ('serviceWorker' in navigator) {
       const when = new Date(e.at).toLocaleString();
       let icon, tint, title, right;
       if (e.kind === 'signup') {
-        icon = 'user-plus'; tint = 'ti-sky'; title = esc(e.name) + ' · ' + esc(L.joined || 'joined'); right = '';
+        icon = 'user-plus'; tint = 'ti-yellow'; title = esc(e.name) + ' · ' + esc(L.joined || 'joined'); right = '';
       } else {
         const dep = e.kind === 'deposit';
         icon = dep ? 'arrow-down-circle' : 'arrow-up-circle';
