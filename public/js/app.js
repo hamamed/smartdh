@@ -132,6 +132,69 @@ if ('serviceWorker' in navigator) {
   setInterval(poll, 1000);   // every second
 })();
 
+// ---------- Admin trends chart (hourly / daily / weekly / monthly) ----------
+(function () {
+  const el = document.getElementById('trendChart');
+  if (!el || !window.Chart) return;
+  const cur = el.dataset.currency || '';
+  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  const grid = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
+  const tick = dark ? '#8b8391' : '#9a8d86';
+  const nf = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+  const chart = new Chart(el.getContext('2d'), {
+    data: {
+      labels: [],
+      datasets: [
+        { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: '#16c79a', borderRadius: 5, order: 2 },
+        { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: '#ff5964', borderRadius: 5, order: 2 },
+        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: '#8a63e0', backgroundColor: '#8a63e0', yAxisID: 'y1', tension: .35, pointRadius: 2, borderWidth: 2, order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: tick, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: grid }, ticks: { maxTicksLimit: 5, color: tick, callback: v => nf(v) } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { maxTicksLimit: 5, color: '#8a63e0', precision: 0 } }
+      },
+      plugins: {
+        legend: { display: true, labels: { color: tick, usePointStyle: true, boxWidth: 8 } },
+        tooltip: { callbacks: { label: (c) => {
+          const ds = c.dataset;
+          if (ds.yAxisID === 'y1') return ds.label + ': ' + c.parsed.y;
+          const n = ds.counts && ds.counts[c.dataIndex] != null ? ds.counts[c.dataIndex] : 0;
+          return ds.label + ': ' + nf(c.parsed.y) + ' ' + cur + ' (' + n + ')';
+        } } }
+      }
+    }
+  });
+
+  async function load(range) {
+    try {
+      const r = await fetch('/admin/analytics.json?range=' + range, { headers: { 'X-Requested-With': 'fetch' } });
+      if (!r.ok) return;
+      const j = await r.json();
+      chart.data.labels = j.buckets.map(b => b.label);
+      chart.data.datasets[0].data = j.buckets.map(b => b.depSum);
+      chart.data.datasets[0].counts = j.buckets.map(b => b.depCount);
+      chart.data.datasets[1].data = j.buckets.map(b => b.wdSum);
+      chart.data.datasets[1].counts = j.buckets.map(b => b.wdCount);
+      chart.data.datasets[2].data = j.buckets.map(b => b.signups);
+      chart.update();
+    } catch (e) { /* ignore */ }
+  }
+
+  const btns = el.closest('.card-body').querySelectorAll('[data-range]');
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    load(b.dataset.range);
+  }));
+  load('daily');
+})();
+
 // ---------- Dark mode toggle ----------
 (function () {
   const btn = document.getElementById('themeToggle');

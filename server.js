@@ -1296,6 +1296,59 @@ app.get('/admin/stats.json', requireAdmin, (req, res) => {
   res.json({ now, totalCoins: earnings + invested, totalEarnings: earnings, totalInvested: invested, perSecond, events });
 });
 
+// Build contiguous time buckets for the trends chart, newest last. Each returns
+// { start, end, label }. Ranges: hourly (24×1h), daily (30×1d), weekly (12×7d),
+// monthly (12 calendar months).
+function trendBuckets(range) {
+  const HOUR = 3600e3, DAYMS = 24 * HOUR, out = [];
+  const now = new Date();
+  const fixed = (count, width, anchorEnd, labelFn) => {
+    for (let i = count - 1; i >= 0; i--) {
+      const end = anchorEnd - i * width, start = end - width;
+      out.push({ start, end, label: labelFn(new Date(start)) });
+    }
+  };
+  if (range === 'hourly') {
+    const a = new Date(now); a.setMinutes(0, 0, 0);
+    fixed(24, HOUR, +a + HOUR, d => String(d.getHours()).padStart(2, '0') + ':00');
+  } else if (range === 'weekly') {
+    const a = new Date(now); a.setHours(0, 0, 0, 0);
+    fixed(12, 7 * DAYMS, +a + DAYMS, d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  } else if (range === 'monthly') {
+    for (let i = 11; i >= 0; i--) {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const e = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      out.push({ start: +s, end: +e, label: s.toLocaleDateString('en-US', { month: 'short' }) + " '" + String(s.getFullYear()).slice(-2) });
+    }
+  } else { // daily
+    const a = new Date(now); a.setHours(0, 0, 0, 0);
+    fixed(30, DAYMS, +a + DAYMS, d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }
+  return out;
+}
+
+// Historical trends: settled deposits, paid withdrawals and new signups per
+// bucket, over the chosen range. Test accounts are excluded.
+app.get('/admin/analytics.json', requireAdmin, (req, res) => {
+  const db = req.db;
+  const range = ['hourly', 'daily', 'weekly', 'monthly'].includes(req.query.range) ? req.query.range : 'daily';
+  const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
+  const buckets = trendBuckets(range).map(b => ({ ...b, depCount: 0, depSum: 0, wdCount: 0, wdSum: 0, signups: 0 }));
+  const first = buckets[0] ? buckets[0].start : 0;
+  const place = (t) => {
+    if (t < first) return null;
+    for (let i = buckets.length - 1; i >= 0; i--) if (t >= buckets[i].start && t < buckets[i].end) return buckets[i];
+    return null;
+  };
+  db.deposits.forEach(d => { if (d.status !== 'approved' || testIds.has(d.userId)) return; const b = place(d.createdAt); if (b) { b.depCount++; b.depSum += d.amount; } });
+  db.withdrawals.forEach(w => { if (w.status !== 'paid' || testIds.has(w.userId)) return; const b = place(w.createdAt); if (b) { b.wdCount++; b.wdSum += w.amount; } });
+  db.users.forEach(u => { if (u.isTest || u.isAdmin) return; const b = place(u.createdAt); if (b) b.signups++; });
+  res.json({
+    range,
+    buckets: buckets.map(b => ({ label: b.label, depCount: b.depCount, depSum: b.depSum, wdCount: b.wdCount, wdSum: b.wdSum, signups: b.signups }))
+  });
+});
+
 // ---------- Users ----------
 app.get('/admin/users', requireAdmin, (req, res) => {
   const db = req.db;

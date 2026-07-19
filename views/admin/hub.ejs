@@ -51,6 +51,29 @@
       </div>
     </div>
 
+    <!-- Trends over time -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="bar-chart-3" class="text-primary"></i><%= t('trend_title') %></h6>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-primary" data-range="hourly"><%= t('trend_hourly') %></button>
+            <button type="button" class="btn btn-outline-primary active" data-range="daily"><%= t('trend_daily') %></button>
+            <button type="button" class="btn btn-outline-primary" data-range="weekly"><%= t('trend_weekly') %></button>
+            <button type="button" class="btn btn-outline-primary" data-range="monthly"><%= t('trend_monthly') %></button>
+          </div>
+        </div>
+        <p class="text-muted small mb-3"><%= t('trend_desc') %></p>
+        <div class="chart-box">
+          <canvas id="trendChart"
+                  data-currency="<%= settings.currency %>"
+                  data-ldep="<%= t('trend_deposits') %>"
+                  data-lwd="<%= t('trend_withdrawals') %>"
+                  data-lplayers="<%= t('trend_players') %>"></canvas>
+        </div>
+      </div>
+    </div>
+
     <!-- Needs attention -->
     <% const todo = counts.pendingUsers + counts.pendingDeposits + counts.pendingWithdrawals; %>
     <div class="card border-0 shadow-sm rounded-4 mb-4">
