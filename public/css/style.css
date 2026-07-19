@@ -294,27 +294,21 @@ h1, h2, h3, h4, h5, h6,
 [data-bs-theme="dark"] .wallet-coral  { background: #34211d !important; color: #f4b3a4; border-color: #4d2e28; }
 [data-bs-theme="dark"] .wallet-yellow { background: #2a2312 !important; color: #fbd07a; border-color: #4a3d1a; }
 
-/* ---------- Home / admin menu — vertical list of rows ---------- */
-.menu-grid { display: grid; grid-template-columns: 1fr; gap: .55rem; }
+/* ---------- Home / admin menu — 4-across tile grid ---------- */
+.menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
+@media (max-width: 575.98px) { .menu-grid { grid-template-columns: repeat(4, 1fr); gap: .5rem; } }
+@media (max-width: 360px) { .menu-grid { grid-template-columns: repeat(3, 1fr); } }
 .menu-tile {
-  display: flex; flex-direction: row; align-items: center; gap: .9rem;
-  padding: .8rem 1rem; text-align: start; text-decoration: none;
-  background: var(--surface); border: 1px solid var(--line); border-radius: .9rem; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem;
+  padding: 1rem .4rem; text-align: center; text-decoration: none;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; color: var(--ink);
   box-shadow: var(--shadow-sm);
-  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s, background-color .18s;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s;
 }
-.menu-tile:hover { transform: translateX(3px); box-shadow: var(--shadow-md); border-color: #d6e0d6; background: var(--surface-2); }
+.menu-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #d6e0d6; }
 .menu-tile:hover .tile-icon { transform: scale(1.06); }
-.menu-tile .tile-label { font-weight: 600; font-size: .95rem; line-height: 1.2; flex-grow: 1; min-width: 0; }
-/* chevron affordance at the row end (flips for RTL) */
-.menu-tile::after {
-  content: ''; width: 8px; height: 8px; flex-shrink: 0;
-  border-right: 2px solid var(--muted); border-top: 2px solid var(--muted);
-  transform: rotate(45deg); opacity: .45;
-}
-[dir="rtl"] .menu-tile::after { transform: rotate(225deg); }
-/* count badges: inline in the row (were absolute for the old square tiles) */
-.menu-tile .badge { position: static !important; margin: 0 !important; flex-shrink: 0; }
+.menu-tile .tile-label { font-weight: 600; font-size: .8rem; line-height: 1.15; }
+@media (max-width: 575.98px) { .menu-tile { padding: .8rem .3rem; } .menu-tile .tile-label { font-size: .72rem; } .menu-tile .tile-icon { width: 46px; height: 46px; font-size: 1.25rem; } }
 
 /* Icon tile — grid menu, app cards, daily bonus, tour, referral… */
 .tile-icon {
