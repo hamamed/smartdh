@@ -9,14 +9,21 @@
 
     <div class="card border-0 shadow-sm rounded-4 text-center">
       <div class="card-body p-4">
-        <div class="tile-icon ti-yellow mx-auto mb-3" style="width:76px;height:76px;font-size:2rem"><i data-lucide="flame"></i></div>
+        <div class="tile-icon ti-yellow mx-auto mb-3" style="width:76px;height:76px;font-size:2rem"><i data-lucide="<%= bonusUnlocked ? 'flame' : 'lock' %>"></i></div>
         <h5 class="fw-bold mb-1"><%= t('streak_line', { n: currentUser.streak.count }) %></h5>
         <p class="text-muted small mb-4"><%= t('bonus_grows', { max: money(settings.dailyBonusBase * 7) }) %></p>
-        <form action="/daily-bonus" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-warning btn-lg px-4 d-inline-flex align-items-center gap-2" <%= canClaim ? '' : 'disabled' %>>
-            <i data-lucide="gift"></i><%= canClaim ? t('btn_claim') : t('btn_claimed') %>
-          </button>
-        </form>
+        <% if (!bonusUnlocked) { %>
+          <div class="alert alert-warning py-2 small d-flex align-items-center justify-content-center gap-1 mb-3">
+            <i data-lucide="lock"></i><span><%= t('bonus_need_deposit') %></span>
+          </div>
+          <a href="/invest" class="btn btn-primary btn-lg px-4 d-inline-flex align-items-center gap-2"><i data-lucide="plus"></i><%= t('bonus_go_deposit') %></a>
+        <% } else { %>
+          <form action="/daily-bonus" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-warning btn-lg px-4 d-inline-flex align-items-center gap-2" <%= canClaim ? '' : 'disabled' %>>
+              <i data-lucide="gift"></i><%= canClaim ? t('btn_claim') : t('btn_claimed') %>
+            </button>
+          </form>
+        <% } %>
       </div>
     </div>
   </div>

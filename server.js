@@ -274,6 +274,10 @@ function totalInvested(user) {
 function totalBalance(user) {
   return totalInvested(user) + (user.earnings || 0);
 }
+// The daily bonus only unlocks once a player has at least one approved deposit.
+function hasApprovedDeposit(db, user) {
+  return db.deposits.some(d => d.userId === user.id && d.status === 'approved');
+}
 function accrue(user, db) {
   const settings = db.settings;
   const now = Date.now();
@@ -798,12 +802,14 @@ app.get('/dashboard', requireActive, (req, res) => {
   const u = req.currentUser;
   const s = req.db.settings;
   checkState(u); recordHistory(u); save(req.db);
+  const depositOk = hasApprovedDeposit(req.db, u);
   res.render('home', Object.assign({
     title: req.t('nav_home'),
     perSecond: earningPerSecond(u, s),
     totalInvested: totalInvested(u),
     totalBalance: totalBalance(u),
-    canClaim: !(u.streak && u.streak.lastClaim === dayStr(Date.now())),
+    bonusUnlocked: depositOk,
+    canClaim: depositOk && !(u.streak && u.streak.lastClaim === dayStr(Date.now())),
     showTour: !u.onboarded || req.query.tour === '1',
     history: u.history || [],
     campaign: campaignStatus(req.db, u)
@@ -860,9 +866,11 @@ app.get('/send', requireActive, (req, res) => {
 // ---------- Rewards (daily bonus + streak) ----------
 app.get('/rewards', requireActive, (req, res) => {
   const u = req.currentUser;
+  const depositOk = hasApprovedDeposit(req.db, u);
   res.render('rewards', {
     title: req.t('db_title'),
-    canClaim: !(u.streak && u.streak.lastClaim === dayStr(Date.now()))
+    bonusUnlocked: depositOk,
+    canClaim: depositOk && !(u.streak && u.streak.lastClaim === dayStr(Date.now()))
   });
 });
 
@@ -1145,6 +1153,8 @@ app.post('/daily-bonus', requireActive, (req, res) => {
   const db = req.db;
   const u = req.currentUser;
   const back = req.body.redirect === 'home' ? '/dashboard' : '/rewards';
+  // Locked until they've made at least one approved deposit.
+  if (!hasApprovedDeposit(db, u)) return res.redirect(back + '?err=needdeposit');
   const today = dayStr(Date.now());
   u.streak = u.streak || { count: 0, lastClaim: null };
   if (u.streak.lastClaim === today) return res.redirect(back + '?err=claimed');

@@ -15,17 +15,25 @@
     <!-- Daily bonus -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body d-flex flex-wrap align-items-center gap-3">
-        <div class="tile-icon ti-yellow" style="width:52px;height:52px;flex:0 0 52px;font-size:1.4rem"><i data-lucide="flame"></i></div>
+        <div class="tile-icon ti-yellow" style="width:52px;height:52px;flex:0 0 52px;font-size:1.4rem"><i data-lucide="<%= bonusUnlocked ? 'flame' : 'lock' %>"></i></div>
         <div class="flex-grow-1">
           <h6 class="fw-bold mb-1"><%= t('db_title') %></h6>
-          <p class="text-muted small mb-0"><%= t('streak_line', { n: currentUser.streak.count }) %> · <%= t('bonus_grows', { max: money(settings.dailyBonusBase * 7) }) %></p>
+          <% if (bonusUnlocked) { %>
+            <p class="text-muted small mb-0"><%= t('streak_line', { n: currentUser.streak.count }) %> · <%= t('bonus_grows', { max: money(settings.dailyBonusBase * 7) }) %></p>
+          <% } else { %>
+            <p class="text-muted small mb-0"><%= t('bonus_need_deposit') %></p>
+          <% } %>
         </div>
-        <form action="/daily-bonus" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="redirect" value="home">
-          <button class="btn btn-warning d-inline-flex align-items-center gap-1" <%= canClaim ? '' : 'disabled' %>>
-            <i data-lucide="gift"></i><%= canClaim ? t('btn_claim') : t('btn_claimed') %>
-          </button>
-        </form>
+        <% if (bonusUnlocked) { %>
+          <form action="/daily-bonus" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="redirect" value="home">
+            <button class="btn btn-warning d-inline-flex align-items-center gap-1" <%= canClaim ? '' : 'disabled' %>>
+              <i data-lucide="gift"></i><%= canClaim ? t('btn_claim') : t('btn_claimed') %>
+            </button>
+          </form>
+        <% } else { %>
+          <a href="/invest" class="btn btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="plus"></i><%= t('bonus_go_deposit') %></a>
+        <% } %>
       </div>
     </div>
 
