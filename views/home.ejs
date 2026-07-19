@@ -55,7 +55,7 @@
             <div class="small d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('c_earnings') %></div>
             <div class="h3 fw-bold mb-0 mt-1 live-counter"
                  data-value="<%= currentUser.earnings %>" data-persec="<%= perSecond %>"
-                 data-currency="<%= settings.currency %>"><%= money(currentUser.earnings) %></div>
+                 data-currency="<%= curLabel %>"><%= money(currentUser.earnings) %></div>
           </div>
         </div>
       </div>
@@ -65,7 +65,7 @@
             <div class="small d-flex align-items-center gap-1"><i data-lucide="wallet"></i><%= t('c_total') %></div>
             <div class="h3 fw-bold mb-0 mt-1 live-counter"
                  data-value="<%= totalBalance %>" data-persec="<%= perSecond %>"
-                 data-currency="<%= settings.currency %>"><%= money(totalBalance) %></div>
+                 data-currency="<%= curLabel %>"><%= money(totalBalance) %></div>
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@
           <div class="chart-box">
             <canvas id="balanceChart"
                     data-points='<%- JSON.stringify(history.map(h => ({ t: h.t, v: h.total }))) %>'
-                    data-currency="<%= settings.currency %>"></canvas>
+                    data-currency="<%= curLabel %>"></canvas>
           </div>
         <% } %>
       </div>

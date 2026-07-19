@@ -41,7 +41,7 @@
               <label class="form-label"><%= t('camp_mindeposit') %></label>
               <div class="input-group">
                 <input name="minDeposit" type="number" min="0" class="form-control" value="<%= c.minDeposit %>">
-                <span class="input-group-text"><%= settings.currency %></span>
+                <span class="input-group-text"><%= curLabel %></span>
               </div>
               <div class="form-text"><%= t('camp_mindeposit_hint') %></div>
             </div>
@@ -57,7 +57,7 @@
               <label class="form-label"><%= t('camp_coinsperinvite') %></label>
               <div class="input-group">
                 <input name="coinsPerInvite" type="number" min="0" class="form-control" value="<%= c.coinsPerInvite %>">
-                <span class="input-group-text"><%= settings.currency %></span>
+                <span class="input-group-text"><%= curLabel %></span>
               </div>
             </div>
             <div class="col-md-6">
@@ -77,7 +77,7 @@
               <label class="form-label"><%= t('camp_rewardcoins') %></label>
               <div class="input-group">
                 <input name="rewardCoins" type="number" min="0" class="form-control" value="<%= c.rewardCoins %>">
-                <span class="input-group-text"><%= settings.currency %></span>
+                <span class="input-group-text"><%= curLabel %></span>
               </div>
             </div>
             <div class="col-md-4">

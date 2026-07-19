@@ -13,17 +13,17 @@
             <div class="col-md-4">
               <label class="form-label"><%= t('set_minadd') %></label>
               <div class="input-group"><input name="minAddFunds" type="number" min="0" class="form-control" value="<%= settings.minAddFunds %>">
-                <span class="input-group-text"><%= settings.currency %></span></div>
+                <span class="input-group-text"><%= curLabel %></span></div>
             </div>
             <div class="col-md-4">
               <label class="form-label"><%= t('set_minwd') %></label>
               <div class="input-group"><input name="minWithdraw" type="number" min="0" class="form-control" value="<%= settings.minWithdraw %>">
-                <span class="input-group-text"><%= settings.currency %></span></div>
+                <span class="input-group-text"><%= curLabel %></span></div>
             </div>
             <div class="col-md-4">
               <label class="form-label"><%= t('set_mintransfer') %></label>
               <div class="input-group"><input name="minTransfer" type="number" min="0" class="form-control" value="<%= settings.minTransfer %>">
-                <span class="input-group-text"><%= settings.currency %></span></div>
+                <span class="input-group-text"><%= curLabel %></span></div>
             </div>
             <div class="col-md-4">
               <label class="form-label"><%= t('set_wdevery') %></label>
@@ -59,7 +59,7 @@
             <div class="col-md-6">
               <label class="form-label"><%= t('set_dailybase') %></label>
               <div class="input-group"><input name="dailyBonusBase" type="number" min="0" class="form-control" value="<%= settings.dailyBonusBase %>">
-                <span class="input-group-text"><%= settings.currency %></span></div>
+                <span class="input-group-text"><%= curLabel %></span></div>
               <div class="form-text"><%= t('set_dailybase_hint', { max: money(settings.dailyBonusBase * 7) }) %></div>
             </div>
           </div>

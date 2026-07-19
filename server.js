@@ -230,7 +230,11 @@ app.use((req, res, next) => {
   res.locals.achDesc = (id) => { const k = 'ach_' + id + '_d'; const v = tr(k); return v === k ? ACHIEVEMENTS[id].desc : v; };
   res.locals.txLabel = (type) => tr('tx_' + type);
   res.locals.statusLabel = (s) => tr('st_' + s);
-  res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${db.settings.currency}`;
+  // Language-aware currency label: Arabic shows درهم for the default DH; other
+  // languages (or a custom currency) show the setting as-is.
+  const curLabel = (lang === 'ar' && ['DH', 'MAD'].includes(db.settings.currency)) ? 'درهم' : db.settings.currency;
+  res.locals.curLabel = curLabel;
+  res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${curLabel}`;
   next();
 });
 
@@ -598,9 +602,10 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
   return sendMail(user.email, subject, html);
 }
 
-function emFmt(n) {
+function emFmt(n, lang) {
   const s = load().settings;
-  return `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${s.currency}`;
+  const cur = (lang === 'ar' && ['DH', 'MAD'].includes(s.currency)) ? 'درهم' : s.currency;
+  return `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${cur}`;
 }
 
 function notifyLevelUp(user, level) {
@@ -613,20 +618,20 @@ function notifyLevelUp(user, level) {
   });
 }
 function notifyDeposit(user, amount, planLabel, approved) {
-  const tr = userT(user);
+  const tr = userT(user), lg = langFor(user);
   mailUser(user, {
     subject: approved ? tr('mail_dep_ok_subj') : tr('mail_dep_no_subj'),
     heading: approved ? tr('mail_dep_ok_h') : tr('mail_dep_no_h'),
-    lines: [tr(approved ? 'mail_dep_ok_b' : 'mail_dep_no_b', { amount: emFmt(amount), app: planLabel })],
+    lines: [tr(approved ? 'mail_dep_ok_b' : 'mail_dep_no_b', { amount: emFmt(amount, lg), app: planLabel })],
     cta: { text: tr('mail_view_account'), url: `${APP_URL}/dashboard` }
   });
 }
 function notifyWithdrawal(user, w, status) {
-  const tr = userT(user);
+  const tr = userT(user), lg = langFor(user);
   mailUser(user, {
     subject: status === 'paid' ? tr('mail_wd_ok_subj') : tr('mail_wd_no_subj'),
     heading: status === 'paid' ? tr('mail_wd_ok_h') : tr('mail_wd_no_h'),
-    lines: [tr(status === 'paid' ? 'mail_wd_ok_b' : 'mail_wd_no_b', { amount: emFmt(w.amount) })],
+    lines: [tr(status === 'paid' ? 'mail_wd_ok_b' : 'mail_wd_no_b', { amount: emFmt(w.amount, lg) })],
     cta: { text: tr('email_visit'), url: `${APP_URL}/dashboard` }
   });
 }

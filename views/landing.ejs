@@ -42,9 +42,9 @@
             <div class="input-group input-group-lg mb-4">
               <span class="input-group-text"><i data-lucide="wallet"></i></span>
               <input type="number" id="calcAmount" class="form-control" value="10000" min="0" step="100">
-              <span class="input-group-text"><%= settings.currency %></span>
+              <span class="input-group-text"><%= curLabel %></span>
             </div>
-            <div class="row g-3 text-center" data-currency="<%= settings.currency %>">
+            <div class="row g-3 text-center" data-currency="<%= curLabel %>">
               <div class="col-4"><div class="p-3 rounded-3 wallet wallet-coral">
                 <div class="small mb-1"><%= t('lbl_daily') %></div>
                 <div class="fw-bold" id="calcDaily">—</div></div></div>

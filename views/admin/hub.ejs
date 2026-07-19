@@ -57,7 +57,7 @@
 
         <div class="chart-box">
           <canvas id="trendChart"
-                  data-currency="<%= settings.currency %>"
+                  data-currency="<%= curLabel %>"
                   data-ldep="<%= t('trend_deposits') %>"
                   data-lwd="<%= t('trend_withdrawals') %>"
                   data-lplayers="<%= t('trend_players') %>"
@@ -70,7 +70,7 @@
           <span class="small text-muted" id="actCount"></span>
         </div>
         <div id="trendActivity"
-             data-currency="<%= settings.currency %>"
+             data-currency="<%= curLabel %>"
              data-i18n="<%= JSON.stringify({
                deposit: t('trend_deposits'), withdraw: t('trend_withdrawals'), joined: t('act_joined'),
                empty: t('act_empty'), more: t('act_more'), invoice: t('inv_title'), invited_by: t('invited_by'),

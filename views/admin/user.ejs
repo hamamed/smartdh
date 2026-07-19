@@ -151,7 +151,7 @@
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label small mb-1"><%= t('th_amount') %></label>
-                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= settings.currency %></span></div>
+                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= curLabel %></span></div>
                 </div>
                 <div class="col-6">
                   <label class="form-label small mb-1"><%= t('plans_title') %></label>
@@ -193,7 +193,7 @@
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label small mb-1"><%= t('th_amount') %></label>
-                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= settings.currency %></span></div>
+                  <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= curLabel %></span></div>
                 </div>
                 <div class="col-6">
                   <label class="form-label small mb-1"><%= t('th_from') %></label>
@@ -276,7 +276,7 @@
         <form action="/admin/users/<%= u.id %>/schedule" method="post" class="row g-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="col-md-3">
             <label class="form-label small mb-1"><%= t('th_amount') %></label>
-            <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= settings.currency %></span></div>
+            <div class="input-group input-group-sm"><input name="amount" type="number" min="1" class="form-control" required><span class="input-group-text"><%= curLabel %></span></div>
           </div>
           <div class="col-md-3">
             <label class="form-label small mb-1"><%= t('plans_title') %></label>
