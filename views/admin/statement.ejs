@@ -4,33 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= t('statement') %> · <%= u.name %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: "Segoe UI", system-ui, Tahoma, sans-serif; color: #222; margin: 0; padding: 32px; background: #fff; }
-    .sheet { max-width: 760px; margin: 0 auto; }
-    .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #ff5f6d; padding-bottom: 14px; margin-bottom: 20px; }
-    .brand { font-size: 1.4rem; font-weight: 800; color: #ff5f6d; }
-    .muted { color: #777; font-size: .85rem; }
+    body { font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, Tahoma, sans-serif; color: #14261c; margin: 0; padding: 32px; background: #f4f6f3; }
+    .sheet { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid #e5eae2; border-radius: 18px; padding: 30px; box-shadow: 0 18px 42px -20px rgba(20,38,28,.22); }
+    .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0e9f6e; padding-bottom: 14px; margin-bottom: 20px; }
+    .brand { font-size: 1.4rem; font-weight: 800; color: #0e9f6e; letter-spacing: -.02em; }
+    .muted { color: #5f6b62; font-size: .85rem; }
     .who { margin: 18px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: .9rem; }
-    .who div span { color: #777; }
+    .who div span { color: #5f6b62; }
     table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: 8px; }
-    th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid #eee; }
-    th { color: #777; font-weight: 600; text-transform: uppercase; font-size: .72rem; }
-    .amt { text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .in { color: #12a37a; } .out { color: #d63b46; }
-    .tag { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #f1efe9; color: #555; }
+    th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid #e5eae2; }
+    th { color: #5f6b62; font-weight: 700; text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+    .amt { text-align: end; font-weight: 700; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", ui-monospace, monospace; }
+    .in { color: #0b7d57; } .out { color: #d3373c; }
+    .tag { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #eef1ec; color: #5f6b62; }
     .totals { margin-top: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .totals .box { border: 1px solid #eee; border-radius: 12px; padding: 12px; text-align: center; }
-    .totals .box .v { font-size: 1.15rem; font-weight: 800; }
-    .foot { margin-top: 26px; font-size: .75rem; color: #999; text-align: center; }
+    .totals .box { border: 1px solid #e5eae2; border-radius: 12px; padding: 12px; text-align: center; }
+    .totals .box .v { font-size: 1.15rem; font-weight: 800; font-family: "JetBrains Mono", ui-monospace, monospace; }
+    .foot { margin-top: 26px; font-size: .75rem; color: #8a938b; text-align: center; }
     .noprint { margin-bottom: 18px; }
-    @media print { .noprint { display: none; } body { padding: 0; } }
+    @media print { .noprint { display: none; } body { padding: 0; background: #fff; } .sheet { border: 0; box-shadow: none; padding: 0; } }
   </style>
 </head>
 <body>
   <div class="sheet">
     <div class="noprint">
-      <button onclick="window.print()" style="padding:8px 16px;border:0;border-radius:999px;background:#ff5f6d;color:#fff;font-weight:700;cursor:pointer">🖨 <%= t('stmt_print') %></button>
+      <button onclick="window.print()" style="padding:9px 18px;border:0;border-radius:10px;background:#0e9f6e;color:#fff;font-weight:700;cursor:pointer">🖨 <%= t('stmt_print') %></button>
       <a href="/admin/users/<%= u.id %>" style="margin-inline-start:8px;color:#777">← <%= t('nav_back') %></a>
     </div>
 

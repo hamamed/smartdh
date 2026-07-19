@@ -28,7 +28,7 @@ function esc(s) {
 // blank lines separate paragraphs, single newlines become <br>.
 function textToHtml(text) {
   return String(text || '').trim().split(/\n{2,}/).map(block =>
-    `<p style="margin:0 0 16px;color:#3a3340;font-size:15px;line-height:1.6;">${
+    `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${
       esc(block).replace(/\n/g, '<br>')
     }</p>`
   ).join('');
@@ -63,14 +63,14 @@ function renderEmail(opts = {}) {
 
   const align = dir === 'rtl' ? 'right' : 'left';
   const body = bodyHtml || lines.map(l =>
-    `<p style="margin:0 0 16px;color:#3a3340;font-size:15px;line-height:1.6;">${esc(l)}</p>`
+    `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${esc(l)}</p>`
   ).join('');
 
   const button = cta && cta.url ? `
         <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 6px;">
-          <tr><td align="center" bgcolor="#ff5f6d" style="border-radius:12px;">
+          <tr><td align="center" bgcolor="#0e9f6e" style="border-radius:12px;">
             <a href="${esc(cta.url)}" target="_blank"
-               style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#ff8a4d,#ff5f6d);">
+               style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#17b57e,#0b7d57);">
               ${esc(cta.text || L.visit)}
             </a>
           </td></tr>
@@ -84,13 +84,13 @@ function renderEmail(opts = {}) {
 <meta name="color-scheme" content="light only">
 <title>${esc(heading || siteName)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f1f7;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background:#f0f3ef;-webkit-font-smoothing:antialiased;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(preview || heading)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1f7;padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f3ef;padding:24px 12px;">
   <tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(60,40,70,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(20,38,28,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
       <!-- Header -->
-      <tr><td align="center" bgcolor="#ff6a6a" style="background:linear-gradient(135deg,#ffb03a 0%,#ff6a6a 55%,#ff5f8f 100%);padding:30px 24px;">
+      <tr><td align="center" bgcolor="#12a06d" style="background:linear-gradient(135deg,#f4a62a 0%,#1bb07c 62%,#0e9f6e 100%);padding:30px 24px;">
         ${logoUrl
           ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
           : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}
@@ -98,8 +98,8 @@ function renderEmail(opts = {}) {
       </td></tr>
       <!-- Body -->
       <tr><td align="${align}" dir="${dir}" style="padding:32px 30px 8px;">
-        ${heading ? `<h1 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#241d2b;">${esc(heading)}</h1>` : ''}
-        ${intro ? `<p style="margin:0 0 16px;color:#3a3340;font-size:15px;line-height:1.6;">${esc(intro)}</p>` : ''}
+        ${heading ? `<h1 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#14261c;">${esc(heading)}</h1>` : ''}
+        ${intro ? `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${esc(intro)}</p>` : ''}
         ${body}
         ${button}
       </td></tr>
@@ -112,8 +112,8 @@ function renderEmail(opts = {}) {
         </table>
       </td></tr>
       <!-- Footer -->
-      <tr><td align="center" style="padding:20px 24px 28px;border-top:1px solid #efeaf3;">
-        <a href="${esc(appUrl)}" target="_blank" style="color:#ff5f6d;font-size:13px;font-weight:600;text-decoration:none;">${esc(L.visit)}</a>
+      <tr><td align="center" style="padding:20px 24px 28px;border-top:1px solid #e5eae2;">
+        <a href="${esc(appUrl)}" target="_blank" style="color:#0b7d57;font-size:13px;font-weight:600;text-decoration:none;">${esc(L.visit)}</a>
         ${unsubscribeUrl ? `
         <div style="margin-top:10px;">
           <a href="${esc(unsubscribeUrl)}" target="_blank" style="color:#9a93a3;font-size:12px;text-decoration:underline;">${esc(L.unsubscribe)}</a>

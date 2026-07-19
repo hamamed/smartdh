@@ -1,6 +1,6 @@
 // Minimal service worker: caches static assets, always fetches pages from the
 // network (balances must never be stale), falls back to cache when offline.
-const CACHE = 'dv-static-v2';
+const CACHE = 'dv-static-v3';
 // css/js are NOT precached: they carry a ?v= stamp, so a new build is simply a new
 // URL that misses the cache and gets fetched. Precaching the bare paths would pin
 // a stale copy forever.

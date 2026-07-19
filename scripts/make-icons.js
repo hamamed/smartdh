@@ -46,7 +46,7 @@ function encodePNG(width, height, rgb) {
 // --- artwork: sunset gradient + white "growth" chart arrow ---
 const lerp = (a, b, t) => a + (b - a) * t;
 function gradient(t) { // mango -> coral -> pink, matching the app's --sunset
-  const stops = [[255, 176, 58], [255, 106, 106], [255, 95, 143]];
+  const stops = [[244, 166, 42], [27, 176, 124], [14, 159, 110]]; // Daylight sunrise: amber → teal → emerald
   const seg = t < 0.5 ? 0 : 1;
   const lt = t < 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
   const a = stops[seg], b = stops[seg + 1];
