@@ -30,11 +30,13 @@
                   <span class="gs-check"><i data-lucide="check"></i></span>
                   <span class="tile-icon ti-mint"><i data-lucide="<%= c.icon %>"></i></span>
                   <span class="gs-label"><%= t('gs_' + c.key + '_s') %></span>
+                  <span class="gs-desc text-success"><%= t('gs_done') %></span>
                 </div>
               <% } else { %>
-                <a href="<%= c.href %>" class="gs-box text-reset" title="<%= t('gs_' + c.key + '_d') %>">
+                <a href="<%= c.href %>" class="gs-box text-reset">
                   <span class="tile-icon <%= c.tint %>"><i data-lucide="<%= c.icon %>"></i></span>
                   <span class="gs-label"><%= t('gs_' + c.key + '_s') %></span>
+                  <span class="gs-desc"><%= t('gs_' + c.key + '_d') %></span>
                 </a>
               <% } %>
             <% }) %>
