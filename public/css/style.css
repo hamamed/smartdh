@@ -223,10 +223,21 @@ h1, h2, h3, h4, h5, h6,
 .btn-outline-primary {
   --bs-btn-color: var(--brand); --bs-btn-border-color: var(--brand);
   --bs-btn-hover-bg: var(--brand); --bs-btn-hover-border-color: var(--brand); --bs-btn-hover-color: #fff;
+  /* active / checked (btn groups, toggles) — Bootstrap hardcodes these to blue */
+  --bs-btn-active-bg: var(--brand-strong); --bs-btn-active-border-color: var(--brand-strong); --bs-btn-active-color: #fff;
 }
-.btn-outline-success { --bs-btn-color: var(--brand-strong); --bs-btn-border-color: #7fd4b0; --bs-btn-hover-bg: var(--brand); --bs-btn-hover-color:#fff; }
-.btn-outline-danger  { --bs-btn-color: #d3373c; --bs-btn-border-color: #f0b3b5; --bs-btn-hover-bg: var(--bs-danger); --bs-btn-hover-color:#fff; }
-.btn-outline-warning { --bs-btn-color: var(--accent-strong); --bs-btn-border-color: #f2d296; --bs-btn-hover-bg: var(--accent); --bs-btn-hover-color:#402c00; }
+.btn-outline-success {
+  --bs-btn-color: var(--brand-strong); --bs-btn-border-color: #7fd4b0; --bs-btn-hover-bg: var(--brand); --bs-btn-hover-color:#fff;
+  --bs-btn-active-bg: var(--brand-strong); --bs-btn-active-border-color: var(--brand-strong); --bs-btn-active-color:#fff;
+}
+.btn-outline-danger  {
+  --bs-btn-color: #d3373c; --bs-btn-border-color: #f0b3b5; --bs-btn-hover-bg: var(--bs-danger); --bs-btn-hover-color:#fff;
+  --bs-btn-active-bg: var(--bs-danger); --bs-btn-active-border-color: var(--bs-danger); --bs-btn-active-color:#fff;
+}
+.btn-outline-warning {
+  --bs-btn-color: var(--accent-strong); --bs-btn-border-color: #f2d296; --bs-btn-hover-bg: var(--accent); --bs-btn-hover-color:#402c00;
+  --bs-btn-active-bg: var(--accent); --bs-btn-active-border-color: var(--accent); --bs-btn-active-color:#402c00;
+}
 
 /* round icon button */
 .btn-icon { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; border-radius: 999px; }
