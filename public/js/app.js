@@ -117,9 +117,7 @@ if (window.Chart) {
         y1: { beginAtZero: true, position: 'right', grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, color: P.T.accent, precision: 0 } }
       },
       plugins: {
-        legend: { display: true, labels: { color: P.T.muted, usePointStyle: true, boxWidth: 8, padding: 16,
-          generateLabels: (ch) => { const T = dvTheme(); const solids = [T.brand, '#e5484d', T.accent];
-            return ch.data.datasets.map((ds, i) => ({ text: ds.label, fillStyle: solids[i], strokeStyle: solids[i], pointStyle: 'circle', datasetIndex: i })); } } },
+        legend: { display: false },   /* replaced by the filter chips above the chart */
         tooltip: { callbacks: { label: (c) => {
           const ds = c.dataset;
           if (ds.yAxisID === 'y1') return ds.label + ': ' + c.parsed.y;
@@ -203,9 +201,29 @@ if (window.Chart) {
       chart.data.datasets[1].counts = j.buckets.map(b => b.wdCount);
       chart.data.datasets[2].data = j.buckets.map(b => b.signups);
       chart.update();
-      renderActivity(j.events || [], j.eventTotal || 0);
+      lastEvents = j.events || [];
+      renderFiltered();
     } catch (e) { /* ignore */ }
   }
+
+  // ----- Series filters (chips): toggle chart series + activity list together -----
+  const filters = { deposit: true, withdraw: true, signup: true };
+  const seriesIdx = { deposit: 0, withdraw: 1, signup: 2 };
+  let lastEvents = [];
+  function renderFiltered() {
+    const ev = lastEvents.filter(e => filters[e.kind]);
+    renderActivity(ev, ev.length);
+  }
+  document.querySelectorAll('#trendFilters .trend-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const s = chip.dataset.series;
+      filters[s] = !filters[s];
+      chip.classList.toggle('active', filters[s]);
+      chart.setDatasetVisibility(seriesIdx[s], filters[s]);
+      chart.update();
+      renderFiltered();
+    });
+  });
 
   const btns = el.closest('.card-body').querySelectorAll('[data-range]');
   btns.forEach(b => b.addEventListener('click', () => {

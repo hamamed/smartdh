@@ -401,6 +401,18 @@ h1, h2, h3, h4, h5, h6,
 .tour-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background-color .2s; }
 .tour-dot.active { width: 22px; background: var(--brand); }
 
+/* ---------- Trends series filter chips ---------- */
+.trend-chip {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .32rem .8rem; border-radius: 999px; font-size: .82rem; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+  cursor: pointer; transition: opacity .15s, border-color .15s, background-color .15s;
+}
+.trend-chip .chip-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+.trend-chip:hover { border-color: #d6e0d6; }
+.trend-chip:not(.active) { opacity: .45; text-decoration: line-through; text-decoration-thickness: 1px; }
+.trend-chip.active { background: var(--surface-2); border-color: var(--line); }
+
 /* ---------- Admin activity rows (clickable) ---------- */
 .act-row { border-color: var(--line) !important; border-radius: 10px; transition: background-color .14s; }
 .act-row:hover { background: var(--surface-2); }
