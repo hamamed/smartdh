@@ -12,6 +12,43 @@
 
     <div id="flash"></div>
 
+    <!-- Getting started checklist (hides once every step is done) -->
+    <% if (checklistDone < checklist.length) { %>
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="rocket" class="text-primary"></i><%= t('gs_title') %></h6>
+            <span class="badge bg-primary-subtle text-primary"><%= t('gs_progress', { done: checklistDone, total: checklist.length }) %></span>
+          </div>
+          <p class="text-muted small mb-3"><%= t('gs_sub') %></p>
+          <div class="progress mb-3" style="height:8px"><div class="progress-bar" style="width:<%= Math.round(checklistDone / checklist.length * 100) %>%"></div></div>
+
+          <div class="d-grid gap-2">
+            <% checklist.forEach(c => { %>
+              <% if (c.done) { %>
+                <div class="gs-step done d-flex align-items-center gap-3 p-2 rounded-3">
+                  <span class="tile-icon ti-mint flex-shrink-0" style="width:40px;height:40px;font-size:1.1rem"><i data-lucide="check"></i></span>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate"><%= t('gs_' + c.key + '_t') %></div>
+                    <div class="small text-success"><%= t('gs_done') %></div>
+                  </div>
+                </div>
+              <% } else { %>
+                <a href="<%= c.href %>" class="gs-step d-flex align-items-center gap-3 p-2 rounded-3 text-reset">
+                  <span class="tile-icon <%= c.tint %> flex-shrink-0" style="width:40px;height:40px;font-size:1.1rem"><i data-lucide="<%= c.icon %>"></i></span>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate"><%= t('gs_' + c.key + '_t') %></div>
+                    <div class="small text-muted"><%= t('gs_' + c.key + '_d') %></div>
+                  </div>
+                  <i data-lucide="chevron-right" class="text-muted flex-shrink-0"></i>
+                </a>
+              <% } %>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
     <!-- Daily bonus -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body d-flex flex-wrap align-items-center gap-3">

@@ -402,6 +402,12 @@ h1, h2, h3, h4, h5, h6,
 .tour-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background-color .2s; }
 .tour-dot.active { width: 22px; background: var(--brand); }
 
+/* ---------- Getting-started checklist ---------- */
+.gs-step { border: 1px solid var(--line); background: var(--surface); transition: background-color .15s, border-color .15s, transform .15s var(--ease); }
+a.gs-step:hover { background: var(--surface-2); border-color: #d6e0d6; transform: translateX(2px); }
+.gs-step.done { background: var(--brand-soft); border-color: transparent; }
+.gs-step.done .fw-semibold { text-decoration: line-through; text-decoration-thickness: 1px; opacity: .8; }
+
 /* ---------- Trends series filter chips ---------- */
 .trend-chip {
   display: inline-flex; align-items: center; gap: .45rem;

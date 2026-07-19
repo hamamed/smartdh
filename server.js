@@ -817,6 +817,16 @@ app.get('/dashboard', requireActive, (req, res) => {
   const s = req.db.settings;
   checkState(u); recordHistory(u); save(req.db);
   const depositOk = hasApprovedDeposit(req.db, u);
+  // Getting-started checklist for new players: clear next steps, each with a
+  // done-state so it ticks off as they go. The whole card hides once complete.
+  const hasDeposit = req.db.deposits.some(d => d.userId === u.id);
+  const invitees = req.db.users.filter(x => x.referredBy === u.id).length;
+  const checklist = [
+    { key: 'payout',  done: !payoutMissing(u.payout),           icon: 'landmark',    tint: 'ti-mint',  href: '/profile' },
+    { key: 'deposit', done: hasDeposit,                          icon: 'plus-circle', tint: 'ti-sky',   href: '/invest' },
+    { key: 'invite',  done: invitees > 0,                        icon: 'user-plus',   tint: 'ti-lilac', href: '/referral' },
+    { key: 'bonus',   done: !!(u.streak && u.streak.count > 0),  icon: 'gift',        tint: 'ti-yellow', href: '/rewards' }
+  ];
   res.render('home', Object.assign({
     title: req.t('nav_home'),
     perSecond: earningPerSecond(u, s),
@@ -826,6 +836,7 @@ app.get('/dashboard', requireActive, (req, res) => {
     canClaim: depositOk && !(u.streak && u.streak.lastClaim === dayStr(Date.now())),
     showTour: !u.onboarded || req.query.tour === '1',
     history: u.history || [],
+    checklist, checklistDone: checklist.filter(c => c.done).length,
     campaign: campaignStatus(req.db, u)
   }, levelData(u)));
 });
