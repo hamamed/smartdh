@@ -423,6 +423,21 @@ h1, h2, h3, h4, h5, h6,
    hidden on the root can break position:sticky headers) */
 html, body { overflow-x: clip; max-width: 100%; }
 
+/* Collapsed navbar menu (below the lg breakpoint where it turns into a hamburger):
+   clean full-width stack instead of tiny cramped left-aligned buttons. */
+@media (max-width: 991.98px) {
+  .navbar-collapse { padding-top: .7rem; margin-top: .5rem; border-top: 1px solid var(--line); }
+  .navbar-nav { gap: .5rem; }
+  .navbar-nav .nav-item { width: 100%; }
+  .navbar-nav .btn,
+  .navbar-nav .nav-link,
+  .navbar-nav form,
+  .navbar-nav form > .btn { width: 100%; }
+  .navbar-nav .btn { justify-content: center; padding-block: .55rem; }
+  .navbar-nav .btn-icon { width: 100% !important; height: 44px; border-radius: .8rem; }
+  .navbar-nav .nav-link { text-align: center; background: var(--surface-2); border-radius: .8rem; padding-block: .55rem !important; }
+}
+
 @media (max-width: 575.98px) {
   .container { padding-inline: .9rem; }
 
