@@ -1333,7 +1333,7 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
   const db = req.db;
   const range = ['hourly', 'daily', 'weekly', 'monthly'].includes(req.query.range) ? req.query.range : 'daily';
   const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
-  const buckets = trendBuckets(range).map(b => ({ ...b, depCount: 0, depSum: 0, wdCount: 0, wdSum: 0, signups: 0 }));
+  const buckets = trendBuckets(range).map(b => ({ ...b, depCount: 0, depSum: 0, wdCount: 0, wdSum: 0, signups: 0, referrals: 0 }));
   const first = buckets[0] ? buckets[0].start : 0;
   const place = (t) => {
     if (t < first) return null;
@@ -1342,7 +1342,7 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
   };
   db.deposits.forEach(d => { if (d.status !== 'approved' || testIds.has(d.userId)) return; const b = place(d.createdAt); if (b) { b.depCount++; b.depSum += d.amount; } });
   db.withdrawals.forEach(w => { if (w.status !== 'paid' || testIds.has(w.userId)) return; const b = place(w.createdAt); if (b) { b.wdCount++; b.wdSum += w.amount; } });
-  db.users.forEach(u => { if (u.isTest || u.isAdmin) return; const b = place(u.createdAt); if (b) b.signups++; });
+  db.users.forEach(u => { if (u.isTest || u.isAdmin) return; const b = place(u.createdAt); if (b) { b.signups++; if (u.referredBy) b.referrals++; } });
 
   // Detailed activity within the same window (any status, newest first) so the
   // list under the chart matches the selected range.
@@ -1350,12 +1350,16 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
   const events = [];
   db.deposits.forEach(d => { if (testIds.has(d.userId) || d.createdAt < first || d.createdAt >= winEnd) return; events.push({ kind: 'deposit', id: d.id, userId: d.userId, name: d.userName, amount: d.amount, status: d.status, app: d.planLabel || '', at: d.createdAt }); });
   db.withdrawals.forEach(w => { if (testIds.has(w.userId) || w.createdAt < first || w.createdAt >= winEnd) return; events.push({ kind: 'withdraw', id: w.id, userId: w.userId, name: w.userName, amount: w.amount, status: w.status, app: w.fromLabel || '', at: w.createdAt }); });
-  db.users.forEach(u => { if (u.isTest || u.isAdmin || u.createdAt < first || u.createdAt >= winEnd) return; events.push({ kind: 'signup', userId: u.id, name: u.name, amount: 0, status: u.status, app: '', at: u.createdAt }); });
+  db.users.forEach(u => {
+    if (u.isTest || u.isAdmin || u.createdAt < first || u.createdAt >= winEnd) return;
+    const ref = u.referredBy ? db.users.find(x => x.id === u.referredBy) : null;
+    events.push({ kind: 'signup', userId: u.id, name: u.name, amount: 0, status: u.status, app: '', at: u.createdAt, referred: !!u.referredBy, referrer: ref ? ref.name : '' });
+  });
   events.sort((a, b) => b.at - a.at);
 
   res.json({
     range,
-    buckets: buckets.map(b => ({ label: b.label, depCount: b.depCount, depSum: b.depSum, wdCount: b.wdCount, wdSum: b.wdSum, signups: b.signups })),
+    buckets: buckets.map(b => ({ label: b.label, depCount: b.depCount, depSum: b.depSum, wdCount: b.wdCount, wdSum: b.wdSum, signups: b.signups, referrals: b.referrals })),
     events: events.slice(0, 150),
     eventTotal: events.length
   });

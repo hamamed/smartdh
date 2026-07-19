@@ -52,6 +52,7 @@
           <button type="button" class="trend-chip active" data-series="deposit"><span class="chip-dot" style="background:#0e9f6e"></span><%= t('trend_deposits') %></button>
           <button type="button" class="trend-chip active" data-series="withdraw"><span class="chip-dot" style="background:#e5484d"></span><%= t('trend_withdrawals') %></button>
           <button type="button" class="trend-chip active" data-series="signup"><span class="chip-dot" style="background:#f4a62a"></span><%= t('trend_players') %></button>
+          <button type="button" class="trend-chip active" data-series="referral"><span class="chip-dot" style="background:#7c6be0"></span><%= t('trend_referrals') %></button>
         </div>
 
         <div class="chart-box">
@@ -59,7 +60,8 @@
                   data-currency="<%= settings.currency %>"
                   data-ldep="<%= t('trend_deposits') %>"
                   data-lwd="<%= t('trend_withdrawals') %>"
-                  data-lplayers="<%= t('trend_players') %>"></canvas>
+                  data-lplayers="<%= t('trend_players') %>"
+                  data-lref="<%= t('trend_referrals') %>"></canvas>
         </div>
 
         <!-- Activity within the selected range -->
@@ -71,7 +73,7 @@
              data-currency="<%= settings.currency %>"
              data-i18n="<%= JSON.stringify({
                deposit: t('trend_deposits'), withdraw: t('trend_withdrawals'), joined: t('act_joined'),
-               empty: t('act_empty'), more: t('act_more'), invoice: t('inv_title'),
+               empty: t('act_empty'), more: t('act_more'), invoice: t('inv_title'), invited_by: t('invited_by'),
                approved: t('st_approved'), pending: t('st_pending'), rejected: t('st_rejected'), paid: t('st_paid'), active: t('st_active')
              }) %>"></div>
       </div>

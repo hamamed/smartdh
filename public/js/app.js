@@ -105,7 +105,8 @@ if (window.Chart) {
       datasets: [
         { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: P.dep, borderRadius: 7, borderSkipped: false, maxBarThickness: 34, order: 2 },
         { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: P.wd, borderRadius: 7, borderSkipped: false, maxBarThickness: 34, order: 2 },
-        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: P.T.accent, backgroundColor: P.T.accent, pointBackgroundColor: P.T.accent, pointBorderColor: '#fff', pointBorderWidth: 1.5, yAxisID: 'y1', tension: .4, pointRadius: 3, borderWidth: 2.5, order: 1 }
+        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: P.T.accent, backgroundColor: P.T.accent, pointBackgroundColor: P.T.accent, pointBorderColor: '#fff', pointBorderWidth: 1.5, yAxisID: 'y1', tension: .4, pointRadius: 3, borderWidth: 2.5, order: 1 },
+        { type: 'line', label: el.dataset.lref || 'Referrals', data: [], borderColor: '#7c6be0', backgroundColor: '#7c6be0', pointBackgroundColor: '#7c6be0', pointBorderColor: '#fff', pointBorderWidth: 1.5, yAxisID: 'y1', tension: .4, pointRadius: 3, borderWidth: 2.5, borderDash: [5, 4], order: 0 }
       ]
     },
     options: {
@@ -159,7 +160,11 @@ if (window.Chart) {
       const when = new Date(e.at).toLocaleString();
       let icon, tint, title, right;
       if (e.kind === 'signup') {
-        icon = 'user-plus'; tint = 'ti-yellow'; title = esc(e.name) + ' · ' + esc(L.joined || 'joined'); right = '';
+        icon = e.referred ? 'user-round-plus' : 'user-plus';
+        tint = e.referred ? 'ti-lilac' : 'ti-yellow';
+        title = esc(e.name) + ' · ' + esc(L.joined || 'joined');
+        if (e.referred) title += ' · ' + esc(L.invited_by || 'invited by') + ' ' + esc(e.referrer || '');
+        right = '';
       } else {
         const dep = e.kind === 'deposit';
         icon = dep ? 'arrow-down-circle' : 'arrow-up-circle';
@@ -200,6 +205,7 @@ if (window.Chart) {
       chart.data.datasets[1].data = j.buckets.map(b => b.wdSum);
       chart.data.datasets[1].counts = j.buckets.map(b => b.wdCount);
       chart.data.datasets[2].data = j.buckets.map(b => b.signups);
+      chart.data.datasets[3].data = j.buckets.map(b => b.referrals);
       chart.update();
       lastEvents = j.events || [];
       renderFiltered();
@@ -207,8 +213,8 @@ if (window.Chart) {
   }
 
   // ----- Series filters (chips): toggle chart series + activity list together -----
-  const filters = { deposit: true, withdraw: true, signup: true };
-  const seriesIdx = { deposit: 0, withdraw: 1, signup: 2 };
+  const filters = { deposit: true, withdraw: true, signup: true, referral: true };
+  const seriesIdx = { deposit: 0, withdraw: 1, signup: 2, referral: 3 };
   let lastEvents = [];
   function renderFiltered() {
     const ev = lastEvents.filter(e => filters[e.kind]);
