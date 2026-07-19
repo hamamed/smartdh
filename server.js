@@ -1348,9 +1348,9 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
   // list under the chart matches the selected range.
   const winEnd = buckets.length ? buckets[buckets.length - 1].end : Date.now();
   const events = [];
-  db.deposits.forEach(d => { if (testIds.has(d.userId) || d.createdAt < first || d.createdAt >= winEnd) return; events.push({ kind: 'deposit', name: d.userName, amount: d.amount, status: d.status, app: d.planLabel || '', at: d.createdAt }); });
-  db.withdrawals.forEach(w => { if (testIds.has(w.userId) || w.createdAt < first || w.createdAt >= winEnd) return; events.push({ kind: 'withdraw', name: w.userName, amount: w.amount, status: w.status, app: w.fromLabel || '', at: w.createdAt }); });
-  db.users.forEach(u => { if (u.isTest || u.isAdmin || u.createdAt < first || u.createdAt >= winEnd) return; events.push({ kind: 'signup', name: u.name, amount: 0, status: u.status, app: '', at: u.createdAt }); });
+  db.deposits.forEach(d => { if (testIds.has(d.userId) || d.createdAt < first || d.createdAt >= winEnd) return; events.push({ kind: 'deposit', id: d.id, userId: d.userId, name: d.userName, amount: d.amount, status: d.status, app: d.planLabel || '', at: d.createdAt }); });
+  db.withdrawals.forEach(w => { if (testIds.has(w.userId) || w.createdAt < first || w.createdAt >= winEnd) return; events.push({ kind: 'withdraw', id: w.id, userId: w.userId, name: w.userName, amount: w.amount, status: w.status, app: w.fromLabel || '', at: w.createdAt }); });
+  db.users.forEach(u => { if (u.isTest || u.isAdmin || u.createdAt < first || u.createdAt >= winEnd) return; events.push({ kind: 'signup', userId: u.id, name: u.name, amount: 0, status: u.status, app: '', at: u.createdAt }); });
   events.sort((a, b) => b.at - a.at);
 
   res.json({
@@ -1647,6 +1647,24 @@ app.get('/admin/users/:id/statement', requireAdmin, (req, res) => {
   res.render('admin/statement', {
     layout: false, u, rows,
     invested: totalInvested(u), total: totalBalance(u),
+    generatedAt: Date.now()
+  });
+});
+
+// Printable invoice / receipt for a single deposit or withdrawal.
+app.get('/admin/invoice/:type/:id', requireAdmin, (req, res) => {
+  const db = req.db;
+  const type = req.params.type === 'withdraw' ? 'withdraw' : 'deposit';
+  const id = Number(req.params.id);
+  const rec = (type === 'deposit' ? db.deposits : db.withdrawals).find(x => x.id === id);
+  if (!rec) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  const u = db.users.find(x => x.id === rec.userId) || null;
+  res.render('admin/invoice', {
+    layout: false, type, rec, u,
+    // deposits carry planLabel + note + receipt; withdrawals carry method + payout
+    detail: type === 'deposit'
+      ? { source: rec.planLabel || '', note: rec.note || '', receipt: rec.receipt || '' }
+      : { source: rec.fromLabel || rec.from || '', method: rec.method || '', account: rec.payoutAccount || '', payoutName: rec.payoutName || '' },
     generatedAt: Date.now()
   });
 });

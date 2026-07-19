@@ -401,6 +401,11 @@ h1, h2, h3, h4, h5, h6,
 .tour-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background-color .2s; }
 .tour-dot.active { width: 22px; background: var(--brand); }
 
+/* ---------- Admin activity rows (clickable) ---------- */
+.act-row { border-color: var(--line) !important; border-radius: 10px; transition: background-color .14s; }
+.act-row:hover { background: var(--surface-2); }
+.act-row > a:hover .fw-semibold { color: var(--brand-strong); }
+
 /* ---------- Accessibility ---------- */
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
 .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible { outline: none; }

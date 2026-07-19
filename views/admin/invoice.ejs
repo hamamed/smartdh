@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= t('inv_title') %> #<%= (type === 'deposit' ? 'D' : 'W') + rec.id %></title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --brand: #0e9f6e; --ink: #14261c; --muted: #5f6b62; --line: #e5eae2;
+      --in: #0b7d57; --out: #d3373c;
+    }
+    body { font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, Tahoma, sans-serif; color: var(--ink); margin: 0; padding: 34px; background: #f4f6f3; }
+    .sheet { max-width: 620px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 42px -20px rgba(20,38,28,.22); }
+    .top { padding: 26px 30px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--line); }
+    .brand { font-size: 1.3rem; font-weight: 800; color: var(--brand); letter-spacing: -.02em; }
+    .muted { color: var(--muted); font-size: .82rem; }
+    .badge { display: inline-block; font-size: .74rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; }
+    .b-in  { background: #e3f5ec; color: var(--in); }
+    .b-out { background: #fdecec; color: var(--out); }
+    .b-pending  { background: #fcefd6; color: #97600a; }
+    .b-rejected { background: #fdecec; color: var(--out); }
+    .b-ok       { background: #e3f5ec; color: var(--in); }
+    .amount { padding: 26px 30px; text-align: center; border-bottom: 1px solid var(--line); }
+    .amount .big { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 2.5rem; font-weight: 700; letter-spacing: -.03em; }
+    .amount .big.in { color: var(--in); } .amount .big.out { color: var(--out); }
+    .amount .lbl { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+    .rows { padding: 12px 30px 6px; }
+    .row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+    .row:last-child { border-bottom: 0; }
+    .row .k { color: var(--muted); }
+    .row .v { font-weight: 600; text-align: end; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+    .receipt { padding: 6px 30px 24px; }
+    .receipt img { max-width: 100%; border: 1px solid var(--line); border-radius: 12px; }
+    .foot { padding: 18px 30px 26px; font-size: .74rem; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
+    .bar { max-width: 620px; margin: 0 auto 16px; display: flex; gap: 10px; }
+    .btn { padding: 9px 18px; border: 0; border-radius: 10px; font-weight: 700; font-family: inherit; cursor: pointer; font-size: .9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-p { background: var(--brand); color: #fff; }
+    .btn-o { background: #fff; color: var(--muted); border: 1px solid var(--line); }
+    @media print { body { background: #fff; padding: 0; } .sheet { border: 0; box-shadow: none; } .bar { display: none; } }
+  </style>
+</head>
+<body>
+  <% const inflow = type === 'deposit';
+     const sc = (rec.status === 'approved' || rec.status === 'paid') ? 'b-ok' : (rec.status === 'rejected' ? 'b-rejected' : 'b-pending'); %>
+  <div class="bar">
+    <button class="btn btn-p" onclick="window.print()">🖨 <%= t('stmt_print') %></button>
+    <% if (u) { %><a class="btn btn-o" href="/admin/users/<%= u.id %>">← <%= t('btn_manage') %></a><% } %>
+  </div>
+
+  <div class="sheet">
+    <div class="top">
+      <div>
+        <% if (settings.brandMode === 'logo' && settings.logoUrl) { %>
+          <img src="<%= settings.logoUrl %>" alt="<%= settings.siteName %>" style="height:36px;max-width:200px;object-fit:contain">
+        <% } else { %>
+          <div class="brand"><%= settings.siteName %></div>
+        <% } %>
+        <div class="muted"><%= inflow ? t('inv_deposit') : t('inv_withdraw') %></div>
+      </div>
+      <div style="text-align:end">
+        <div class="mono" style="font-weight:700"><%= inflow ? 'D' : 'W' %><%= rec.id %></div>
+        <div class="muted"><%= new Date(rec.createdAt).toLocaleString() %></div>
+        <div style="margin-top:6px"><span class="badge <%= sc %>"><%= statusLabel(rec.status) || rec.status %></span></div>
+      </div>
+    </div>
+
+    <div class="amount">
+      <div class="big <%= inflow ? 'in' : 'out' %>"><%= inflow ? '+' : '−' %><%= money(rec.amount) %></div>
+      <div class="lbl"><%= inflow ? t('inv_credited') : t('inv_debited') %></div>
+    </div>
+
+    <div class="rows">
+      <div class="row"><span class="k"><%= t('lbl_name') %></span><span class="v"><%= u ? u.name : rec.userName %></span></div>
+      <% if (u) { %><div class="row"><span class="k"><%= t('lbl_email') %></span><span class="v"><%= u.email %></span></div><% } %>
+      <div class="row"><span class="k"><%= inflow ? t('inv_into') : t('inv_from') %></span><span class="v"><%= detail.source %></span></div>
+      <% if (inflow && detail.note) { %><div class="row"><span class="k"><%= t('manual_bankref') %></span><span class="v"><%= detail.note %></span></div><% } %>
+      <% if (!inflow && detail.method) { %>
+        <div class="row"><span class="k"><%= t('payout_method') %></span><span class="v text-capitalize"><%= detail.method %></span></div>
+        <% if (detail.payoutName) { %><div class="row"><span class="k"><%= t('payout_name') %></span><span class="v"><%= detail.payoutName %></span></div><% } %>
+        <% if (detail.account) { %><div class="row"><span class="k"><%= t('inv_account') %></span><span class="v mono" dir="ltr"><%= detail.account %></span></div><% } %>
+      <% } %>
+      <div class="row"><span class="k"><%= t('th_amount') %></span><span class="v mono"><%= money(rec.amount) %></span></div>
+    </div>
+
+    <% if (inflow && detail.receipt) { %>
+      <div class="receipt">
+        <div class="muted" style="margin-bottom:6px"><%= t('manual_receipt') %></div>
+        <img src="<%= detail.receipt %>" alt="receipt">
+      </div>
+    <% } %>
+
+    <div class="foot"><%= settings.siteName %> · <%= t('footer_strong') %> <%= t('footer_rest') %></div>
+  </div>
+</body>
+</html>
