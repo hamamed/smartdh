@@ -56,82 +56,6 @@ if ('serviceWorker' in navigator) {
   });
 })();
 
-// ---------- Admin live activity chart ----------
-(function () {
-  const el = document.getElementById('adminChart');
-  if (!el || !window.Chart) return;
-  const cur = el.dataset.currency || '';
-  const ctx = el.getContext('2d');
-  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-  const grid = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
-  const tick = dark ? '#8b8391' : '#9a8d86';
-
-  const fill = ctx.createLinearGradient(0, 0, 0, 240);
-  fill.addColorStop(0, 'rgba(18,177,214,.30)');
-  fill.addColorStop(1, 'rgba(18,177,214,0)');
-
-  const coins = { label: 'coins', data: [], borderColor: '#12b1d6', backgroundColor: fill, borderWidth: 2.5, fill: true, tension: .35, pointRadius: 0, order: 3 };
-  // Chart.js also evaluates these callbacks with a context that has no data point
-  // (c.raw undefined) while resolving styles — guard so it never throws.
-  const rOf = (c) => (c && c.raw && typeof c.raw.r === 'number' ? c.raw.r : 0);
-  const dep = { label: 'deposit', type: 'scatter', data: [], backgroundColor: '#16c79a', borderColor: '#0e9d78', pointStyle: 'triangle', pointRadius: c => rOf(c), pointHoverRadius: c => rOf(c) + 2, order: 1 };
-  const wd = { label: 'withdraw', type: 'scatter', data: [], backgroundColor: '#ff5964', borderColor: '#d63b46', pointStyle: 'triangle', rotation: 180, pointRadius: c => rOf(c), pointHoverRadius: c => rOf(c) + 2, order: 1 };
-
-  const chart = new Chart(ctx, {
-    type: 'line',
-    data: { datasets: [coins, dep, wd] },
-    options: {
-      parsing: false, animation: false, responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'nearest', intersect: true },
-      scales: {
-        x: { type: 'linear', grid: { display: false },
-             ticks: { maxTicksLimit: 6, color: tick, callback: v => new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) } },
-        y: { grid: { color: grid }, ticks: { maxTicksLimit: 4, color: tick, callback: v => Math.round(v).toLocaleString() } }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => {
-          if (c.dataset.label === 'coins') return c.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' ' + cur;
-          const e = c.raw;
-          return e.name + ': ' + (c.dataset.label === 'withdraw' ? '−' : '+') + e.amount.toLocaleString() + ' ' + cur;
-        } } }
-      }
-    }
-  });
-
-  const WINDOW = 120 * 1000;        // keep the last 2 minutes on screen
-  const seen = new Set();
-  const trim = (arr, minX) => { while (arr.length && arr[0].x < minX) arr.shift(); };
-
-  async function poll() {
-    let s;
-    try {
-      const res = await fetch('/admin/stats.json', { headers: { 'X-Requested-With': 'fetch' } });
-      if (!res.ok) return;
-      s = await res.json();
-    } catch (e) { return; }
-
-    const now = s.now, minX = now - WINDOW;
-    coins.data.push({ x: now, y: s.totalCoins });
-    trim(coins.data, minX);
-
-    s.events.forEach(e => {
-      if (seen.has(e.id) || e.t < minX) { seen.add(e.id); return; }
-      seen.add(e.id);
-      const r = Math.max(4, Math.min(13, 4 + Math.log10(Math.max(1, e.amount)) * 2.2));
-      (e.type === 'deposit' ? dep : wd).data.push({ x: e.t, y: s.totalCoins, r, name: e.name, amount: e.amount });
-    });
-    trim(dep.data, minX);
-    trim(wd.data, minX);
-
-    const c = document.getElementById('statCoins');
-    if (c) c.textContent = Math.round(s.totalCoins).toLocaleString() + ' ' + cur;
-    chart.update('none');
-  }
-  poll();
-  setInterval(poll, 1000);   // every second
-})();
-
 // ---------- Admin trends chart (hourly / daily / weekly / monthly) ----------
 (function () {
   const el = document.getElementById('trendChart');
@@ -194,6 +118,42 @@ if ('serviceWorker' in navigator) {
     chart.update('none');
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
 
+  // ----- Activity list under the chart (same time window as the chart) -----
+  const actEl = document.getElementById('trendActivity');
+  const actCount = document.getElementById('actCount');
+  let L = {}; try { L = JSON.parse(actEl && actEl.dataset.i18n || '{}'); } catch (e) {}
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const statusClass = (s) => (s === 'approved' || s === 'paid' || s === 'active') ? 'success' : (s === 'rejected' ? 'danger' : 'warning');
+
+  function renderActivity(events, total) {
+    if (!actEl) return;
+    if (actCount) actCount.textContent = total ? total + '' : '';
+    if (!events.length) { actEl.innerHTML = '<p class="text-muted small mb-0">' + esc(L.empty || 'No activity in this range.') + '</p>'; return; }
+    const rows = events.map(e => {
+      const when = new Date(e.at).toLocaleString();
+      let icon, tint, title, right;
+      if (e.kind === 'signup') {
+        icon = 'user-plus'; tint = 'ti-sky'; title = esc(e.name) + ' · ' + esc(L.joined || 'joined'); right = '';
+      } else {
+        const dep = e.kind === 'deposit';
+        icon = dep ? 'arrow-down-circle' : 'arrow-up-circle';
+        tint = dep ? 'ti-mint' : 'ti-coral';
+        title = esc(e.name) + (e.app ? ' · ' + esc(e.app) : '');
+        right = '<span class="fw-semibold text-' + (dep ? 'success' : 'danger') + '">' + (dep ? '+' : '−') + nf(e.amount) + ' ' + esc(cur) + '</span>';
+      }
+      const statusTxt = L[e.status] || e.status || '';
+      const badge = e.status ? '<span class="badge bg-' + statusClass(e.status) + '-subtle text-' + statusClass(e.status) + '">' + esc(statusTxt) + '</span>' : '';
+      return '<div class="d-flex align-items-center gap-2 py-2 border-top">'
+        + '<span class="tile-icon ' + tint + '" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="' + icon + '"></i></span>'
+        + '<div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">' + title + '</div>'
+        + '<div class="text-muted" style="font-size:.75rem">' + esc(when) + '</div></div>'
+        + '<div class="text-end d-flex flex-column align-items-end gap-1">' + right + badge + '</div>'
+        + '</div>';
+    }).join('');
+    actEl.innerHTML = rows;
+    if (window.renderIcons) window.renderIcons();
+  }
+
   async function load(range) {
     try {
       const r = await fetch('/admin/analytics.json?range=' + range, { headers: { 'X-Requested-With': 'fetch' } });
@@ -206,6 +166,7 @@ if ('serviceWorker' in navigator) {
       chart.data.datasets[1].counts = j.buckets.map(b => b.wdCount);
       chart.data.datasets[2].data = j.buckets.map(b => b.signups);
       chart.update();
+      renderActivity(j.events || [], j.eventTotal || 0);
     } catch (e) { /* ignore */ }
   }
 

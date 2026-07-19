@@ -33,25 +33,7 @@
       </div>
     </div>
 
-    <!-- Live activity chart -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-      <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="activity" class="text-primary"></i><%= t('live_chart_t') %></h6>
-          <div class="d-flex gap-3 small">
-            <span class="d-inline-flex align-items-center gap-1"><span class="dot" style="background:#12b1d6"></span><%= t('stat_total') %>: <strong id="statCoins">—</strong></span>
-            <span class="d-inline-flex align-items-center gap-1"><i data-lucide="triangle" style="color:#16c79a;width:.8em;height:.8em"></i><%= t('live_deposit') %></span>
-            <span class="d-inline-flex align-items-center gap-1"><i data-lucide="triangle" style="color:#ff5964;width:.8em;height:.8em;transform:rotate(180deg)"></i><%= t('live_withdraw') %></span>
-          </div>
-        </div>
-        <p class="text-muted small mb-3"><%= t('live_chart_d') %></p>
-        <div class="chart-box">
-          <canvas id="adminChart" data-currency="<%= settings.currency %>"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Trends over time -->
+    <!-- Trends over time + matching activity -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
@@ -71,6 +53,19 @@
                   data-lwd="<%= t('trend_withdrawals') %>"
                   data-lplayers="<%= t('trend_players') %>"></canvas>
         </div>
+
+        <!-- Activity within the selected range -->
+        <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="list" class="text-primary"></i><%= t('act_title') %></h6>
+          <span class="small text-muted" id="actCount"></span>
+        </div>
+        <div id="trendActivity"
+             data-currency="<%= settings.currency %>"
+             data-i18n="<%= JSON.stringify({
+               deposit: t('trend_deposits'), withdraw: t('trend_withdrawals'), joined: t('act_joined'),
+               empty: t('act_empty'), more: t('act_more'),
+               approved: t('st_approved'), pending: t('st_pending'), rejected: t('st_rejected'), paid: t('st_paid'), active: t('st_active')
+             }) %>"></div>
       </div>
     </div>
 

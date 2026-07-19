@@ -1343,9 +1343,21 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
   db.deposits.forEach(d => { if (d.status !== 'approved' || testIds.has(d.userId)) return; const b = place(d.createdAt); if (b) { b.depCount++; b.depSum += d.amount; } });
   db.withdrawals.forEach(w => { if (w.status !== 'paid' || testIds.has(w.userId)) return; const b = place(w.createdAt); if (b) { b.wdCount++; b.wdSum += w.amount; } });
   db.users.forEach(u => { if (u.isTest || u.isAdmin) return; const b = place(u.createdAt); if (b) b.signups++; });
+
+  // Detailed activity within the same window (any status, newest first) so the
+  // list under the chart matches the selected range.
+  const winEnd = buckets.length ? buckets[buckets.length - 1].end : Date.now();
+  const events = [];
+  db.deposits.forEach(d => { if (testIds.has(d.userId) || d.createdAt < first || d.createdAt >= winEnd) return; events.push({ kind: 'deposit', name: d.userName, amount: d.amount, status: d.status, app: d.planLabel || '', at: d.createdAt }); });
+  db.withdrawals.forEach(w => { if (testIds.has(w.userId) || w.createdAt < first || w.createdAt >= winEnd) return; events.push({ kind: 'withdraw', name: w.userName, amount: w.amount, status: w.status, app: w.fromLabel || '', at: w.createdAt }); });
+  db.users.forEach(u => { if (u.isTest || u.isAdmin || u.createdAt < first || u.createdAt >= winEnd) return; events.push({ kind: 'signup', name: u.name, amount: 0, status: u.status, app: '', at: u.createdAt }); });
+  events.sort((a, b) => b.at - a.at);
+
   res.json({
     range,
-    buckets: buckets.map(b => ({ label: b.label, depCount: b.depCount, depSum: b.depSum, wdCount: b.wdCount, wdSum: b.wdSum, signups: b.signups }))
+    buckets: buckets.map(b => ({ label: b.label, depCount: b.depCount, depSum: b.depSum, wdCount: b.wdCount, wdSum: b.wdSum, signups: b.signups })),
+    events: events.slice(0, 150),
+    eventTotal: events.length
   });
 });
 
