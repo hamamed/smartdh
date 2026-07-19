@@ -71,8 +71,11 @@ if ('serviceWorker' in navigator) {
   fill.addColorStop(1, 'rgba(18,177,214,0)');
 
   const coins = { label: 'coins', data: [], borderColor: '#12b1d6', backgroundColor: fill, borderWidth: 2.5, fill: true, tension: .35, pointRadius: 0, order: 3 };
-  const dep = { label: 'deposit', type: 'scatter', data: [], backgroundColor: '#16c79a', borderColor: '#0e9d78', pointStyle: 'triangle', pointRadius: c => c.raw.r, pointHoverRadius: c => c.raw.r + 2, order: 1 };
-  const wd = { label: 'withdraw', type: 'scatter', data: [], backgroundColor: '#ff5964', borderColor: '#d63b46', pointStyle: 'triangle', rotation: 180, pointRadius: c => c.raw.r, pointHoverRadius: c => c.raw.r + 2, order: 1 };
+  // Chart.js also evaluates these callbacks with a context that has no data point
+  // (c.raw undefined) while resolving styles — guard so it never throws.
+  const rOf = (c) => (c && c.raw && typeof c.raw.r === 'number' ? c.raw.r : 0);
+  const dep = { label: 'deposit', type: 'scatter', data: [], backgroundColor: '#16c79a', borderColor: '#0e9d78', pointStyle: 'triangle', pointRadius: c => rOf(c), pointHoverRadius: c => rOf(c) + 2, order: 1 };
+  const wd = { label: 'withdraw', type: 'scatter', data: [], backgroundColor: '#ff5964', borderColor: '#d63b46', pointStyle: 'triangle', rotation: 180, pointRadius: c => rOf(c), pointHoverRadius: c => rOf(c) + 2, order: 1 };
 
   const chart = new Chart(ctx, {
     type: 'line',
