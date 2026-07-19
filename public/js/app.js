@@ -196,6 +196,32 @@ if ('serviceWorker' in navigator) {
   update();
 })();
 
+// ---------- Invest cards: live 30-day earnings preview under the amount input ----------
+(function () {
+  const inputs = document.querySelectorAll('[data-earn-input]');
+  if (!inputs.length) return;
+  const M = window.MSG || {};
+  const cur = M.cur || '';
+  const fmt = (n) => n.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + cur;
+  inputs.forEach((input) => {
+    const out = input.closest('form').querySelector('[data-earn-out]');
+    if (!out) return;
+    const span = out.querySelector('span');
+    const rate = parseFloat(input.dataset.rate) || 0;
+    const update = () => {
+      const amount = parseFloat(input.value) || 0;
+      if (amount > 0 && rate > 0) {
+        span.textContent = '+' + fmt(amount * rate * 2) + ' · ' + (M.earn30 || '30d');
+        out.classList.remove('d-none');
+      } else {
+        out.classList.add('d-none');
+      }
+    };
+    input.addEventListener('input', update);
+    update();
+  });
+})();
+
 // ---------- Profile photo: live preview ----------
 (function () {
   const input = document.getElementById('photoInput');

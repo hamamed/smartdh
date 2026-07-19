@@ -63,11 +63,17 @@
                   <i data-lucide="lock"></i><%= t('locked_at', { n: p.minLevel }) %>
                 </div>
               <% } else { %>
-                <form action="/add-funds" method="post" class="d-flex gap-1"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <form action="/add-funds" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="plan" value="<%= p.id %>">
-                  <input name="amount" type="number" min="<%= settings.minAddFunds %>" step="1"
-                         class="form-control form-control-sm" placeholder="<%= t('amount_ph') %>">
-                  <button class="btn btn-sm btn-<%= p.color %>"><i data-lucide="plus"></i></button>
+                  <div class="d-flex gap-1">
+                    <input name="amount" type="number" min="<%= settings.minAddFunds %>" step="1"
+                           class="form-control form-control-sm" placeholder="<%= t('amount_ph') %>"
+                           data-earn-input data-rate="<%= p.ratePer15Days %>">
+                    <button class="btn btn-sm btn-<%= p.color %>"><i data-lucide="plus"></i></button>
+                  </div>
+                  <div class="small text-success mt-1 d-none d-flex align-items-center gap-1" data-earn-out>
+                    <i data-lucide="trending-up"></i><span></span>
+                  </div>
                 </form>
               <% } %>
             </div>
