@@ -137,30 +137,43 @@ if ('serviceWorker' in navigator) {
   const el = document.getElementById('trendChart');
   if (!el || !window.Chart) return;
   const cur = el.dataset.currency || '';
-  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-  const grid = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
-  const tick = dark ? '#8b8391' : '#9a8d86';
+  const ctx = el.getContext('2d');
   const nf = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const OCEAN = '#12b1d6';   // app info/ocean — the "new players" line
+  const isDark = () => document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  const themeColors = () => ({
+    grid: isDark() ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)',
+    tick: isDark() ? '#8b8391' : '#9a8d86'
+  });
 
-  const chart = new Chart(el.getContext('2d'), {
+  // Vertical gradient fills so the bars read like the app's jelly buttons.
+  const grad = (top, bottom) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, top); g.addColorStop(1, bottom); return g; };
+  const depFill = grad('#2ee0a6', '#12b98a');   // success gradient
+  const wdFill = grad('#ff7a6b', '#ff4d67');    // danger gradient
+
+  let tc = themeColors();
+  const chart = new Chart(ctx, {
     data: {
       labels: [],
       datasets: [
-        { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: '#16c79a', borderRadius: 5, order: 2 },
-        { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: '#ff5964', borderRadius: 5, order: 2 },
-        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: '#8a63e0', backgroundColor: '#8a63e0', yAxisID: 'y1', tension: .35, pointRadius: 2, borderWidth: 2, order: 1 }
+        { type: 'bar', label: el.dataset.ldep || 'Deposits', data: [], counts: [], backgroundColor: depFill, borderRadius: 6, borderSkipped: false, order: 2 },
+        { type: 'bar', label: el.dataset.lwd || 'Withdrawals', data: [], counts: [], backgroundColor: wdFill, borderRadius: 6, borderSkipped: false, order: 2 },
+        { type: 'line', label: el.dataset.lplayers || 'New players', data: [], borderColor: OCEAN, backgroundColor: OCEAN, pointBackgroundColor: OCEAN, yAxisID: 'y1', tension: .35, pointRadius: 2, borderWidth: 2.5, order: 1 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: tick, autoSkip: true } },
-        y: { beginAtZero: true, grid: { color: grid }, ticks: { maxTicksLimit: 5, color: tick, callback: v => nf(v) } },
-        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { maxTicksLimit: 5, color: '#8a63e0', precision: 0 } }
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: tc.tick, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: tc.grid }, ticks: { maxTicksLimit: 5, color: tc.tick, callback: v => nf(v) } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { maxTicksLimit: 5, color: OCEAN, precision: 0 } }
       },
       plugins: {
-        legend: { display: true, labels: { color: tick, usePointStyle: true, boxWidth: 8 } },
+        legend: { display: true, labels: { color: tc.tick, usePointStyle: true, boxWidth: 8,
+          // solid swatches (bars use gradients, which don't render well in the legend box)
+          generateLabels: (ch) => { const solids = ['#16c79a', '#ff5964', OCEAN];
+            return ch.data.datasets.map((ds, i) => ({ text: ds.label, fillStyle: solids[i], strokeStyle: solids[i], pointStyle: 'circle', datasetIndex: i })); } } },
         tooltip: { callbacks: { label: (c) => {
           const ds = c.dataset;
           if (ds.yAxisID === 'y1') return ds.label + ': ' + c.parsed.y;
@@ -170,6 +183,16 @@ if ('serviceWorker' in navigator) {
       }
     }
   });
+
+  // Re-theme grid/tick/legend colours when the user flips dark mode.
+  new MutationObserver(() => {
+    tc = themeColors();
+    chart.options.scales.x.ticks.color = tc.tick;
+    chart.options.scales.y.ticks.color = tc.tick;
+    chart.options.scales.y.grid.color = tc.grid;
+    chart.options.plugins.legend.labels.color = tc.tick;
+    chart.update('none');
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
 
   async function load(range) {
     try {
