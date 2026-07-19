@@ -294,21 +294,19 @@ h1, h2, h3, h4, h5, h6,
 [data-bs-theme="dark"] .wallet-coral  { background: #34211d !important; color: #f4b3a4; border-color: #4d2e28; }
 [data-bs-theme="dark"] .wallet-yellow { background: #2a2312 !important; color: #fbd07a; border-color: #4a3d1a; }
 
-/* ---------- Home / admin menu — 4-across tile grid ---------- */
-.menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
-@media (max-width: 575.98px) { .menu-grid { grid-template-columns: repeat(4, 1fr); gap: .5rem; } }
-@media (max-width: 360px) { .menu-grid { grid-template-columns: repeat(3, 1fr); } }
+/* ---------- Home / admin menu (3-across tiles) ---------- */
+.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+@media (max-width: 400px) { .menu-grid { grid-template-columns: repeat(2, 1fr); } }
 .menu-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem;
-  padding: 1rem .4rem; text-align: center; text-decoration: none;
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  padding: 1.15rem .5rem; text-align: center; text-decoration: none;
   background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; color: var(--ink);
   box-shadow: var(--shadow-sm);
   transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s;
 }
 .menu-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #d6e0d6; }
 .menu-tile:hover .tile-icon { transform: scale(1.06); }
-.menu-tile .tile-label { font-weight: 600; font-size: .8rem; line-height: 1.15; }
-@media (max-width: 575.98px) { .menu-tile { padding: .8rem .3rem; } .menu-tile .tile-label { font-size: .72rem; } .menu-tile .tile-icon { width: 46px; height: 46px; font-size: 1.25rem; } }
+.menu-tile .tile-label { font-weight: 600; font-size: .82rem; line-height: 1.15; }
 
 /* Icon tile — grid menu, app cards, daily bonus, tour, referral… */
 .tile-icon {
@@ -404,11 +402,22 @@ h1, h2, h3, h4, h5, h6,
 .tour-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background-color .2s; }
 .tour-dot.active { width: 22px; background: var(--brand); }
 
-/* ---------- Getting-started checklist ---------- */
-.gs-step { border: 1px solid var(--line); background: var(--surface); transition: background-color .15s, border-color .15s, transform .15s var(--ease); }
-a.gs-step:hover { background: var(--surface-2); border-color: #d6e0d6; transform: translateX(2px); }
-.gs-step.done { background: var(--brand-soft); border-color: transparent; }
-.gs-step.done .fw-semibold { text-decoration: line-through; text-decoration-thickness: 1px; opacity: .8; }
+/* ---------- Getting-started checklist — 4 boxes across ---------- */
+.gs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
+@media (max-width: 480px) { .gs-grid { grid-template-columns: repeat(2, 1fr); } }
+.gs-box {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: .5rem;
+  padding: 1rem .5rem; text-align: center; text-decoration: none;
+  border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); color: var(--ink);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s, background-color .18s;
+}
+a.gs-box:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #d6e0d6; }
+a.gs-box:hover .tile-icon { transform: scale(1.06); }
+.gs-box .gs-label { font-weight: 600; font-size: .78rem; line-height: 1.2; }
+.gs-box.done { background: var(--brand-soft); border-color: transparent; }
+.gs-box.done .gs-label { color: var(--brand-strong); }
+.gs-box .gs-check { position: absolute; top: 8px; inset-inline-end: 8px; width: 18px; height: 18px; border-radius: 999px; background: var(--brand); color: #fff; display: grid; place-items: center; }
+.gs-box .gs-check svg { width: 12px; height: 12px; }
 
 /* ---------- Trends series filter chips ---------- */
 .trend-chip {
