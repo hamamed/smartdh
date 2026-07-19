@@ -3,7 +3,7 @@ const locales = {
  ar: {
  dir: 'rtl', name: 'العربية',
  nav_dashboard: 'لوحة التحكم', nav_leaderboard: 'المتصدرون', nav_admin: 'الإدارة',
- nav_login: 'تسجيل الدخول', nav_logout: 'خروج', nav_getstarted: 'ابدأ الآن',
+ nav_login: 'تسجيل الدخول', nav_logout: 'خروج', nav_getstarted: 'ابدأ الآن', nav_language: 'اللغة',
  nav_home: 'الرئيسية',
     msg_pend_s1: 'تم إنشاء الحساب', msg_pend_s2: 'موافقة المشرف', msg_pend_s3: 'سجّل الدخول والعب',
     app_photo: 'صورة المنتج', app_remove_photo: 'إزالة الصورة', app_photo_hint: 'ارفع صورة للمنتج ليراها اللاعبون عند الاستثمار. الأيقونة تُستخدم إن لم توجد صورة.',
@@ -417,7 +417,7 @@ const locales = {
  fr: {
  dir: 'ltr', name: 'Français',
  nav_dashboard: 'Tableau de bord', nav_leaderboard: 'Classement', nav_admin: 'Admin',
- nav_login: 'Connexion', nav_logout: 'Déconnexion', nav_getstarted: 'Commencer',
+ nav_login: 'Connexion', nav_logout: 'Déconnexion', nav_getstarted: 'Commencer', nav_language: 'Langue',
  nav_home: 'Accueil',
     msg_pend_s1: 'Compte créé', msg_pend_s2: 'Approbation admin', msg_pend_s3: 'Connexion & jeu',
     app_photo: 'Photo du produit', app_remove_photo: 'Retirer la photo', app_photo_hint: 'Téléchargez une photo du produit pour que les joueurs voient dans quoi ils investissent. L’icône est utilisée s’il n’y a pas de photo.',
@@ -832,7 +832,7 @@ const locales = {
  en: {
  dir: 'ltr', name: 'English',
  nav_dashboard: 'Dashboard', nav_leaderboard: 'Leaderboard', nav_admin: 'Admin',
- nav_login: 'Log in', nav_logout: 'Log out', nav_getstarted: 'Get started',
+ nav_login: 'Log in', nav_logout: 'Log out', nav_getstarted: 'Get started', nav_language: 'Language',
  nav_home: 'Home',
     msg_pend_s1: 'Account created', msg_pend_s2: 'Admin approves', msg_pend_s3: 'Log in & play',
     app_photo: 'Product photo', app_remove_photo: 'Remove photo', app_photo_hint: 'Upload a product photo so players see what they invest in. The icon is used when there is no photo.',

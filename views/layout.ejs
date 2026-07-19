@@ -44,6 +44,23 @@
               <a href="/admin" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
             </li>
           <% } %>
+          <!-- Language switcher -->
+          <li class="nav-item dropdown lang-switch">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i data-lucide="globe"></i><span><%= locales[lang].name %></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><h6 class="dropdown-header d-flex align-items-center gap-1"><i data-lucide="languages"></i><%= t('nav_language') %></h6></li>
+              <% LANGS.forEach(l => { %>
+                <li>
+                  <a class="dropdown-item d-flex align-items-center gap-2 <%= l === lang ? 'active' : '' %>" href="/lang/<%= l %>">
+                    <i data-lucide="<%= l === lang ? 'check' : 'circle' %>" class="<%= l === lang ? '' : 'opacity-25' %>"></i>
+                    <span class="flex-grow-1"><%= locales[l].name %></span>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          </li>
           <li class="nav-item">
             <button id="themeToggle" class="btn btn-sm btn-outline-secondary btn-icon ms-lg-2" title="Theme"><i data-lucide="moon"></i></button>
           </li>

@@ -494,6 +494,22 @@ html, body { overflow-x: clip; max-width: 100%; }
 /* tables (admin lists) already scroll inside .table-responsive; make wide charts safe too */
 .chart-box { max-width: 100%; }
 
+/* ---------- Dropdown menus (theme-matched) ---------- */
+.dropdown-menu {
+  border-radius: .85rem; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: var(--shadow-md); padding: .35rem; min-width: 12rem;
+}
+.dropdown-header { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.dropdown-item { border-radius: .6rem; color: var(--ink); font-weight: 600; padding: .5rem .6rem; }
+.dropdown-item:hover, .dropdown-item:focus { background: var(--surface-2); color: var(--ink); }
+.dropdown-item.active, .dropdown-item:active { background: var(--brand-soft); color: var(--brand-strong); }
+.lang-switch .dropdown-toggle::after { margin-inline-start: .1rem; opacity: .6; }
+
+/* On the collapsed mobile menu, the language dropdown opens inline (full width) */
+@media (max-width: 991.98px) {
+  .navbar-nav .dropdown-menu { width: 100%; box-shadow: none; margin-top: .35rem; }
+}
+
 /* ---------- Accessibility ---------- */
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
 .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible { outline: none; }
