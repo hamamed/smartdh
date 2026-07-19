@@ -418,6 +418,45 @@ h1, h2, h3, h4, h5, h6,
 .act-row:hover { background: var(--surface-2); }
 .act-row > a:hover .fw-semibold { color: var(--brand-strong); }
 
+/* ---------- Mobile polish ---------- */
+/* never let a stray element scroll the whole page sideways (clip, not hidden —
+   hidden on the root can break position:sticky headers) */
+html, body { overflow-x: clip; max-width: 100%; }
+
+@media (max-width: 575.98px) {
+  .container { padding-inline: .9rem; }
+
+  /* header: tighter bar, brand can't overflow next to the toggler */
+  .navbar { padding-top: .45rem; padding-bottom: .45rem; }
+  .navbar-brand { font-size: 1.02rem; max-width: 62vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brand-logo { height: 28px; max-width: 150px; }
+
+  /* stat / wallet numbers: mono is wide — keep big figures inside the card */
+  .wallet .h4, .card .h4 { font-size: 1.15rem; }
+  .wallet .h5, .card .h5 { font-size: 1rem; }
+  .wallet .fw-bold, .card.bg-primary .display-1, .card.bg-primary .display-2,
+  .card.bg-primary .display-3, .card.bg-primary .display-4 { overflow-wrap: anywhere; }
+  .card-body { padding: .95rem; }
+
+  /* range switcher: fill the width, share it evenly, never overflow */
+  .trend-ranges { width: 100%; }
+  .trend-ranges > .btn { flex: 1 1 0; padding-inline: .25rem; font-size: .76rem; }
+  #trendFilters .trend-chip { font-size: .78rem; padding: .28rem .6rem; }
+
+  /* admin activity rows: keep the amount + badge + invoice on one tidy line */
+  .act-row { gap: .5rem; }
+  .act-row .fw-semibold { font-size: .82rem; }
+  .act-row .badge { font-size: .68rem; padding: .3em .55em; }
+  .act-row .btn-icon { width: 30px !important; height: 30px !important; }
+
+  /* footer: comfortable stacked spacing, links wrap cleanly */
+  footer .container { font-size: .84rem; }
+  footer .d-flex.flex-wrap { gap: .65rem 1rem !important; }
+}
+
+/* tables (admin lists) already scroll inside .table-responsive; make wide charts safe too */
+.chart-box { max-width: 100%; }
+
 /* ---------- Accessibility ---------- */
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
 .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible { outline: none; }
