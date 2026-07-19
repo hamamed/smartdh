@@ -90,7 +90,7 @@ function renderEmail(opts = {}) {
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(20,38,28,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
       <!-- Header -->
-      <tr><td align="center" bgcolor="#12a06d" style="background:linear-gradient(135deg,#f4a62a 0%,#1bb07c 62%,#0e9f6e 100%);padding:30px 24px;">
+      <tr><td align="center" bgcolor="#0e9f6e" style="background:linear-gradient(135deg,#13b07f 0%,#0b7d57 100%);padding:30px 24px;">
         ${logoUrl
           ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
           : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}

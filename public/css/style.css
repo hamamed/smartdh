@@ -32,7 +32,8 @@
   --shadow-md: 0 8px 24px -10px rgba(20,38,28,.18);
   --shadow-lg: 0 20px 46px -20px rgba(20,38,28,.26);
 
-  --sunrise: linear-gradient(135deg, #f4a62a 0%, #1bb07c 62%, #0e9f6e 100%);
+  /* clean single-hue emerald (used by the status hero + announcement bar) */
+  --sunrise: linear-gradient(135deg, #13b07f 0%, #0b7d57 100%);
   --brand-grad: linear-gradient(140deg, #17b57e 0%, #0b7d57 100%);
 
   /* Bootstrap tokens */
