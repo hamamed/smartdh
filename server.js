@@ -69,9 +69,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
-// Optional admin subdomain (e.g. https://admin.kanzup.com). Falls back to the
-// /admin path on whatever host the user is on.
-const ADMIN_URL_LINK = process.env.ADMIN_URL ? process.env.ADMIN_URL.replace(/\/+$/, '') + '/admin' : '/admin';
+// Optional admin subdomain (e.g. https://admin.kanzup.com). The subdomain's nginx
+// sends its root to /admin, so we link to the bare host. Falls back to the /admin
+// path on whatever host the user is on.
+const ADMIN_URL_LINK = process.env.ADMIN_URL ? process.env.ADMIN_URL.replace(/\/+$/, '') : '/admin';
 const DAY = 1000 * 60 * 60 * 24;
 
 // ---------- Session secret ----------
