@@ -700,7 +700,6 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
     lines, bodyHtml, cta,
     dir: (locales[uLang] && locales[uLang].dir) || 'ltr',
     labels: {
-      disclaimer: tr('email_disclaimer'),
       tagline: tr('email_tagline'),
       unsubscribe: tr('email_unsub'),
       visit: tr('email_visit')
