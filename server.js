@@ -76,8 +76,13 @@ const ADMIN_URL_LINK = process.env.ADMIN_URL ? process.env.ADMIN_URL.replace(/\/
 // Host of the admin subdomain (from ADMIN_URL), e.g. "admin.kanzup.com". When a
 // request comes in on this host, admin pages are served at the ROOT (clean URLs
 // like /users), while everything still works under /admin on every host.
-const ADMIN_HOST = process.env.ADMIN_URL ? (() => { try { return new URL(process.env.ADMIN_URL).host; } catch (e) { return ''; } })() : '';
-const onAdminHost = (req) => !!ADMIN_HOST && req.hostname === ADMIN_HOST;
+const ADMIN_HOST = process.env.ADMIN_URL ? (() => { try { return new URL(process.env.ADMIN_URL).host.toLowerCase(); } catch (e) { return ''; } })() : '';
+// A request is "on the admin host" if it matches ADMIN_URL's host, or simply if
+// the hostname starts with "admin." (so it works even if ADMIN_URL is unset).
+const onAdminHost = (req) => {
+  const h = (req.hostname || '').toLowerCase();
+  return (!!ADMIN_HOST && h === ADMIN_HOST) || h.startsWith('admin.');
+};
 // All admin routes live on this router — mounted at /admin everywhere, and at the
 // root on the admin host (see the mounts near the bottom).
 const adminRouter = express.Router();
