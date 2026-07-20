@@ -41,7 +41,7 @@
         <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
           <% if (currentUser && currentUser.isAdmin) { %>
             <li class="nav-item">
-              <a href="/admin" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
+              <a href="<%= adminUrl %>" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="shield"></i><%= t('nav_admin') %></a>
             </li>
           <% } %>
           <!-- Language switcher -->

@@ -69,6 +69,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
+// Optional admin subdomain (e.g. https://admin.kanzup.com). Falls back to the
+// /admin path on whatever host the user is on.
+const ADMIN_URL_LINK = process.env.ADMIN_URL ? process.env.ADMIN_URL.replace(/\/+$/, '') + '/admin' : '/admin';
 const DAY = 1000 * 60 * 60 * 24;
 
 // ---------- Session secret ----------
@@ -219,6 +222,9 @@ app.use((req, res, next) => {
   res.locals.locales = locales;
   res.locals.t = tr;
   res.locals.currentUser = user;
+  // Where the "Admin" button points. Set ADMIN_URL=https://admin.kanzup.com to
+  // send admins to the subdomain; defaults to the /admin path on the same host.
+  res.locals.adminUrl = ADMIN_URL_LINK;
   res.locals.settings = db.settings;
   res.locals.plans = db.settings.plans;
   res.locals.ACH = ACHIEVEMENTS;
