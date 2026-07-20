@@ -837,8 +837,16 @@ app.get('/dashboard', requireActive, (req, res) => {
     showTour: !u.onboarded || req.query.tour === '1',
     history: u.history || [],
     checklist, checklistDone: checklist.filter(c => c.done).length,
+    checklistHidden: !!u.gsDismissed,
     campaign: campaignStatus(req.db, u)
   }, levelData(u)));
+});
+
+// Dismiss the getting-started checklist for good (per player).
+app.post('/dismiss-getting-started', requireActive, (req, res) => {
+  req.currentUser.gsDismissed = true;
+  save(req.db);
+  res.redirect('/dashboard');
 });
 
 // Mark the welcome tour as seen (so it won't auto-open again).

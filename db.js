@@ -155,6 +155,8 @@ function migrate(db) {
     // Test accounts: excluded from the real dashboard, stats and leaderboard;
     // managed on the admin Test Lab page instead.
     if (u.isTest === undefined) u.isTest = false;
+    // Whether the player dismissed the getting-started checklist (stays hidden).
+    if (u.gsDismissed === undefined) u.gsDismissed = false;
   });
   return db;
 }

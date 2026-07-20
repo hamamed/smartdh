@@ -12,13 +12,19 @@
 
     <div id="flash"></div>
 
-    <!-- Getting started checklist (hides once every step is done) -->
-    <% if (checklistDone < checklist.length) { %>
+    <!-- Getting started checklist (hides once every step is done, or when dismissed) -->
+    <% if (!checklistHidden && checklistDone < checklist.length) { %>
       <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
             <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="rocket" class="text-primary"></i><%= t('gs_title') %></h6>
-            <span class="badge bg-primary-subtle text-primary"><%= t('gs_progress', { done: checklistDone, total: checklist.length }) %></span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary-subtle text-primary"><%= t('gs_progress', { done: checklistDone, total: checklist.length }) %></span>
+              <form action="/dismiss-getting-started" method="post" onsubmit="return confirm('<%= t('gs_hide_c') %>')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-icon btn-outline-secondary" style="width:30px;height:30px" title="<%= t('gs_hide') %>" aria-label="<%= t('gs_hide') %>"><i data-lucide="x"></i></button>
+              </form>
+            </div>
           </div>
           <p class="text-muted small mb-3"><%= t('gs_sub') %></p>
           <div class="progress mb-3" style="height:8px"><div class="progress-bar" style="width:<%= Math.round(checklistDone / checklist.length * 100) %>%"></div></div>
