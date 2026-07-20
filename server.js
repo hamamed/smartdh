@@ -162,7 +162,9 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: DAY * 7, httpOnly: true, sameSite: 'lax', secure: PROD }
+  // COOKIE_DOMAIN=.kanzup.com shares the login across kanzup.com + admin.kanzup.com.
+  // Unset (localhost / single domain) → host-only cookie, which is correct there.
+  cookie: { maxAge: DAY * 7, httpOnly: true, sameSite: 'lax', secure: PROD, domain: process.env.COOKIE_DOMAIN || undefined }
 }));
 
 // ---------- CSRF protection ----------
@@ -704,7 +706,10 @@ function requireActive(req, res, next) {
   next();
 }
 function requireAdmin(req, res, next) {
-  if (!req.currentUser || !req.currentUser.isAdmin) return res.status(403).render('message', {
+  // Not logged in at all → send to login (login sends admins on to /admin).
+  if (!req.currentUser) return res.redirect('/login');
+  // Logged in but not an admin → access denied.
+  if (!req.currentUser.isAdmin) return res.status(403).render('message', {
     title: req.t('forbidden_title'), heading: req.t('forbidden_h'), mBody: req.t('forbidden_b')
   });
   next();

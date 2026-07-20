@@ -88,7 +88,8 @@ Fill in `.env`:
 SESSION_SECRET=<paste the generated value>
 ADMIN_EMAIL=your@email.com        # ONLY this address becomes admin
 APP_URL=https://kanzup.com
-ADMIN_URL=https://admin.kanzup.com   # makes the "Admin" button open the subdomain
+ADMIN_URL=https://admin.kanzup.com    # makes the "Admin" button open the subdomain
+COOKIE_DOMAIN=.kanzup.com             # shares the login across kanzup.com + admin.kanzup.com (note the dot)
 NODE_ENV=production
 PORT=3000
 ```
