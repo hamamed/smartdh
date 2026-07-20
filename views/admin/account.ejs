@@ -1,0 +1,66 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <%- include('_head', { heading: t('acct_title'), back: '/admin' }) %>
+
+    <% const okMap = { email: t('acct_ok_email'), password: t('acct_ok_pw') };
+       const errMap = { wrongpass: t('acct_err_wrongpass'), bademail: t('acct_err_bademail'),
+                        dupemail: t('acct_err_dupemail'), short: t('acct_err_short'), mismatch: t('acct_err_mismatch') }; %>
+    <% if (ok && okMap[ok]) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i><%= okMap[ok] %></div>
+    <% } %>
+    <% if (err && errMap[err]) { %>
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i><%= errMap[err] %></div>
+    <% } %>
+
+    <div class="alert alert-secondary d-flex align-items-start gap-2 small rounded-4">
+      <i data-lucide="shield" class="flex-shrink-0 mt-1"></i>
+      <span><%= t('acct_intro') %></span>
+    </div>
+
+    <!-- Change email -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('acct_email_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('acct_signed_in') %> <strong><%= currentUser.email %></strong></p>
+        <% if (adminEmailLocked) { %>
+          <div class="alert alert-warning py-2 small d-flex align-items-start gap-2"><i data-lucide="lock" class="flex-shrink-0 mt-1"></i><span><%= t('acct_locked_note') %></span></div>
+        <% } %>
+        <form action="/admin/account/email" method="post" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label small"><%= t('acct_new_email') %></label>
+            <input name="email" type="email" class="form-control" value="<%= currentUser.email %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small"><%= t('acct_current') %></label>
+            <input name="current" type="password" class="form-control" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('acct_save_email') %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Change password -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="key-round" class="text-primary"></i><%= t('acct_pw_t') %></h6>
+        <form action="/admin/account/password" method="post" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label small"><%= t('acct_current') %></label>
+            <input name="current" type="password" class="form-control" autocomplete="current-password" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small"><%= t('acct_new_pw') %></label>
+            <input name="password" type="password" minlength="6" class="form-control" autocomplete="new-password" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small"><%= t('acct_confirm') %></label>
+            <input name="confirm" type="password" minlength="6" class="form-control" autocomplete="new-password" required>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('acct_save_pw') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

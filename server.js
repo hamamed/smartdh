@@ -1779,6 +1779,43 @@ adminRouter.post('/users/:id/password', requireAdmin, async (req, res) => {
   res.redirect('/admin/users/' + req.params.id + '?ok=1');
 });
 
+// ---------- Admin's own account (change email / password) ----------
+adminRouter.get('/account', requireAdmin, (req, res) => {
+  res.render('admin/account', {
+    title: req.t('acct_title'), counts: adminCounts(req.db),
+    adminEmailLocked: !!ADMIN_EMAIL && req.currentUser.email.toLowerCase() === ADMIN_EMAIL,
+    ok: req.query.ok || null, err: req.query.err || null
+  });
+});
+
+// Change your own email — requires your current password.
+adminRouter.post('/account/email', requireAdmin, async (req, res) => {
+  const db = req.db, u = req.currentUser;
+  const current = req.body.current || '';
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!(await bcrypt.compare(current, u.passwordHash))) return res.redirect('/admin/account?err=wrongpass');
+  if (!email.includes('@')) return res.redirect('/admin/account?err=bademail');
+  if (db.users.find(x => x.id !== u.id && x.email.toLowerCase() === email)) return res.redirect('/admin/account?err=dupemail');
+  u.email = email;
+  logAudit(db, u, 'admin.changeEmail', email);
+  save(db);
+  res.redirect('/admin/account?ok=email');
+});
+
+// Change your own password — requires your current password + a confirmation.
+adminRouter.post('/account/password', requireAdmin, async (req, res) => {
+  const db = req.db, u = req.currentUser;
+  const current = req.body.current || '', pass = req.body.password || '', confirm = req.body.confirm || '';
+  if (!(await bcrypt.compare(current, u.passwordHash))) return res.redirect('/admin/account?err=wrongpass');
+  if (pass.length < 6) return res.redirect('/admin/account?err=short');
+  if (pass !== confirm) return res.redirect('/admin/account?err=mismatch');
+  u.passwordHash = await bcrypt.hash(pass, 10);
+  u.reset = null;
+  logAudit(db, u, 'admin.changePassword', u.name);
+  save(db);
+  res.redirect('/admin/account?ok=password');
+});
+
 // ---------- Send email to players ----------
 // Pick who a broadcast goes to. Admins are never included (you are the sender),
 // and opted-out players are dropped unless you target them by exact email.
