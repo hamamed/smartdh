@@ -73,6 +73,14 @@ const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 // sends its root to /admin, so we link to the bare host. Falls back to the /admin
 // path on whatever host the user is on.
 const ADMIN_URL_LINK = process.env.ADMIN_URL ? process.env.ADMIN_URL.replace(/\/+$/, '') : '/admin';
+// Host of the admin subdomain (from ADMIN_URL), e.g. "admin.kanzup.com". When a
+// request comes in on this host, admin pages are served at the ROOT (clean URLs
+// like /users), while everything still works under /admin on every host.
+const ADMIN_HOST = process.env.ADMIN_URL ? (() => { try { return new URL(process.env.ADMIN_URL).host; } catch (e) { return ''; } })() : '';
+const onAdminHost = (req) => !!ADMIN_HOST && req.hostname === ADMIN_HOST;
+// All admin routes live on this router — mounted at /admin everywhere, and at the
+// root on the admin host (see the mounts near the bottom).
+const adminRouter = express.Router();
 const DAY = 1000 * 60 * 60 * 24;
 
 // ---------- Session secret ----------
@@ -244,6 +252,34 @@ app.use((req, res, next) => {
   const curLabel = (lang === 'ar' && ['DH', 'MAD'].includes(db.settings.currency)) ? 'درهم' : db.settings.currency;
   res.locals.curLabel = curLabel;
   res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${curLabel}`;
+  next();
+});
+
+// ---------- Admin subdomain: clean URLs ----------
+// On the admin host the admin panel lives at the root, with no "/admin" in the
+// URL. Templates keep their /admin/... links (so a single-domain deploy still
+// works); on the admin host we transparently strip the prefix in three places:
+//   1) "/" serves the hub (internally routed to /admin — the URL bar stays "/")
+//   2) redirects to /admin/... become /...
+//   3) rendered HTML has its /admin/ links rewritten to / (all paths are literal
+//      strings by render time, so this is a safe, uniform swap)
+app.use((req, res, next) => {
+  if (onAdminHost(req)) {
+    if (req.path === '/') req.url = '/admin' + req.url.slice(1);
+    const origRedirect = res.redirect.bind(res);
+    res.redirect = (url) => {
+      if (typeof url === 'string' && (url === '/admin' || url.startsWith('/admin/'))) url = url.slice(6) || '/';
+      return origRedirect(url);
+    };
+    const origRender = res.render.bind(res);
+    res.render = (view, opts) => origRender(view, opts, (err, html) => {
+      if (err) return next(err);
+      res.send(html
+        .replace(/\/admin\//g, '/')     // href/action="/admin/users" → "/users"
+        .replace(/"\/admin"/g, '"/"')    // href="/admin" (hub) → "/"
+        .replace(/'\/admin'/g, "'/'"));
+    });
+  }
   next();
 });
 
@@ -1289,7 +1325,7 @@ function adminCounts(db) {
 }
 
 // ---------- Admin hub ----------
-app.get('/admin', requireAdmin, (req, res) => {
+adminRouter.get('/', requireAdmin, (req, res) => {
   const db = req.db;
   db.users.forEach(u => accrue(u, db));
   save(db);
@@ -1312,7 +1348,7 @@ app.get('/admin', requireAdmin, (req, res) => {
 // Live totals + recent deposit/withdraw events for the admin activity chart.
 // Read-only and never saves — it projects each player's earnings forward from
 // their last accrual instead of mutating, so polling it every second is cheap.
-app.get('/admin/stats.json', requireAdmin, (req, res) => {
+adminRouter.get('/stats.json', requireAdmin, (req, res) => {
   const db = req.db;
   const now = Date.now();
   let earnings = 0, invested = 0, perSecond = 0;
@@ -1365,7 +1401,7 @@ function trendBuckets(range) {
 
 // Historical trends: settled deposits, paid withdrawals and new signups per
 // bucket, over the chosen range. Test accounts are excluded.
-app.get('/admin/analytics.json', requireAdmin, (req, res) => {
+adminRouter.get('/analytics.json', requireAdmin, (req, res) => {
   const db = req.db;
   const range = ['hourly', 'daily', 'weekly', 'monthly'].includes(req.query.range) ? req.query.range : 'daily';
   const testIds = new Set(db.users.filter(u => u.isTest).map(u => u.id));
@@ -1402,7 +1438,7 @@ app.get('/admin/analytics.json', requireAdmin, (req, res) => {
 });
 
 // ---------- Users ----------
-app.get('/admin/users', requireAdmin, (req, res) => {
+adminRouter.get('/users', requireAdmin, (req, res) => {
   const db = req.db;
   db.users.forEach(u => accrue(u, db));
   save(db);
@@ -1431,7 +1467,7 @@ app.get('/admin/users', requireAdmin, (req, res) => {
 });
 
 // ---------- Single user ----------
-app.get('/admin/users/:id', requireAdmin, (req, res) => {
+adminRouter.get('/users/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (!u) return res.status(404).render('error', {
@@ -1455,7 +1491,7 @@ app.get('/admin/users/:id', requireAdmin, (req, res) => {
 });
 
 // ---------- Test Lab: a sandbox of test accounts kept out of the real game ----------
-app.get('/admin/test', requireAdmin, (req, res) => {
+adminRouter.get('/test', requireAdmin, (req, res) => {
   const db = req.db;
   db.users.forEach(u => accrue(u, db));
   save(db);
@@ -1477,7 +1513,7 @@ app.get('/admin/test', requireAdmin, (req, res) => {
 });
 
 // Flip a user between real and test.
-app.post('/admin/users/:id/toggle-test', requireAdmin, (req, res) => {
+adminRouter.post('/users/:id/toggle-test', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u && !u.isAdmin) {           // never turn the admin into a test account
@@ -1489,7 +1525,7 @@ app.post('/admin/users/:id/toggle-test', requireAdmin, (req, res) => {
 });
 
 // Delete every test account in one click (cascades their deposits/withdrawals).
-app.post('/admin/test/delete-all', requireAdmin, (req, res) => {
+adminRouter.post('/test/delete-all', requireAdmin, (req, res) => {
   const db = req.db;
   const ids = db.users.filter(u => u.isTest && !u.isAdmin).map(u => u.id);
   ids.forEach(id => deleteUserCascade(db, id));
@@ -1499,7 +1535,7 @@ app.post('/admin/test/delete-all', requireAdmin, (req, res) => {
 });
 
 // Create an account directly from the admin panel.
-app.post('/admin/users/create', requireAdmin, async (req, res) => {
+adminRouter.post('/users/create', requireAdmin, async (req, res) => {
   const db = req.db;
   const name = (req.body.name || '').trim();
   const email = (req.body.email || '').trim().toLowerCase();
@@ -1518,7 +1554,7 @@ app.post('/admin/users/create', requireAdmin, async (req, res) => {
 // Record a deposit on a player's behalf — any app, any date, approved or pending,
 // with an optional bank reference and receipt image. csrfGuard runs before multer
 // (token from the query) so a rejected upload never writes a file.
-app.post('/admin/users/:id/deposit', requireAdmin, csrfGuard,
+adminRouter.post('/users/:id/deposit', requireAdmin, csrfGuard,
   (req, res, next) => uploadReceipt.single('receipt')(req, res, () => next()),
   (req, res) => {
     const db = req.db;
@@ -1541,7 +1577,7 @@ app.post('/admin/users/:id/deposit', requireAdmin, csrfGuard,
   });
 
 // Record a withdrawal on a player's behalf — with bank/PayPal details and a date.
-app.post('/admin/users/:id/withdraw', requireAdmin, (req, res) => {
+adminRouter.post('/users/:id/withdraw', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (!u) return res.redirect('/admin/users');
@@ -1578,7 +1614,7 @@ app.post('/admin/users/:id/withdraw', requireAdmin, (req, res) => {
 });
 
 // ----- Impersonation: view the game as a player (read-only) -----
-app.post('/admin/users/:id/impersonate', requireAdmin, (req, res) => {
+adminRouter.post('/users/:id/impersonate', requireAdmin, (req, res) => {
   const target = req.db.users.find(x => x.id === Number(req.params.id));
   if (target && !target.isAdmin) {
     req.session.impersonate = target.id;
@@ -1587,7 +1623,7 @@ app.post('/admin/users/:id/impersonate', requireAdmin, (req, res) => {
   }
   res.redirect('/dashboard');
 });
-app.post('/admin/stop-impersonate', (req, res) => {
+adminRouter.post('/stop-impersonate', (req, res) => {
   // req.currentUser is the target while impersonating; the real admin is session.userId
   const id = req.session.impersonate;
   delete req.session.impersonate;
@@ -1595,7 +1631,7 @@ app.post('/admin/stop-impersonate', (req, res) => {
 });
 
 // ----- Batch deposit to several selected players -----
-app.post('/admin/users/batch-deposit', requireAdmin, (req, res) => {
+adminRouter.post('/users/batch-deposit', requireAdmin, (req, res) => {
   const db = req.db;
   let ids = req.body.ids || [];
   if (!Array.isArray(ids)) ids = [ids];
@@ -1639,7 +1675,7 @@ function runSchedules(db) {
   return ran;
 }
 
-app.post('/admin/users/:id/schedule', requireAdmin, (req, res) => {
+adminRouter.post('/users/:id/schedule', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (!u) return res.redirect('/admin/users');
@@ -1657,7 +1693,7 @@ app.post('/admin/users/:id/schedule', requireAdmin, (req, res) => {
   res.redirect('/admin/users/' + u.id + '?ok=schedule');
 });
 
-app.post('/admin/schedules/:sid/delete', requireAdmin, (req, res) => {
+adminRouter.post('/schedules/:sid/delete', requireAdmin, (req, res) => {
   const db = req.db;
   const sc = db.schedules.find(s => s.id === Number(req.params.sid));
   db.schedules = db.schedules.filter(s => s.id !== Number(req.params.sid));
@@ -1667,7 +1703,7 @@ app.post('/admin/schedules/:sid/delete', requireAdmin, (req, res) => {
 });
 
 // Run all due schedules now (also runs automatically on a timer).
-app.post('/admin/schedules/run', requireAdmin, (req, res) => {
+adminRouter.post('/schedules/run', requireAdmin, (req, res) => {
   const db = req.db;
   const n = runSchedules(db);
   logAudit(db, req.currentUser, 'schedule.run', n + ' payouts');
@@ -1676,7 +1712,7 @@ app.post('/admin/schedules/run', requireAdmin, (req, res) => {
 });
 
 // Printable per-user statement (browser print → PDF).
-app.get('/admin/users/:id/statement', requireAdmin, (req, res) => {
+adminRouter.get('/users/:id/statement', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (!u) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
@@ -1692,7 +1728,7 @@ app.get('/admin/users/:id/statement', requireAdmin, (req, res) => {
 });
 
 // Printable invoice / receipt for a single deposit or withdrawal.
-app.get('/admin/invoice/:type/:id', requireAdmin, (req, res) => {
+adminRouter.get('/invoice/:type/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const type = req.params.type === 'withdraw' ? 'withdraw' : 'deposit';
   const id = Number(req.params.id);
@@ -1710,7 +1746,7 @@ app.get('/admin/invoice/:type/:id', requireAdmin, (req, res) => {
 });
 
 // Set a user's XP directly (level is derived from it).
-app.post('/admin/users/:id/xp', requireAdmin, (req, res) => {
+adminRouter.post('/users/:id/xp', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u && req.body.xp !== '') {
@@ -1722,7 +1758,7 @@ app.post('/admin/users/:id/xp', requireAdmin, (req, res) => {
 });
 
 // Give a user a new password (they can change it later in their profile).
-app.post('/admin/users/:id/password', requireAdmin, async (req, res) => {
+adminRouter.post('/users/:id/password', requireAdmin, async (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   const pass = req.body.password || '';
@@ -1745,7 +1781,7 @@ function emailAudience(db, kind) {
   return real; // 'all'
 }
 
-app.get('/admin/email', requireAdmin, (req, res) => {
+adminRouter.get('/email', requireAdmin, (req, res) => {
   const db = req.db;
   const optedOut = db.users.filter(u => !u.isAdmin && u.emailOptOut).length;
   res.render('admin/email', {
@@ -1765,7 +1801,7 @@ app.get('/admin/email', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/admin/email/send', requireAdmin, csrfGuard, async (req, res) => {
+adminRouter.post('/email/send', requireAdmin, csrfGuard, async (req, res) => {
   const db = req.db;
   const subject = (req.body.subject || '').trim();
   const heading = (req.body.heading || '').trim() || subject;
@@ -1810,11 +1846,11 @@ app.post('/admin/email/send', requireAdmin, csrfGuard, async (req, res) => {
 });
 
 // ---------- Section pages ----------
-app.get('/admin/apps', requireAdmin, (req, res) => {
+adminRouter.get('/apps', requireAdmin, (req, res) => {
   res.render('admin/apps', { title: req.t('tab_apps'), counts: adminCounts(req.db) });
 });
 
-app.get('/admin/deposits', requireAdmin, (req, res) => {
+adminRouter.get('/deposits', requireAdmin, (req, res) => {
   const db = req.db;
   const status = req.query.status || '';
   const q = (req.query.q || '').trim().toLowerCase();
@@ -1830,7 +1866,7 @@ app.get('/admin/deposits', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/withdrawals', requireAdmin, (req, res) => {
+adminRouter.get('/withdrawals', requireAdmin, (req, res) => {
   const db = req.db;
   const status = req.query.status || '';
   const q = (req.query.q || '').trim().toLowerCase();
@@ -1846,7 +1882,7 @@ app.get('/admin/withdrawals', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/audit', requireAdmin, (req, res) => {
+adminRouter.get('/audit', requireAdmin, (req, res) => {
   const db = req.db;
   res.render('admin/audit', {
     title: req.t('tab_audit'),
@@ -1856,11 +1892,11 @@ app.get('/admin/audit', requireAdmin, (req, res) => {
 });
 
 // ---------- Settings hub + focused settings pages ----------
-app.get('/admin/settings', requireAdmin, (req, res) => {
+adminRouter.get('/settings', requireAdmin, (req, res) => {
   res.render('admin/settings', { title: req.t('tab_settings'), counts: adminCounts(req.db) });
 });
 ['general', 'economy', 'payments', 'announcement', 'campaign'].forEach(section => {
-  app.get('/admin/settings/' + section, requireAdmin, (req, res) => {
+  adminRouter.get('/settings/' + section, requireAdmin, (req, res) => {
     res.render('admin/settings-' + section, {
       title: req.t('set_' + section + '_t'), counts: adminCounts(req.db), ok: req.query.ok || null
     });
@@ -1868,7 +1904,7 @@ app.get('/admin/settings', requireAdmin, (req, res) => {
 });
 
 // ----- CSV exports -----
-app.get('/admin/export/users.csv', requireAdmin, (req, res) => {
+adminRouter.get('/export/users.csv', requireAdmin, (req, res) => {
   const db = req.db;
   const apps = db.settings.plans;
   // per-app columns mean an export can be edited and imported straight back
@@ -1887,13 +1923,13 @@ app.get('/admin/export/users.csv', requireAdmin, (req, res) => {
   csvReply(res, 'users.csv', rows);
 });
 
-app.get('/admin/export/deposits.csv', requireAdmin, (req, res) => {
+adminRouter.get('/export/deposits.csv', requireAdmin, (req, res) => {
   const rows = [['id', 'user', 'amount', 'app', 'status', 'date']];
   req.db.deposits.forEach(d => rows.push([d.id, d.userName, d.amount, d.planLabel, d.status, new Date(d.createdAt).toISOString()]));
   csvReply(res, 'deposits.csv', rows);
 });
 
-app.get('/admin/export/withdrawals.csv', requireAdmin, (req, res) => {
+adminRouter.get('/export/withdrawals.csv', requireAdmin, (req, res) => {
   const rows = [['id', 'user', 'amount', 'from', 'method', 'payoutName', 'payoutAccount', 'status', 'date']];
   req.db.withdrawals.forEach(w => rows.push([w.id, w.userName, w.amount, w.fromLabel || w.from, w.method || '',
     w.payoutName || '', w.payoutAccount || w.details || '', w.status, new Date(w.createdAt).toISOString()]));
@@ -1906,7 +1942,7 @@ const uploadData = multer({
   limits: { fileSize: 10 * 1024 * 1024, files: 1 }
 });
 
-app.get('/admin/data', requireAdmin, (req, res) => {
+adminRouter.get('/data', requireAdmin, (req, res) => {
   res.render('admin/data', {
     title: req.t('tab_data'), counts: adminCounts(req.db),
     result: req.query.wiped ? { ok: true, wiped: true, created: [], updated: [], errors: [] }
@@ -1916,7 +1952,7 @@ app.get('/admin/data', requireAdmin, (req, res) => {
 });
 
 // Whole database as JSON — the real "all data" backup.
-app.get('/admin/export/backup.json', requireAdmin, (req, res) => {
+adminRouter.get('/export/backup.json', requireAdmin, (req, res) => {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="kanzup-backup-${stamp}.json"`);
@@ -1924,7 +1960,7 @@ app.get('/admin/export/backup.json', requireAdmin, (req, res) => {
 });
 
 // A ready-to-fill template so the expected columns are obvious.
-app.get('/admin/export/users-template.csv', requireAdmin, (req, res) => {
+adminRouter.get('/export/users-template.csv', requireAdmin, (req, res) => {
   const apps = req.db.settings.plans;
   csvReply(res, 'users-template.csv', [
     ['name', 'email', 'status', 'xp', 'earnings', 'password', ...apps.map(p => 'invested_' + p.id)],
@@ -1934,7 +1970,7 @@ app.get('/admin/export/users-template.csv', requireAdmin, (req, res) => {
 });
 
 // Import/update players from CSV. Matches on email.
-app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file'), async (req, res) => {
+adminRouter.post('/import/users', requireAdmin, csrfGuard, uploadData.single('file'), async (req, res) => {
   const db = req.db;
   const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(db), result });
   if (!req.file) return render({ ok: false, error: req.t('imp_nofile') });
@@ -2022,7 +2058,7 @@ app.post('/admin/import/users', requireAdmin, csrfGuard, uploadData.single('file
 
 // Wipe everything and start over. The most destructive action in the app, so it
 // needs the typed phrase AND the admin's password — CSRF alone isn't enough here.
-app.post('/admin/wipe', requireAdmin, async (req, res) => {
+adminRouter.post('/wipe', requireAdmin, async (req, res) => {
   const db = req.db;
   const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(db), result });
 
@@ -2050,7 +2086,7 @@ app.post('/admin/wipe', requireAdmin, async (req, res) => {
 });
 
 // Restore the whole database from a backup JSON. Destructive.
-app.post('/admin/restore', requireAdmin, csrfGuard, uploadData.single('file'), (req, res) => {
+adminRouter.post('/restore', requireAdmin, csrfGuard, uploadData.single('file'), (req, res) => {
   const render = (result) => res.render('admin/data', { title: req.t('tab_data'), counts: adminCounts(req.db), result });
   if (!req.file) return render({ ok: false, error: req.t('imp_nofile') });
   if (req.body.confirm !== 'RESTORE') return render({ ok: false, error: req.t('imp_noconfirm') });
@@ -2076,7 +2112,7 @@ function appImage(req) {
   return (req.body.imageUrl || '').trim();
 }
 
-app.post('/admin/apps/add', requireAdmin, csrfGuard,
+adminRouter.post('/apps/add', requireAdmin, csrfGuard,
   (req, res, next) => uploadAppImg.single('image')(req, res, () => next()),
   (req, res) => {
     const db = req.db;
@@ -2098,7 +2134,7 @@ app.post('/admin/apps/add', requireAdmin, csrfGuard,
     res.redirect('/admin/apps');
   });
 
-app.post('/admin/apps/edit/:id', requireAdmin, csrfGuard,
+adminRouter.post('/apps/edit/:id', requireAdmin, csrfGuard,
   (req, res, next) => uploadAppImg.single('image')(req, res, () => next()),
   (req, res) => {
     const db = req.db;
@@ -2121,7 +2157,7 @@ app.post('/admin/apps/edit/:id', requireAdmin, csrfGuard,
     res.redirect('/admin/apps');
   });
 
-app.post('/admin/apps/delete/:id', requireAdmin, (req, res) => {
+adminRouter.post('/apps/delete/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const id = req.params.id;
   const gone = db.settings.plans.find(x => x.id === id);
@@ -2156,7 +2192,7 @@ app.post('/admin/apps/delete/:id', requireAdmin, (req, res) => {
 });
 
 // Approving a deposit is where coins are actually credited.
-app.post('/admin/deposit/:id/:action', requireAdmin, (req, res) => {
+adminRouter.post('/deposit/:id/:action', requireAdmin, (req, res) => {
   const db = req.db;
   const d = db.deposits.find(x => x.id === Number(req.params.id));
   if (d && d.status === 'pending') {
@@ -2186,7 +2222,7 @@ app.post('/admin/deposit/:id/:action', requireAdmin, (req, res) => {
   res.redirect('/admin/deposits');
 });
 
-app.post('/admin/approve/:id', requireAdmin, async (req, res) => {
+adminRouter.post('/approve/:id', requireAdmin, async (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u) {
@@ -2205,7 +2241,7 @@ app.post('/admin/approve/:id', requireAdmin, async (req, res) => {
   res.redirect('/admin/users');
 });
 
-app.post('/admin/reject/:id', requireAdmin, (req, res) => {
+adminRouter.post('/reject/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u && !u.isAdmin) { u.status = 'rejected'; logAudit(db, req.currentUser, 'user.reject', u.name + ' <' + u.email + '>'); }
@@ -2213,7 +2249,7 @@ app.post('/admin/reject/:id', requireAdmin, (req, res) => {
   res.redirect('/admin/users');
 });
 
-app.post('/admin/adjust/:id', requireAdmin, (req, res) => {
+adminRouter.post('/adjust/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u) {
@@ -2231,7 +2267,7 @@ app.post('/admin/adjust/:id', requireAdmin, (req, res) => {
   res.redirect('/admin/users/' + req.params.id);
 });
 
-app.post('/admin/toggle-admin/:id', requireAdmin, (req, res) => {
+adminRouter.post('/toggle-admin/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const u = db.users.find(x => x.id === Number(req.params.id));
   if (u && u.id !== req.currentUser.id) {
@@ -2254,7 +2290,7 @@ function deleteUserCascade(db, id) {
   return u;
 }
 
-app.post('/admin/delete/:id', requireAdmin, (req, res) => {
+adminRouter.post('/delete/:id', requireAdmin, (req, res) => {
   const db = req.db;
   const id = Number(req.params.id);
   if (id !== req.currentUser.id) {   // never delete yourself
@@ -2266,7 +2302,7 @@ app.post('/admin/delete/:id', requireAdmin, (req, res) => {
 });
 
 // ----- Bulk actions from the users list -----
-app.post('/admin/users/bulk', requireAdmin, async (req, res) => {
+adminRouter.post('/users/bulk', requireAdmin, async (req, res) => {
   const db = req.db;
   const action = req.body.action;
   let ids = req.body.ids || [];
@@ -2315,7 +2351,7 @@ app.post('/admin/users/bulk', requireAdmin, async (req, res) => {
 
 // Each settings page posts only its own fields, so handlers are split per section
 // (a single merged handler would wipe any field the form didn't include).
-app.post('/admin/settings/general', requireAdmin, (req, res) => {
+adminRouter.post('/settings/general', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;
   s.siteName = (req.body.siteName || '').trim() || s.siteName;
   s.currency = (req.body.currency || '').trim() || s.currency;
@@ -2326,7 +2362,7 @@ app.post('/admin/settings/general', requireAdmin, (req, res) => {
 
 // Branding: upload/replace/remove the logo image and choose whether the navbar
 // and emails show the logo or the text name. csrfGuard runs before multer.
-app.post('/admin/settings/logo', requireAdmin, csrfGuard,
+adminRouter.post('/settings/logo', requireAdmin, csrfGuard,
   (req, res, next) => uploadLogo.single('logo')(req, res, () => next()),
   (req, res) => {
     const db = req.db, s = db.settings;
@@ -2347,7 +2383,7 @@ app.post('/admin/settings/logo', requireAdmin, csrfGuard,
     res.redirect('/admin/settings/general?ok=1');
   });
 
-app.post('/admin/settings/economy', requireAdmin, (req, res) => {
+adminRouter.post('/settings/economy', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;
   s.minAddFunds = Math.max(0, Number(req.body.minAddFunds) || 0);
   s.minWithdraw = Math.max(0, Number(req.body.minWithdraw) || 0);
@@ -2362,7 +2398,7 @@ app.post('/admin/settings/economy', requireAdmin, (req, res) => {
   res.redirect('/admin/settings/economy?ok=1');
 });
 
-app.post('/admin/settings/payments', requireAdmin, (req, res) => {
+adminRouter.post('/settings/payments', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;
   s.depositInfo = {
     bankName: (req.body.dep_bankName || '').trim(),
@@ -2375,7 +2411,7 @@ app.post('/admin/settings/payments', requireAdmin, (req, res) => {
   res.redirect('/admin/settings/payments?ok=1');
 });
 
-app.post('/admin/settings/campaign', requireAdmin, (req, res) => {
+adminRouter.post('/settings/campaign', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;
   const prev = s.campaign || {};
   s.campaign = {
@@ -2403,7 +2439,7 @@ app.post('/admin/settings/campaign', requireAdmin, (req, res) => {
   res.redirect('/admin/settings/campaign?ok=1');
 });
 
-app.post('/admin/settings/announcement', requireAdmin, (req, res) => {
+adminRouter.post('/settings/announcement', requireAdmin, (req, res) => {
   const db = req.db, s = db.settings;
   s.announcement = { text: (req.body.ann_text || '').trim(), enabled: !!req.body.ann_enabled };
   logAudit(db, req.currentUser, 'settings.announcement', s.announcement.enabled ? 'ON: ' + s.announcement.text : 'OFF');
@@ -2411,7 +2447,7 @@ app.post('/admin/settings/announcement', requireAdmin, (req, res) => {
   res.redirect('/admin/settings/announcement?ok=1');
 });
 
-app.post('/admin/withdraw/:id/:action', requireAdmin, (req, res) => {
+adminRouter.post('/withdraw/:id/:action', requireAdmin, (req, res) => {
   const db = req.db;
   const w = db.withdrawals.find(x => x.id === Number(req.params.id));
   if (w && w.status === 'pending') {
@@ -2434,6 +2470,14 @@ app.post('/admin/withdraw/:id/:action', requireAdmin, (req, res) => {
   }
   res.redirect('/admin/withdrawals');
 });
+
+// ---------- Mount the admin router ----------
+// Everywhere: reachable under /admin (backward compatible, form posts, XHR).
+app.use('/admin', adminRouter);
+// On the admin host only: also reachable at the root, so /users, /deposits, … work
+// as clean URLs. Placed after all the player routes above, so player pages (login,
+// dashboard, impersonation view, language, …) still win on this host.
+app.use((req, res, next) => onAdminHost(req) ? adminRouter(req, res, next) : next());
 
 // ---------- 404 ----------
 app.use((req, res) => {
