@@ -86,6 +86,54 @@ const onAdminHost = (req) => {
 // All admin routes live on this router — mounted at /admin everywhere, and at the
 // root on the admin host (see the mounts near the bottom).
 const adminRouter = express.Router();
+
+// ---------- Admin roles (RBAC) ----------
+// Each role grants a set of permissions. 'owner' has '*' (everything, incl. managing
+// admins). Order here = order shown in the UI.
+const ROLES = {
+  owner:     { perms: ['*'] },
+  manager:   { perms: ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'audit', 'test'] },
+  moderator: { perms: ['users', 'deposits', 'withdrawals', 'audit'] },
+  support:   { perms: ['users', 'audit'] }
+};
+const PERMS = ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'data', 'audit', 'test', 'admins'];
+
+function roleOf(u) { return (u && u.isAdmin) ? (ROLES[u.role] ? u.role : 'owner') : null; }
+function hasPerm(u, perm) {
+  if (!u || !u.isAdmin) return false;
+  const r = ROLES[roleOf(u)];
+  return !!r && (r.perms.includes('*') || r.perms.includes(perm));
+}
+// Which permission an admin path needs (null = any admin: the hub, own account, invoices, charts).
+function permForPath(p) {
+  if (p === '/' || p === '' || p.startsWith('/account') || p.startsWith('/invoice')
+      || p.startsWith('/stats.json') || p.startsWith('/analytics.json')) return null;
+  if (p.startsWith('/admins') || p.startsWith('/toggle-admin')) return 'admins';
+  if (p.startsWith('/users') || p.startsWith('/approve') || p.startsWith('/reject') || p.startsWith('/adjust') || p.startsWith('/delete')) return 'users';
+  if (p.startsWith('/deposits') || p.startsWith('/deposit/') || p.startsWith('/schedules')) return 'deposits';
+  if (p.startsWith('/withdrawals') || p.startsWith('/withdraw/')) return 'withdrawals';
+  if (p.startsWith('/email')) return 'email';
+  if (p.startsWith('/apps')) return 'apps';
+  if (p.startsWith('/settings')) return 'settings';
+  if (p.startsWith('/data') || p.startsWith('/export') || p.startsWith('/import') || p.startsWith('/restore') || p.startsWith('/wipe')) return 'data';
+  if (p.startsWith('/audit')) return 'audit';
+  if (p.startsWith('/test')) return 'test';
+  return null;
+}
+// Enforce role permissions across the whole admin router. requireAdmin on each
+// route still handles logged-out / non-admin; this adds the per-permission gate.
+adminRouter.use((req, res, next) => {
+  const u = req.currentUser;
+  if (!u || !u.isAdmin) return next();
+  const perm = permForPath(req.path);
+  if (perm && !hasPerm(u, perm)) {
+    return res.status(403).render('message', {
+      title: req.t('forbidden_title'), heading: req.t('forbidden_h'), mBody: req.t('perm_denied'),
+      mIcon: 'shield-alert', mTint: 'ti-coral'
+    });
+  }
+  next();
+});
 const DAY = 1000 * 60 * 60 * 24;
 
 // ---------- Session secret ----------
@@ -244,6 +292,8 @@ app.use((req, res, next) => {
   // The main game site — used by the admin panel to link back to the player area
   // (so "back to dashboard" leaves the admin subdomain).
   res.locals.appUrl = APP_URL;
+  res.locals.can = (perm) => hasPerm(user, perm);   // gate admin UI by permission
+  res.locals.roleOf = roleOf;
   res.locals.settings = db.settings;
   res.locals.plans = db.settings.plans;
   res.locals.ACH = ACHIEVEMENTS;
@@ -570,11 +620,11 @@ function addXp(user, n) {
 
 // The ONE place a user record is created — signup and CSV import both use it, so a
 // new field can never be added to one path and forgotten in the other.
-function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null, lang = null, isTest = false }) {
+function createUser(db, { name, email, passwordHash, isAdmin = false, status = 'pending', referredBy = null, lang = null, isTest = false, role = null }) {
   const id = db.nextUserId++;
   const user = {
     id, name, email, passwordHash,
-    isAdmin, status, lang, isTest,
+    isAdmin, status, lang, isTest, role: role || (isAdmin ? 'owner' : null),
     invested: {},
     earnings: 0,
     xp: 0,
@@ -1839,6 +1889,67 @@ adminRouter.post('/account/password', requireAdmin, async (req, res) => {
   logAudit(db, u, 'admin.changePassword', u.name);
   save(db);
   res.redirect('/admin/account?ok=password');
+});
+
+// ---------- Admins & roles (RBAC) ----------
+adminRouter.get('/admins', requireAdmin, (req, res) => {
+  const db = req.db;
+  res.render('admin/admins', {
+    title: req.t('tab_admins'), counts: adminCounts(db),
+    admins: db.users.filter(u => u.isAdmin).sort((a, b) => a.id - b.id),
+    roles: Object.keys(ROLES), ROLES, PERMS,
+    adminEmail: ADMIN_EMAIL,
+    ok: req.query.ok || null, err: req.query.err || null
+  });
+});
+
+// Add an admin: promote an existing user by email, or create a new account.
+adminRouter.post('/admins/add', requireAdmin, async (req, res) => {
+  const db = req.db;
+  const email = (req.body.email || '').trim().toLowerCase();
+  const role = ROLES[req.body.role] ? req.body.role : 'moderator';
+  if (!email.includes('@')) return res.redirect('/admin/admins?err=bademail');
+  let u = db.users.find(x => x.email.toLowerCase() === email);
+  if (u) {
+    u.isAdmin = true; u.role = role; u.status = 'active';
+  } else {
+    const name = (req.body.name || '').trim();
+    const password = req.body.password || '';
+    if (!name || password.length < 4) return res.redirect('/admin/admins?err=needdetails');
+    u = createUser(db, { name, email, passwordHash: await bcrypt.hash(password, 10), isAdmin: true, status: 'active', role });
+  }
+  logAudit(db, req.currentUser, 'admin.add', u.name + ' <' + u.email + '> as ' + role);
+  save(db);
+  res.redirect('/admin/admins?ok=added');
+});
+
+// Change an admin's role.
+adminRouter.post('/admins/:id/role', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  const role = ROLES[req.body.role] ? req.body.role : null;
+  if (!u || !u.isAdmin || !role) return res.redirect('/admin/admins?err=cantchange');
+  if (u.id === req.currentUser.id) return res.redirect('/admin/admins?err=notself');
+  if (ADMIN_EMAIL && u.email.toLowerCase() === ADMIN_EMAIL) return res.redirect('/admin/admins?err=locked');
+  u.role = role;
+  logAudit(db, req.currentUser, 'admin.role', u.name + ' → ' + role);
+  save(db);
+  res.redirect('/admin/admins?ok=role');
+});
+
+// Remove admin rights (back to a normal player).
+adminRouter.post('/admins/:id/remove', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u || !u.isAdmin) return res.redirect('/admin/admins?err=cantchange');
+  if (u.id === req.currentUser.id) return res.redirect('/admin/admins?err=notself');
+  if (ADMIN_EMAIL && u.email.toLowerCase() === ADMIN_EMAIL) return res.redirect('/admin/admins?err=locked');
+  if (roleOf(u) === 'owner' && db.users.filter(x => x.isAdmin && roleOf(x) === 'owner').length <= 1)
+    return res.redirect('/admin/admins?err=lastowner');
+  u.isAdmin = false; u.role = null;
+  logAudit(db, req.currentUser, 'admin.remove', u.name + ' <' + u.email + '>');
+  save(db);
+  res.redirect('/admin/admins?ok=removed');
 });
 
 // ---------- Send email to players ----------

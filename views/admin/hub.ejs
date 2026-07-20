@@ -108,45 +108,43 @@
     <!-- Grid menu -->
     <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="layout-grid" class="text-primary"></i><%= t('menu_title') %></h6>
     <div class="menu-grid">
+      <% if (can('users')) { %>
       <a class="menu-tile position-relative" href="/admin/users">
         <span class="tile-icon ti-coral"><i data-lucide="users"></i></span>
         <span class="tile-label"><%= t('tab_users') %></span>
         <% if (counts.pendingUsers) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingUsers %></span><% } %>
       </a>
+      <% } %>
+      <% if (can('deposits')) { %>
       <a class="menu-tile position-relative" href="/admin/deposits">
         <span class="tile-icon ti-mint"><i data-lucide="receipt"></i></span>
         <span class="tile-label"><%= t('tab_deposits') %></span>
         <% if (counts.pendingDeposits) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingDeposits %></span><% } %>
       </a>
+      <% } %>
+      <% if (can('withdrawals')) { %>
       <a class="menu-tile position-relative" href="/admin/withdrawals">
         <span class="tile-icon ti-yellow"><i data-lucide="banknote"></i></span>
         <span class="tile-label"><%= t('tab_withdrawals') %></span>
         <% if (counts.pendingWithdrawals) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.pendingWithdrawals %></span><% } %>
       </a>
+      <% } %>
+      <% if (can('email')) { %>
       <a class="menu-tile" href="/admin/email">
         <span class="tile-icon ti-coral"><i data-lucide="mail"></i></span>
         <span class="tile-label"><%= t('tab_email') %></span>
       </a>
+      <% } %>
+      <% if (can('apps')) { %>
       <a class="menu-tile" href="/admin/apps">
         <span class="tile-icon ti-sky"><i data-lucide="layers"></i></span>
         <span class="tile-label"><%= t('tab_apps') %></span>
       </a>
+      <% } %>
+      <% if (can('settings')) { %>
       <a class="menu-tile" href="/admin/settings">
         <span class="tile-icon ti-lilac"><i data-lucide="settings"></i></span>
         <span class="tile-label"><%= t('tab_settings') %></span>
-      </a>
-      <a class="menu-tile" href="/admin/data">
-        <span class="tile-icon ti-mint"><i data-lucide="database"></i></span>
-        <span class="tile-label"><%= t("tab_data") %></span>
-      </a>
-      <a class="menu-tile" href="/admin/audit">
-        <span class="tile-icon ti-navy"><i data-lucide="history"></i></span>
-        <span class="tile-label"><%= t('tab_audit') %></span>
-      </a>
-      <a class="menu-tile position-relative" href="/admin/test">
-        <span class="tile-icon ti-yellow"><i data-lucide="flask-conical"></i></span>
-        <span class="tile-label"><%= t('tab_test') %></span>
-        <% if (counts.testUsers) { %><span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2"><%= counts.testUsers %></span><% } %>
       </a>
       <a class="menu-tile" href="/admin/settings/announcement">
         <span class="tile-icon ti-coral"><i data-lucide="megaphone"></i></span>
@@ -155,6 +153,36 @@
       <a class="menu-tile" href="/admin/settings/campaign">
         <span class="tile-icon ti-lilac"><i data-lucide="party-popper"></i></span>
         <span class="tile-label"><%= t('set_campaign_t') %></span>
+      </a>
+      <% } %>
+      <% if (can('admins')) { %>
+      <a class="menu-tile" href="/admin/admins">
+        <span class="tile-icon ti-navy"><i data-lucide="shield-check"></i></span>
+        <span class="tile-label"><%= t('tab_admins') %></span>
+      </a>
+      <% } %>
+      <% if (can('data')) { %>
+      <a class="menu-tile" href="/admin/data">
+        <span class="tile-icon ti-mint"><i data-lucide="database"></i></span>
+        <span class="tile-label"><%= t("tab_data") %></span>
+      </a>
+      <% } %>
+      <% if (can('audit')) { %>
+      <a class="menu-tile" href="/admin/audit">
+        <span class="tile-icon ti-navy"><i data-lucide="history"></i></span>
+        <span class="tile-label"><%= t('tab_audit') %></span>
+      </a>
+      <% } %>
+      <% if (can('test')) { %>
+      <a class="menu-tile position-relative" href="/admin/test">
+        <span class="tile-icon ti-yellow"><i data-lucide="flask-conical"></i></span>
+        <span class="tile-label"><%= t('tab_test') %></span>
+        <% if (counts.testUsers) { %><span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2"><%= counts.testUsers %></span><% } %>
+      </a>
+      <% } %>
+      <a class="menu-tile" href="/admin/account">
+        <span class="tile-icon ti-sky"><i data-lucide="user-cog"></i></span>
+        <span class="tile-label"><%= t('tab_account') %></span>
       </a>
     </div>
   </div>

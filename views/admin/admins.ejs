@@ -1,0 +1,99 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 820px;">
+    <%- include('_head', { heading: t('tab_admins'), back: '/admin' }) %>
+
+    <%
+      const okMap = { added: t('adm_ok_added'), role: t('adm_ok_role'), removed: t('adm_ok_removed') };
+      const errMap = { bademail: t('adm_err_bademail'), needdetails: t('adm_err_needdetails'), notself: t('adm_err_notself'),
+                       locked: t('adm_err_locked'), lastowner: t('adm_err_lastowner'), cantchange: t('adm_err_cantchange') };
+    %>
+    <% if (ok && okMap[ok]) { %><div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i><%= okMap[ok] %></div><% } %>
+    <% if (err && errMap[err]) { %><div class="alert alert-danger py-2 d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i><%= errMap[err] %></div><% } %>
+
+    <p class="text-muted mb-4"><%= t('adm_intro') %></p>
+
+    <!-- Add admin -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="user-plus" class="text-primary"></i><%= t('adm_add_t') %></h6>
+        <form method="post" action="/admin/admins/add" class="row g-2">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="col-md-5"><label class="form-label small"><%= t('lbl_email') %></label><input name="email" type="email" class="form-control" required></div>
+          <div class="col-md-4"><label class="form-label small"><%= t('adm_role') %></label>
+            <select name="role" class="form-select">
+              <% roles.filter(r => r !== 'owner').forEach(r => { %><option value="<%= r %>"><%= t('role_' + r) %></option><% }) %>
+              <option value="owner"><%= t('role_owner') %></option>
+            </select></div>
+          <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="plus"></i><%= t('adm_add_btn') %></button></div>
+          <div class="col-12"><div class="form-text"><%= t('adm_add_hint') %></div></div>
+          <div class="col-md-6"><input name="name" class="form-control form-control-sm" placeholder="<%= t('adm_newname_ph') %>"></div>
+          <div class="col-md-6"><input name="password" type="text" class="form-control form-control-sm" placeholder="<%= t('adm_newpass_ph') %>"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- What each role can do -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="shield" class="text-primary"></i><%= t('adm_roles_t') %></h6>
+        <% roles.forEach(r => { const perms = ROLES[r].perms; %>
+          <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-top">
+            <span class="badge bg-primary-subtle text-primary" style="min-width:88px"><%= t('role_' + r) %></span>
+            <% if (perms.includes('*')) { %>
+              <span class="small fw-semibold text-success"><%= t('adm_all_access') %></span>
+            <% } else { PERMS.forEach(p => { const on = perms.includes(p); %>
+              <span class="badge <%= on ? 'bg-success-subtle text-success' : 'bg-body-secondary text-muted' %>"><i data-lucide="<%= on ? 'check' : 'x' %>" style="width:.8em;height:.8em"></i> <%= t('perm_' + p) %></span>
+            <% }) } %>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Current admins -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="users" class="text-primary"></i><%= t('adm_list_t') %></h6>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="text-muted small"><tr><th><%= t('th_user') %></th><th><%= t('adm_role') %></th><th class="text-end"><%= t('th_action') %></th></tr></thead>
+            <tbody>
+              <% admins.forEach(a => {
+                   const isSelf = a.id === currentUser.id;
+                   const isLocked = adminEmail && a.email.toLowerCase() === adminEmail; %>
+                <tr>
+                  <td>
+                    <div class="fw-semibold"><%= a.name %>
+                      <% if (isSelf) { %><span class="badge bg-primary-subtle text-primary ms-1"><%= t('adm_you') %></span><% } %>
+                      <% if (isLocked) { %><span class="badge bg-body-secondary text-muted ms-1"><i data-lucide="lock" style="width:.8em;height:.8em"></i></span><% } %>
+                    </div>
+                    <div class="small text-muted"><%= a.email %></div>
+                  </td>
+                  <td>
+                    <% if (isSelf || isLocked) { %>
+                      <span class="badge bg-primary-subtle text-primary"><%= t('role_' + roleOf(a)) %></span>
+                    <% } else { %>
+                      <form method="post" action="/admin/admins/<%= a.id %>/role" class="d-flex gap-1">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <select name="role" class="form-select form-select-sm" style="max-width:150px" onchange="this.form.submit()">
+                          <% roles.forEach(r => { %><option value="<%= r %>" <%= roleOf(a) === r ? 'selected' : '' %>><%= t('role_' + r) %></option><% }) %>
+                        </select>
+                      </form>
+                    <% } %>
+                  </td>
+                  <td class="text-end">
+                    <% if (!isSelf && !isLocked) { %>
+                      <form method="post" action="/admin/admins/<%= a.id %>/remove" class="d-inline" onsubmit="return confirm('<%= t('adm_remove_c') %>')">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"><i data-lucide="user-minus"></i><%= t('adm_remove') %></button>
+                      </form>
+                    <% } else { %><span class="small text-muted">—</span><% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -157,6 +157,8 @@ function migrate(db) {
     if (u.isTest === undefined) u.isTest = false;
     // Whether the player dismissed the getting-started checklist (stays hidden).
     if (u.gsDismissed === undefined) u.gsDismissed = false;
+    // Admin role (RBAC). Existing admins become 'owner' (full access); others null.
+    if (u.role === undefined) u.role = u.isAdmin ? 'owner' : null;
   });
   return db;
 }
