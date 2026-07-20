@@ -1018,7 +1018,7 @@ const locales = {
     lp_chip_1: 'Invest', lp_chip_2: 'Win', lp_chip_3: 'Withdraw',
     lp_what_t: 'What is {site}?',
     lp_what_d: 'It’s a play-money investing. Deposit money, invest them in apps the admin sets up, and watch them earn every second.',
-    lp_pillar_1_t: 'Play money only', lp_pillar_1_d: 'Every coin is virtual. No real deposits, no real payouts — ever.',
+    lp_pillar_1_t: 'Invest and earn money', lp_pillar_1_d: 'Deposit your money and start earning money',
     lp_pillar_2_t: 'Invest in apps', lp_pillar_2_d: 'Pick an app with its own rate, put coins in, and watch your earnings tick up live.',
     lp_pillar_3_t: 'Compete with family', lp_pillar_3_d: 'Level up, unlock badges and climb the leaderboard against everyone else.',
     lp_steps_t: 'How it works', lp_steps_d: 'From signing up to your first earnings — four steps.',
