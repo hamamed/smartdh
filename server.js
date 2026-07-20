@@ -241,6 +241,9 @@ app.use((req, res, next) => {
   // Where the "Admin" button points. Set ADMIN_URL=https://admin.kanzup.com to
   // send admins to the subdomain; defaults to the /admin path on the same host.
   res.locals.adminUrl = ADMIN_URL_LINK;
+  // The main game site — used by the admin panel to link back to the player area
+  // (so "back to dashboard" leaves the admin subdomain).
+  res.locals.appUrl = APP_URL;
   res.locals.settings = db.settings;
   res.locals.plans = db.settings.plans;
   res.locals.ACH = ACHIEVEMENTS;
