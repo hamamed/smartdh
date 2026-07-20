@@ -353,9 +353,11 @@ app.use((req, res, next) => {
 
 // While impersonating, the session is read-only — the only write allowed is Exit.
 app.use((req, res, next) => {
+  // Allow the exit both as /admin/stop-impersonate and as /stop-impersonate
+  // (the admin-subdomain clean-URL rewrite strips the /admin prefix from the form).
   if (res.locals.impersonating &&
       ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
-      req.path !== '/admin/stop-impersonate') {
+      !req.path.endsWith('/stop-impersonate')) {
     return res.status(403).render('error', {
       title: req.t('imp_ro_t'), code: 403, heading: req.t('imp_ro_t'), mBody: req.t('imp_ro_d')
     });
