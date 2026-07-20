@@ -1788,18 +1788,21 @@ adminRouter.get('/account', requireAdmin, (req, res) => {
   });
 });
 
-// Change your own email — requires your current password.
-adminRouter.post('/account/email', requireAdmin, async (req, res) => {
+// Change your own profile (name + email) — requires your current password.
+adminRouter.post('/account/profile', requireAdmin, async (req, res) => {
   const db = req.db, u = req.currentUser;
   const current = req.body.current || '';
+  const name = (req.body.name || '').trim();
   const email = (req.body.email || '').trim().toLowerCase();
   if (!(await bcrypt.compare(current, u.passwordHash))) return res.redirect('/admin/account?err=wrongpass');
+  if (!name) return res.redirect('/admin/account?err=noname');
   if (!email.includes('@')) return res.redirect('/admin/account?err=bademail');
   if (db.users.find(x => x.id !== u.id && x.email.toLowerCase() === email)) return res.redirect('/admin/account?err=dupemail');
+  u.name = name;
   u.email = email;
-  logAudit(db, u, 'admin.changeEmail', email);
+  logAudit(db, u, 'admin.changeProfile', name + ' <' + email + '>');
   save(db);
-  res.redirect('/admin/account?ok=email');
+  res.redirect('/admin/account?ok=profile');
 });
 
 // Change your own password — requires your current password + a confirmation.
