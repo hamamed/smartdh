@@ -2229,6 +2229,18 @@ adminRouter.post('/import/users', requireAdmin, csrfGuard, uploadData.single('fi
       u.lastAccrual = Date.now();     // start earning from import time
       if (isNew) award(u, 'first_deposit');
     }
+    // Optional payout details (so imported players can test withdrawals).
+    const payMethod = get('payout_method').toLowerCase();
+    const payAccount = get('payout_account');
+    if (payMethod || payAccount) {
+      const bank = payMethod === 'bank';
+      u.payout = {
+        method: bank ? 'bank' : 'paypal',
+        name: get('payout_name') || u.name,
+        paypal: bank ? '' : payAccount,
+        rib: bank ? payAccount : ''
+      };
+    }
     checkState(u); // balance-based achievements
   }
 

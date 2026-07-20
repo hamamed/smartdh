@@ -38,9 +38,17 @@ const cell = (v) => {
 const APPS = (process.argv[4] || 'safe,balanced,risky').split(',');
 const LEVEL3_XP = 200; // level = floor(sqrt(xp/50))+1, so 200xp = level 3
 
+// A fake Moroccan RIB (24 digits, grouped) — demo only, never a real account.
+const fakeRib = () => {
+  let d = '';
+  for (let i = 0; i < 24; i++) d += int(0, 9);
+  return d.replace(/(\d{3})(\d{3})(\d{16})(\d{2})/, '$1 $2 $3 $4');
+};
+
 // is_test=yes so these import straight into the Test Lab, kept out of the real
-// dashboard, totals and leaderboard.
-const rows = [['name', 'email', 'status', 'is_test', 'xp', 'earnings', 'password', ...APPS.map(a => 'invested_' + a)]];
+// dashboard, totals and leaderboard. payout_* lets you test withdrawals.
+const rows = [['name', 'email', 'status', 'is_test', 'xp', 'earnings', 'password',
+  ...APPS.map(a => 'invested_' + a), 'payout_method', 'payout_name', 'payout_account']];
 const seen = new Set();
 
 while (rows.length <= COUNT) {
@@ -74,7 +82,12 @@ while (rows.length <= COUNT) {
   // make sure an active player isn't left with nothing invested
   if (status === 'active' && invested.every(v => v === 0)) invested[0] = int(1, 20) * 500;
 
-  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested]);
+  // Payout details so withdrawals can be tested. 60% bank (RIB), 40% PayPal.
+  const bank = Math.random() < 0.6;
+  const payMethod = bank ? 'bank' : 'paypal';
+  const payAccount = bank ? fakeRib() : `${slug(first)}.${slug(last)}@paypal.com`;
+
+  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount]);
 }
 
 fs.writeFileSync(OUT, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'utf8');
