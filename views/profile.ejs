@@ -5,14 +5,25 @@
       <h3 class="fw-bold mb-0"><%= t('profile_title') %></h3>
     </div>
 
-    <% if (error) { %>
+    <%
+      const okMap = { saved: t('profile_saved'), payout: t('profile_saved'), password: t('pw_changed'),
+                      email: t('prof_email_changed'), prefs: t('prof_prefs_saved') };
+      const errMap = { wrongpass: t('pw_wrong_current'), short: t('pw_too_short'), mismatch: t('pw_mismatch'),
+                       bademail: t('prof_bademail'), dupemail: t('prof_dupemail') };
+      const okKey = typeof ok !== 'undefined' ? ok : null;
+      const errKey = typeof err !== 'undefined' ? err : null;
+    %>
+    <% if (typeof error !== 'undefined' && error) { %>
       <div class="alert alert-danger py-2 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= error %></div>
     <% } %>
-    <% if (ok) { %>
-      <div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div>
+    <% if (errKey && errMap[errKey]) { %>
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= errMap[errKey] %></div>
+    <% } %>
+    <% if (okKey && okMap[okKey]) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= okMap[okKey] %></div>
     <% } %>
 
-    <!-- Identity -->
+    <!-- Profile: name + photo -->
     <div class="card border-0 shadow-sm rounded-4 mb-3">
       <div class="card-body">
         <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="user" class="text-primary"></i><%= t('profile_identity') %></h6>
@@ -25,7 +36,6 @@
           <% } %>
           <div class="small text-muted"><%= currentUser.email %><br><span class="text-uppercase"><%= currentUser.referralCode %></span></div>
         </div>
-        <%# token also in the query so it can be verified before the file is written %>
         <form method="post" action="/profile?_csrf=<%= csrfToken %>" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="mb-3">
             <label class="form-label"><%= t('lbl_name') %></label>
@@ -33,7 +43,6 @@
           </div>
           <div class="mb-3">
             <label class="form-label"><%= t('profile_photo') %> <span class="text-muted small"><%= t('opt') %></span></label>
-            <!-- accept="image/*" lets phones offer Camera or Gallery -->
             <input type="file" name="photo" id="photoInput" class="form-control" accept="image/*">
             <input type="hidden" name="hasPhoto" id="hasPhoto" value="0">
             <div class="form-text"><%= t('photo_hint') %></div>
@@ -62,20 +71,56 @@
       </div>
     </div>
 
-    <!-- Password -->
+    <!-- Preferences -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="settings-2" class="text-primary"></i><%= t('prof_prefs_t') %></h6>
+        <form method="post" action="/profile/prefs"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label"><%= t('prof_lang') %></label>
+            <select name="lang" class="form-select">
+              <% LANGS.forEach(l => { %>
+                <option value="<%= l %>" <%= (currentUser.lang || lang) === l ? 'selected' : '' %>><%= locales[l].name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" name="emails" id="emails" value="1" <%= currentUser.emailOptOut ? '' : 'checked' %>>
+            <label class="form-check-label" for="emails"><%= t('prof_notif') %><span class="d-block small text-muted"><%= t('prof_notif_d') %></span></label>
+          </div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Security: email + password (both need current password) -->
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">
-        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="lock" class="text-primary"></i><%= t('profile_password') %></h6>
-        <form method="post" action="/profile/password"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="mb-3">
-            <label class="form-label"><%= t('pw_current') %></label>
-            <input name="current" type="password" class="form-control" required>
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="shield-check" class="text-primary"></i><%= t('prof_security_t') %></h6>
+        <div class="alert alert-secondary py-2 small d-flex align-items-start gap-2 mb-3"><i data-lucide="lock" class="flex-shrink-0 mt-1"></i><span><%= t('prof_security_note') %></span></div>
+
+        <!-- Email -->
+        <div class="fw-semibold small mb-2"><%= t('prof_email_t') %></div>
+        <form method="post" action="/profile/email" autocomplete="off" class="mb-4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-2">
+            <input name="email" type="email" class="form-control" value="<%= currentUser.email %>" required>
           </div>
-          <div class="mb-3">
-            <label class="form-label"><%= t('pw_new') %></label>
-            <input name="next" type="password" class="form-control" minlength="4" required>
+          <div class="input-group">
+            <span class="input-group-text"><i data-lucide="lock"></i></span>
+            <input name="current" type="password" class="form-control" placeholder="<%= t('pw_current') %>" autocomplete="current-password" required>
+            <button class="btn btn-outline-primary"><%= t('btn_save') %></button>
           </div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('pw_change') %></button>
+        </form>
+
+        <!-- Password -->
+        <div class="fw-semibold small mb-2"><%= t('profile_password') %></div>
+        <form method="post" action="/profile/password" autocomplete="off"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-2"><input name="current" type="password" class="form-control" placeholder="<%= t('pw_current') %>" autocomplete="current-password" required></div>
+          <div class="mb-2"><input name="next" type="password" minlength="6" class="form-control" placeholder="<%= t('pw_new') %>" autocomplete="new-password" required></div>
+          <div class="input-group">
+            <input name="confirm" type="password" minlength="6" class="form-control" placeholder="<%= t('pw_confirm') %>" autocomplete="new-password" required>
+            <button class="btn btn-outline-primary"><%= t('pw_change') %></button>
+          </div>
         </form>
       </div>
     </div>

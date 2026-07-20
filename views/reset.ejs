@@ -12,7 +12,7 @@
         <form method="post" action="/reset/<%= token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="mb-3">
             <label class="form-label"><%= t('pw_new') %></label>
-            <input name="password" type="password" class="form-control" minlength="4" required autofocus>
+            <input name="password" type="password" class="form-control" minlength="6" required autofocus>
           </div>
           <button class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-1">
             <i data-lucide="lock"></i><%= t('reset_save') %>

@@ -1020,7 +1020,7 @@ app.post('/campaign/claim', requireActive, (req, res) => {
 
 // ---------- Profile / settings ----------
 app.get('/profile', requireActive, (req, res) => {
-  res.render('profile', { title: req.t('profile_title'), error: null, ok: req.query.ok || null });
+  res.render('profile', { title: req.t('profile_title'), error: null, ok: req.query.ok || null, err: req.query.err || null });
 });
 
 // Photo upload. csrfGuard runs BEFORE multer (reading the token from the query string)
@@ -1075,16 +1075,38 @@ function payoutMissing(p) {
 }
 function payoutAccount(p) { return p.method === 'bank' ? p.rib : p.paypal; }
 
+// Change password — needs the current password AND a matching confirmation.
 app.post('/profile/password', requireActive, async (req, res) => {
   const u = req.currentUser;
-  const { current, next: newPass } = req.body;
-  if (!newPass || newPass.length < 4)
-    return res.render('profile', { title: req.t('profile_title'), error: req.t('pw_too_short'), ok: null });
-  if (!(await bcrypt.compare(current || '', u.passwordHash)))
-    return res.render('profile', { title: req.t('profile_title'), error: req.t('pw_wrong_current'), ok: null });
+  const current = req.body.current || '', newPass = req.body.next || '', confirm = req.body.confirm || '';
+  if (!(await bcrypt.compare(current, u.passwordHash))) return res.redirect('/profile?err=wrongpass');
+  if (newPass.length < 6) return res.redirect('/profile?err=short');
+  if (newPass !== confirm) return res.redirect('/profile?err=mismatch');
   u.passwordHash = await bcrypt.hash(newPass, 10);
+  u.reset = null;
   save(req.db);
   res.redirect('/profile?ok=password');
+});
+
+// Change email — needs the current password to confirm it's really you.
+app.post('/profile/email', requireActive, async (req, res) => {
+  const db = req.db, u = req.currentUser;
+  const current = req.body.current || '', email = (req.body.email || '').trim().toLowerCase();
+  if (!(await bcrypt.compare(current, u.passwordHash))) return res.redirect('/profile?err=wrongpass');
+  if (!email.includes('@')) return res.redirect('/profile?err=bademail');
+  if (db.users.find(x => x.id !== u.id && x.email.toLowerCase() === email)) return res.redirect('/profile?err=dupemail');
+  u.email = email;
+  save(db);
+  res.redirect('/profile?ok=email');
+});
+
+// Preferences: language + email notifications.
+app.post('/profile/prefs', requireActive, (req, res) => {
+  const u = req.currentUser;
+  if (LANGS.includes(req.body.lang)) { u.lang = req.body.lang; req.session.lang = req.body.lang; }
+  u.emailOptOut = req.body.emails !== '1';   // checkbox on = receive emails
+  save(req.db);
+  res.redirect('/profile?ok=prefs');
 });
 
 // ---------- Password reset ----------
@@ -1129,7 +1151,7 @@ app.post('/reset/:token', authLimiter, async (req, res) => {
     title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), mBody: req.t('reset_bad_d')
   });
   const pass = req.body.password || '';
-  if (pass.length < 4)
+  if (pass.length < 6)
     return res.render('reset', { title: req.t('reset_title'), token: req.params.token, error: req.t('pw_too_short') });
   u.passwordHash = await bcrypt.hash(pass, 10);
   u.reset = null;
