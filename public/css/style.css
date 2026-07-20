@@ -414,6 +414,16 @@ h1, h2, h3, h4, h5, h6,
 .tour-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background-color .2s; }
 .tour-dot.active { width: 22px; background: var(--brand); }
 
+/* ---------- Admin settings list rows ---------- */
+.set-row {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; text-decoration: none;
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s, background-color .15s;
+}
+.set-row:hover { transform: translateX(3px); box-shadow: var(--shadow-md); border-color: #d6e0d6; background: var(--surface-2); }
+.set-row:hover .tile-icon { transform: scale(1.06); }
+[dir="rtl"] .set-row:hover { transform: translateX(-3px); }
+[dir="rtl"] .set-row [data-lucide="chevron-right"] { transform: scaleX(-1); }
+
 /* ---------- Getting-started checklist — 4 boxes across ---------- */
 .gs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
 @media (max-width: 480px) { .gs-grid { grid-template-columns: repeat(2, 1fr); } }

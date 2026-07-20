@@ -1,52 +1,30 @@
 <section class="py-4 py-lg-5">
-  <div class="container">
+  <div class="container" style="max-width: 720px;">
     <%- include('_head', { heading: t('tab_settings') }) %>
     <p class="text-muted mb-4"><%= t('settings_intro') %></p>
 
-    <div class="menu-grid">
-      <a class="menu-tile" href="/admin/settings/general">
-        <span class="tile-icon ti-sky"><i data-lucide="sliders-horizontal"></i></span>
-        <span class="tile-label"><%= t('set_general_t') %></span>
-      </a>
-      <a class="menu-tile" href="/admin/settings/economy">
-        <span class="tile-icon ti-mint"><i data-lucide="coins"></i></span>
-        <span class="tile-label"><%= t('set_economy_t') %></span>
-      </a>
-      <a class="menu-tile" href="/admin/settings/payments">
-        <span class="tile-icon ti-yellow"><i data-lucide="landmark"></i></span>
-        <span class="tile-label"><%= t('set_payments_t') %></span>
-      </a>
-      <a class="menu-tile" href="/admin/settings/announcement">
-        <span class="tile-icon ti-coral"><i data-lucide="megaphone"></i></span>
-        <span class="tile-label"><%= t('set_announcement_t') %></span>
-      </a>
-      <a class="menu-tile" href="/admin/settings/campaign">
-        <span class="tile-icon ti-mint"><i data-lucide="party-popper"></i></span>
-        <span class="tile-label"><%= t("set_campaign_t") %></span>
-      </a>
-      <a class="menu-tile" href="/admin/apps">
-        <span class="tile-icon ti-lilac"><i data-lucide="layers"></i></span>
-        <span class="tile-label"><%= t('tab_apps') %></span>
-      </a>
-    </div>
-
-    <div class="row g-3 mt-1">
-      <div class="col-md-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
-        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="sliders-horizontal" class="text-primary"></i><%= t('set_general_t') %></h6>
-        <p class="text-muted small mb-0"><%= t('set_general_d') %></p>
-      </div></div></div>
-      <div class="col-md-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
-        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="coins" class="text-primary"></i><%= t('set_economy_t') %></h6>
-        <p class="text-muted small mb-0"><%= t('set_economy_d') %></p>
-      </div></div></div>
-      <div class="col-md-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
-        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="landmark" class="text-primary"></i><%= t('set_payments_t') %></h6>
-        <p class="text-muted small mb-0"><%= t('set_payments_d') %></p>
-      </div></div></div>
-      <div class="col-md-6"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-body">
-        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="megaphone" class="text-primary"></i><%= t('set_announcement_t') %></h6>
-        <p class="text-muted small mb-0"><%= t('set_announcement_d') %></p>
-      </div></div></div>
+    <%
+      const items = [
+        { href: '/admin/settings/general',      icon: 'sliders-horizontal', tint: 'ti-sky',   title: t('set_general_t'),      desc: t('set_general_d') },
+        { href: '/admin/settings/economy',      icon: 'coins',              tint: 'ti-mint',  title: t('set_economy_t'),      desc: t('set_economy_d') },
+        { href: '/admin/settings/payments',     icon: 'landmark',           tint: 'ti-yellow',title: t('set_payments_t'),     desc: t('set_payments_d') },
+        { href: '/admin/settings/announcement', icon: 'megaphone',          tint: 'ti-coral', title: t('set_announcement_t'), desc: t('set_announcement_d') },
+        { href: '/admin/settings/campaign',     icon: 'party-popper',       tint: 'ti-lilac', title: t('set_campaign_t'),     desc: t('set_campaign_d') },
+        { href: '/admin/apps',                  icon: 'layers',             tint: 'ti-navy',  title: t('tab_apps'),           desc: t('set_apps_d') },
+        { href: '/admin/account',               icon: 'user-cog',           tint: 'ti-sky',   title: t('tab_account'),        desc: t('set_account_d') }
+      ];
+    %>
+    <div class="d-grid gap-2">
+      <% items.forEach(it => { %>
+        <a href="<%= it.href %>" class="set-row d-flex align-items-center gap-3 p-3 text-reset">
+          <span class="tile-icon <%= it.tint %> flex-shrink-0" style="width:44px;height:44px;font-size:1.2rem"><i data-lucide="<%= it.icon %>"></i></span>
+          <span class="flex-grow-1 min-w-0">
+            <span class="d-block fw-semibold"><%= it.title %></span>
+            <span class="d-block small text-muted"><%= it.desc %></span>
+          </span>
+          <i data-lucide="chevron-right" class="text-muted flex-shrink-0"></i>
+        </a>
+      <% }) %>
     </div>
   </div>
 </section>
