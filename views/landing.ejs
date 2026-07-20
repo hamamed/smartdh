@@ -1,13 +1,11 @@
-<!-- ============ HERO ============ -->
-<section class="hero py-5">
-  <div class="container py-lg-4">
+<!-- ============================================================ HERO -->
+<section class="lp-hero py-5">
+  <div class="container py-lg-5">
     <div class="row align-items-center g-5">
       <div class="col-lg-6">
-        <span class="badge bg-primary-subtle text-primary rounded-pill mb-3 px-3 py-2 d-inline-flex align-items-center gap-1">
-          <i data-lucide="gamepad-2"></i><%= t('hero_badge') %>
-        </span>
-        <h1 class="display-5 fw-bold mb-3"><%= t('hero_title') %></h1>
-        <p class="lead text-muted mb-4"><%= t('hero_desc') %></p>
+        <span class="lp-eyebrow mb-3"><i data-lucide="gamepad-2"></i><%= t('hero_badge') %></span>
+        <h1 class="lp-title fw-bold mb-3"><%= t('hero_title') %></h1>
+        <p class="lp-lead text-muted mb-4"><%= t('hero_desc') %></p>
 
         <div class="d-flex gap-2 flex-wrap mb-4">
           <a href="/signup" class="btn btn-primary btn-lg px-4 d-inline-flex align-items-center gap-2">
@@ -16,21 +14,20 @@
           <a href="/login" class="btn btn-outline-secondary btn-lg px-4"><%= t('btn_login') %></a>
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
+        <div class="lp-trust">
           <% [['shield-check','lp_chip_1'], ['gift','lp_chip_2'], ['globe','lp_chip_3']].forEach(([icon, key]) => { %>
-            <span class="badge bg-body-secondary text-muted d-inline-flex align-items-center gap-1 p-2">
-              <i data-lucide="<%= icon %>"></i><%= t(key) %>
-            </span>
+            <span class="chip"><i data-lucide="<%= icon %>"></i><%= t(key) %></span>
           <% }) %>
         </div>
       </div>
 
       <!-- Earnings calculator -->
       <div class="col-lg-6">
-        <div class="card shadow-sm border-0 rounded-4">
-          <div class="card-body p-4">
+        <div class="card calc-card border-0 rounded-4">
+          <div class="card-body">
             <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="calculator" class="text-primary"></i><%= t('calc_title') %></h5>
-            <label class="form-label small text-muted"><%= t('calc_choose_plan') %></label>
+
+            <label class="form-label small text-muted mb-1"><%= t('calc_choose_plan') %></label>
             <select id="calcPlan" class="form-select mb-3">
               <% plans.forEach(p => { %>
                 <option value="<%= p.ratePer15Days %>" <%= p.id==='balanced'?'selected':'' %>>
@@ -38,20 +35,22 @@
                 </option>
               <% }) %>
             </select>
-            <label class="form-label small text-muted"><%= t('calc_ifinvest') %></label>
+
+            <label class="form-label small text-muted mb-1"><%= t('calc_ifinvest') %></label>
             <div class="input-group input-group-lg mb-4">
               <span class="input-group-text"><i data-lucide="wallet"></i></span>
               <input type="number" id="calcAmount" class="form-control" value="10000" min="0" step="100">
               <span class="input-group-text"><%= curLabel %></span>
             </div>
-            <div class="row g-3 text-center" data-currency="<%= curLabel %>">
-              <div class="col-4"><div class="p-3 rounded-3 wallet wallet-coral">
+
+            <div class="row g-2 text-center" data-currency="<%= curLabel %>">
+              <div class="col-4"><div class="calc-out wallet wallet-coral">
                 <div class="small mb-1"><%= t('lbl_daily') %></div>
                 <div class="fw-bold" id="calcDaily">—</div></div></div>
-              <div class="col-4"><div class="p-3 rounded-3 wallet wallet-mint">
+              <div class="col-4"><div class="calc-out wallet wallet-mint">
                 <div class="small mb-1"><%= t('lbl_15days') %></div>
                 <div class="fw-bold" id="calc15">—</div></div></div>
-              <div class="col-4"><div class="p-3 rounded-3 wallet wallet-yellow">
+              <div class="col-4"><div class="calc-out wallet wallet-yellow">
                 <div class="small mb-1"><%= t('lbl_monthly') %></div>
                 <div class="fw-bold" id="calcMonthly">—</div></div></div>
             </div>
@@ -63,33 +62,38 @@
   </div>
 </section>
 
-<!-- ============ LIVE STATS (real data, hidden until there are players) ============ -->
+<!-- ============================================ LIVE STATS (real data only) -->
 <% if (stats) { %>
-  <section class="py-4 bg-body border-top">
+  <section class="pb-2">
     <div class="container">
-      <div class="row g-3 text-center">
-        <% [
-             ['users', 'ti-coral',  stats.players.toLocaleString(), 'stat_players'],
-             ['coins', 'ti-mint',   money(stats.coins),             'stat_total'],
-             ['layers','ti-sky',    stats.apps,                     'plans_title'],
-             ['banknote','ti-yellow', stats.payouts.toLocaleString(), 'lp_stat_payouts']
-           ].forEach(([icon, tint, value, key]) => { %>
-          <div class="col-6 col-lg-3">
-            <span class="tile-icon <%= tint %> mx-auto mb-2" style="width:46px;height:46px;font-size:1.2rem"><i data-lucide="<%= icon %>"></i></span>
-            <div class="h5 fw-bold mb-0"><%= value %></div>
-            <div class="small text-muted"><%= t(key) %></div>
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body py-4">
+          <div class="row g-3 text-center">
+            <% [
+                 ['users', 'ti-coral',  stats.players.toLocaleString(), 'stat_players'],
+                 ['coins', 'ti-mint',   money(stats.coins),             'stat_total'],
+                 ['layers','ti-sky',    stats.apps,                     'plans_title'],
+                 ['banknote','ti-yellow', stats.payouts.toLocaleString(), 'lp_stat_payouts']
+               ].forEach(([icon, tint, value, key]) => { %>
+              <div class="col-6 col-lg-3">
+                <span class="tile-icon <%= tint %> mx-auto mb-2" style="width:46px;height:46px;font-size:1.2rem"><i data-lucide="<%= icon %>"></i></span>
+                <div class="h4 fw-bold mb-0"><%= value %></div>
+                <div class="small text-muted"><%= t(key) %></div>
+              </div>
+            <% }) %>
           </div>
-        <% }) %>
+        </div>
       </div>
     </div>
   </section>
 <% } %>
 
-<!-- ============ WHAT IS IT ============ -->
-<section class="py-5 bg-body border-top">
+<!-- ================================================================ WHAT IS IT -->
+<section class="py-5 mt-2">
   <div class="container">
     <div class="text-center mx-auto mb-5" style="max-width: 720px;">
-      <h2 class="fw-bold mb-3"><%= t('lp_what_t', { site: settings.siteName }) %></h2>
+      <span class="sec-eyebrow"><%= t('hero_badge') %></span>
+      <h2 class="sec-title fw-bold mb-3"><%= t('lp_what_t', { site: settings.siteName }) %></h2>
       <p class="text-muted mb-0 lh-lg"><%= t('lp_what_d') %></p>
     </div>
     <div class="row g-3">
@@ -102,12 +106,10 @@
       %>
       <% pillars.forEach(p => { %>
         <div class="col-md-4">
-          <div class="card border-0 shadow-sm rounded-4 h-100 text-center">
-            <div class="card-body p-4">
-              <span class="tile-icon ti-<%= p.tint %> mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem"><i data-lucide="<%= p.icon %>"></i></span>
-              <h6 class="fw-bold mb-2"><%= t(p.t) %></h6>
-              <p class="text-muted small mb-0"><%= t(p.d) %></p>
-            </div>
+          <div class="lp-card text-center p-4">
+            <span class="tile-icon ti-<%= p.tint %> mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem"><i data-lucide="<%= p.icon %>"></i></span>
+            <h6 class="fw-bold mb-2"><%= t(p.t) %></h6>
+            <p class="text-muted small mb-0 lh-lg"><%= t(p.d) %></p>
           </div>
         </div>
       <% }) %>
@@ -115,14 +117,14 @@
   </div>
 </section>
 
-<!-- ============ HOW IT WORKS ============ -->
-<section class="py-5">
+<!-- =============================================================== HOW IT WORKS -->
+<section class="py-5 bg-body border-top">
   <div class="container">
     <div class="text-center mb-5">
-      <h2 class="fw-bold mb-1"><%= t('lp_steps_t') %></h2>
-      <p class="text-muted mb-0"><%= t('lp_steps_d') %></p>
+      <span class="sec-eyebrow"><%= t('lp_steps_d') %></span>
+      <h2 class="sec-title fw-bold mb-0"><%= t('lp_steps_t') %></h2>
     </div>
-    <div class="row g-3">
+    <div class="row g-4 lp-steps">
       <%
         const steps = [
           { icon: 'user-plus',   text: t('howto_invest_1') },
@@ -133,14 +135,12 @@
       %>
       <% steps.forEach((s, i) => { %>
         <div class="col-md-6 col-lg-3">
-          <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="step-num"><%= i + 1 %></span>
-                <span class="tile-icon ti-navy" style="width:40px;height:40px;font-size:1.05rem"><i data-lucide="<%= s.icon %>"></i></span>
-              </div>
-              <p class="text-muted small mb-0"><%= s.text %></p>
+          <div class="lp-step h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="step-num"><%= i + 1 %></span>
+              <span class="tile-icon ti-navy" style="width:44px;height:44px;font-size:1.15rem"><i data-lucide="<%= s.icon %>"></i></span>
             </div>
+            <p class="text-muted small mb-0 lh-lg"><%= s.text %></p>
           </div>
         </div>
       <% }) %>
@@ -148,12 +148,12 @@
   </div>
 </section>
 
-<!-- ============ WAYS TO EARN ============ -->
-<section class="py-5 bg-body border-top">
+<!-- ================================================================ WAYS TO EARN -->
+<section class="py-5">
   <div class="container">
     <div class="text-center mb-5">
-      <h2 class="fw-bold mb-1"><%= t('howto_earn_t') %></h2>
-      <p class="text-muted mb-0"><%= t('lp_earn_d') %></p>
+      <span class="sec-eyebrow"><%= t('lp_earn_d') %></span>
+      <h2 class="sec-title fw-bold mb-0"><%= t('howto_earn_t') %></h2>
     </div>
     <div class="row g-3">
       <%
@@ -166,12 +166,10 @@
       %>
       <% earn.forEach(e => { %>
         <div class="col-md-6 col-lg-3">
-          <div class="card border-0 shadow-sm rounded-4 h-100 text-center">
-            <div class="card-body p-4">
-              <span class="tile-icon ti-<%= e.tint %> mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem"><i data-lucide="<%= e.icon %>"></i></span>
-              <h6 class="fw-bold mb-2"><%= t(e.t) %></h6>
-              <p class="text-muted small mb-0"><%= e.d %></p>
-            </div>
+          <div class="lp-card text-center p-4">
+            <span class="tile-icon ti-<%= e.tint %> mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem"><i data-lucide="<%= e.icon %>"></i></span>
+            <h6 class="fw-bold mb-2"><%= t(e.t) %></h6>
+            <p class="text-muted small mb-0 lh-lg"><%= e.d %></p>
           </div>
         </div>
       <% }) %>
@@ -179,33 +177,30 @@
   </div>
 </section>
 
-<!-- ============ LEVELS & WITHDRAWALS ============ -->
-<section class="py-5">
+<!-- ========================================================= LEVELS & WITHDRAWALS -->
+<section class="py-5 bg-body border-top">
   <div class="container">
-    <h2 class="fw-bold text-center mb-2"><%= t('lp_more_t') %></h2>
-    <p class="text-center mb-5">
+    <div class="text-center mb-5">
+      <span class="sec-eyebrow"><%= t('guide_title') %></span>
+      <h2 class="sec-title fw-bold mb-2"><%= t('lp_more_t') %></h2>
       <a href="/guide" class="d-inline-flex align-items-center gap-1"><i data-lucide="book-open"></i><%= t('guide_title') %></a>
-    </p>
+    </div>
     <div class="row g-3 justify-content-center">
       <div class="col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body p-4 d-flex align-items-start gap-3">
-            <span class="tile-icon ti-yellow" style="width:48px;height:48px;font-size:1.25rem"><i data-lucide="star"></i></span>
-            <div>
-              <h6 class="fw-bold mb-2"><%= t('howto_level_t') %></h6>
-              <p class="text-muted small mb-0"><%= t('howto_level_d') %></p>
-            </div>
+        <div class="lp-card p-4 d-flex align-items-start gap-3">
+          <span class="tile-icon ti-yellow" style="width:48px;height:48px;font-size:1.25rem"><i data-lucide="star"></i></span>
+          <div>
+            <h6 class="fw-bold mb-2"><%= t('howto_level_t') %></h6>
+            <p class="text-muted small mb-0 lh-lg"><%= t('howto_level_d') %></p>
           </div>
         </div>
       </div>
       <div class="col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body p-4 d-flex align-items-start gap-3">
-            <span class="tile-icon ti-sky" style="width:48px;height:48px;font-size:1.25rem"><i data-lucide="arrow-down-to-line"></i></span>
-            <div>
-              <h6 class="fw-bold mb-2"><%= t('howto_withdraw_t') %></h6>
-              <p class="text-muted small mb-0"><%= t('howto_withdraw_d', { min: money(settings.minWithdraw), days: settings.withdrawEveryDays }) %></p>
-            </div>
+        <div class="lp-card p-4 d-flex align-items-start gap-3">
+          <span class="tile-icon ti-sky" style="width:48px;height:48px;font-size:1.25rem"><i data-lucide="arrow-down-to-line"></i></span>
+          <div>
+            <h6 class="fw-bold mb-2"><%= t('howto_withdraw_t') %></h6>
+            <p class="text-muted small mb-0 lh-lg"><%= t('howto_withdraw_d', { min: money(settings.minWithdraw), days: settings.withdrawEveryDays }) %></p>
           </div>
         </div>
       </div>
@@ -213,11 +208,14 @@
   </div>
 </section>
 
-<!-- ============ FAQ ============ -->
-<section class="py-5 bg-body border-top">
+<!-- ======================================================================== FAQ -->
+<section class="py-5">
   <div class="container" style="max-width: 760px;">
-    <h2 class="fw-bold text-center mb-5"><%= t('faq_t') %></h2>
-    <div class="accordion accordion-flush" id="faq">
+    <div class="text-center mb-5">
+      <span class="sec-eyebrow"><%= t('faq_t') %></span>
+      <h2 class="sec-title fw-bold mb-0"><%= t('faq_t') %></h2>
+    </div>
+    <div class="accordion accordion-flush faq" id="faq">
       <% [1, 2, 3, 4].forEach((n, i) => { %>
         <div class="accordion-item border-0 shadow-sm rounded-4 mb-2 overflow-hidden">
           <h2 class="accordion-header">
@@ -227,22 +225,29 @@
             </button>
           </h2>
           <div id="faq<%= n %>" class="accordion-collapse collapse <%= i === 0 ? 'show' : '' %>" data-bs-parent="#faq">
-            <div class="accordion-body text-muted small"><%= t('faq_' + n + '_a', { site: settings.siteName }) %></div>
+            <div class="accordion-body text-muted small lh-lg"><%= t('faq_' + n + '_a', { site: settings.siteName }) %></div>
           </div>
         </div>
       <% }) %>
     </div>
+  </div>
+</section>
 
-    <!-- closing note + sign-up nudge -->
-    <div class="text-center mt-5">
-      <div class="alert alert-warning small d-inline-flex align-items-center gap-2 mb-4">
-        <i data-lucide="alert-triangle"></i><span><%= t('howto_note') %></span>
+<!-- =============================================================== CLOSING CTA -->
+<section class="pb-5">
+  <div class="container">
+    <div class="cta-band text-center px-3 px-md-5 py-5">
+      <span class="badge bg-white bg-opacity-25 text-white rounded-pill mb-3 px-3 py-2 d-inline-flex align-items-center gap-1">
+        <i data-lucide="alert-triangle"></i><%= t('howto_note') %>
+      </span>
+      <h2 class="fw-bold mb-2"><%= t('lp_ready_t') %></h2>
+      <p class="cta-note mb-4 mx-auto" style="max-width: 46ch;"><%= t('lp_ready_d') %></p>
+      <div class="d-flex gap-2 flex-wrap justify-content-center">
+        <a href="/signup" class="btn btn-light btn-lg px-4 d-inline-flex align-items-center gap-2">
+          <i data-lucide="rocket"></i><%= t('btn_getstarted') %>
+        </a>
+        <a href="/login" class="btn btn-outline-light btn-lg px-4"><%= t('btn_login') %></a>
       </div>
-      <h5 class="fw-bold mb-1"><%= t('lp_ready_t') %></h5>
-      <p class="text-muted small mb-3"><%= t('lp_ready_d') %></p>
-      <a href="/signup" class="btn btn-primary px-4 d-inline-flex align-items-center gap-2">
-        <i data-lucide="rocket"></i><%= t('btn_getstarted') %>
-      </a>
     </div>
   </div>
 </section>

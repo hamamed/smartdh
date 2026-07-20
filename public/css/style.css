@@ -358,6 +358,91 @@ h1, h2, h3, h4, h5, h6,
 }
 .feature-icon:hover { transform: translateY(-2px); }
 
+/* ==========================================================================
+   LANDING PAGE — clean, spacious, conversion-focused
+   ========================================================================== */
+.lp-hero {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(1100px 480px at 80% -10%, rgba(244,166,42,.13), transparent 60%),
+    radial-gradient(920px 520px at 8% 6%, rgba(14,159,110,.14), transparent 58%);
+}
+/* faint dotted texture, fading out downward */
+.lp-hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+  background-image: radial-gradient(rgba(14,159,110,.12) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
+          mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
+}
+.lp-hero > .container { position: relative; z-index: 1; }
+
+.lp-eyebrow {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--brand-strong); background: var(--brand-soft);
+  padding: .42rem .85rem; border-radius: 999px; border: 1px solid #cdebdd;
+}
+[data-bs-theme="dark"] .lp-eyebrow { border-color: #1c4a3a; }
+
+.lp-title { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.08; letter-spacing: -.022em; }
+.lp-title .hl { color: var(--brand); }
+.lp-lead { font-size: 1.08rem; line-height: 1.6; max-width: 40ch; }
+
+.lp-trust { display: flex; flex-wrap: wrap; gap: .5rem; }
+.lp-trust .chip {
+  display: inline-flex; align-items: center; gap: .45rem; font-size: .82rem; font-weight: 600;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  padding: .5rem .8rem; border-radius: 999px; box-shadow: var(--shadow-sm);
+}
+.lp-trust .chip svg { color: var(--brand); width: 1em; height: 1em; }
+
+/* Earnings calculator — floating premium widget */
+.calc-card { box-shadow: var(--shadow-lg); }
+.calc-card .card-body { padding: 1.6rem; }
+.calc-out { border-radius: var(--radius-sm); padding: .9rem .5rem; }
+.calc-out .fw-bold { font-size: 1.05rem; }
+
+/* Section headers */
+.sec-eyebrow {
+  display: inline-block; margin-bottom: .5rem;
+  font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--brand-strong);
+}
+.sec-title { letter-spacing: -.02em; }
+
+/* Unified landing card */
+.lp-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); height: 100%;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s;
+}
+.lp-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: #d6e0d6; }
+[data-bs-theme="dark"] .lp-card:hover { border-color: #2f4238; }
+
+/* Numbered step, connected by a faint line on wide screens */
+.lp-step { position: relative; }
+@media (min-width: 992px) {
+  .lp-steps > [class*="col-"]:not(:last-child) .lp-step::after {
+    content: ""; position: absolute; top: 34px; inset-inline-start: calc(100% - .375rem);
+    width: calc(100% - 2.5rem); height: 2px; border-top: 2px dashed var(--line);
+  }
+}
+
+/* Big closing call-to-action */
+.cta-band { background: var(--brand-grad); color: #fff; border-radius: 1.75rem; position: relative; overflow: hidden; }
+.cta-band::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(620px 320px at 85% 15%, rgba(255,255,255,.20), transparent 60%);
+}
+.cta-band > * { position: relative; z-index: 1; }
+.cta-band .btn-light { --bs-btn-color: var(--brand-strong); --bs-btn-hover-color: var(--brand-strong); font-weight: 700; }
+.cta-band .cta-note { color: rgba(255,255,255,.82); }
+
+/* FAQ — soft cards */
+.faq .accordion-button:not(.collapsed) { background: var(--brand-soft); color: var(--brand-strong); box-shadow: none; }
+.faq .accordion-button:focus { box-shadow: 0 0 0 3px rgba(14,159,110,.15); }
+
 /* ---------- Product (app) cards ---------- */
 .product-media { position: relative; height: 150px; background: var(--surface-2); overflow: hidden; }
 .product-media > img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s var(--ease); }
