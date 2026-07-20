@@ -1907,7 +1907,7 @@ app.get('/admin/data', requireAdmin, (req, res) => {
 app.get('/admin/export/backup.json', requireAdmin, (req, res) => {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="smartdh-backup-${stamp}.json"`);
+  res.setHeader('Content-Disposition', `attachment; filename="kanzup-backup-${stamp}.json"`);
   res.send(JSON.stringify(req.db, null, 2));
 });
 

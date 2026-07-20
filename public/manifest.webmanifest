@@ -1,6 +1,6 @@
 {
-  "name": "DirhamVest — play-money investing game",
-  "short_name": "DirhamVest",
+  "name": "KanzUp — play-money investing game",
+  "short_name": "KanzUp",
   "description": "A play-money investing simulator game for friends and family.",
   "start_url": "/dashboard",
   "scope": "/",

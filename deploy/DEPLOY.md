@@ -1,6 +1,6 @@
 # Deploying SmartDH to your VPS
 
-Target: **46.224.32.64** · domain **smartdh.ma**
+Target: **46.224.32.64** · domain **kanzup.com**
 Stack: Node + systemd, nginx reverse proxy, Let's Encrypt TLS.
 
 Run everything below **on the VPS as root** (or with `sudo`), unless it says "on your PC".
@@ -9,17 +9,19 @@ Run everything below **on the VPS as root** (or with `sudo`), unless it says "on
 
 ## 1. DNS (do this first — TLS needs it)
 
-At your domain registrar for `smartdh.ma`, add:
+At your domain registrar for `kanzup.com`, add:
 
-| Type | Name | Value |
-|------|------|-------|
-| A    | `@`  | `46.224.32.64` |
-| A    | `www`| `46.224.32.64` |
+| Type | Name    | Value |
+|------|---------|-------|
+| A    | `@`     | `46.224.32.64` |
+| A    | `www`   | `46.224.32.64` |
+| A    | `admin` | `46.224.32.64` |
 
-Check it resolves before continuing (wait a few minutes if not):
+Check they resolve before continuing (wait a few minutes if not):
 
 ```bash
-dig +short smartdh.ma        # must print 46.224.32.64
+dig +short kanzup.com          # must print 46.224.32.64
+dig +short admin.kanzup.com    # must print 46.224.32.64
 ```
 
 ---
@@ -85,7 +87,7 @@ Fill in `.env`:
 ```ini
 SESSION_SECRET=<paste the generated value>
 ADMIN_EMAIL=your@email.com        # ONLY this address becomes admin
-APP_URL=https://smartdh.ma
+APP_URL=https://kanzup.com
 NODE_ENV=production
 PORT=3000
 ```
@@ -119,8 +121,8 @@ Logs: `journalctl -u smartdh -f`
 ## 8. nginx + HTTPS
 
 ```bash
-cp /var/www/smartdh/deploy/nginx.conf /etc/nginx/sites-available/smartdh.ma
-ln -sf /etc/nginx/sites-available/smartdh.ma /etc/nginx/sites-enabled/
+cp /var/www/smartdh/deploy/nginx.conf /etc/nginx/sites-available/kanzup.com
+ln -sf /etc/nginx/sites-available/kanzup.com /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 ```
@@ -128,7 +130,7 @@ nginx -t && systemctl reload nginx
 Now get the certificate — certbot edits the file to add TLS and the redirect itself:
 
 ```bash
-certbot --nginx -d smartdh.ma -d www.smartdh.ma --agree-tos -m your@email.com --redirect
+certbot --nginx -d kanzup.com -d www.kanzup.com -d admin.kanzup.com --agree-tos -m your@email.com --redirect
 nginx -t && systemctl reload nginx
 ```
 
@@ -136,7 +138,7 @@ Renewal is automatic (`systemctl status certbot.timer`).
 
 ## 9. Claim your admin account — do this immediately
 
-Open **https://smartdh.ma/signup** and register with the **exact `ADMIN_EMAIL`** from `.env`.
+Open **https://kanzup.com/signup** and register with the **exact `ADMIN_EMAIL`** from `.env`.
 That account becomes admin automatically; everyone else lands in *pending* until you approve them.
 
 > Because `ADMIN_EMAIL` is set, nobody else can take admin even if they sign up first.

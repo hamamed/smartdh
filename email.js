@@ -40,7 +40,7 @@ function textToHtml(text) {
 // it renders in Gmail/Outlook/Apple Mail (which strip <style> and flexbox).
 function renderEmail(opts = {}) {
   const {
-    siteName = 'DirhamVest',
+    siteName = 'KanzUp',
     appUrl = '#',
     logoUrl = '',
     unsubscribeUrl = '',
@@ -134,7 +134,7 @@ async function sendMail(to, subject, html) {
   }
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'DirhamVest <no-reply@game.local>',
+      from: process.env.SMTP_FROM || 'KanzUp <no-reply@kanzup.com>',
       to, subject, html
     });
     return { ok: true };

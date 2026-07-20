@@ -18,7 +18,7 @@ const DEFAULTS = {
   audit: [],
   schedules: [],
   settings: {
-    siteName: 'DirhamVest',
+    siteName: 'KanzUp',
     // Branding: show the text name, or an uploaded logo image, in the navbar/emails.
     logoUrl: '',
     brandMode: 'text',   // 'text' | 'logo'
