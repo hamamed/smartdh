@@ -212,7 +212,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Sessions are stored on disk, so a restart/deploy doesn't log everyone out.
 const FileStore = require('session-file-store')(session);
 app.use(session({
-  name: 'dv.sid',
+  // Renamed from 'dv.sid' so any stale host-only cookie from before COOKIE_DOMAIN
+  // is orphaned (ignored) instead of colliding with the new domain-wide cookie.
+  name: 'kz.sid',
   store: new FileStore({
     path: path.join(__dirname, 'data', 'sessions'),
     ttl: 60 * 60 * 24 * 7,     // 7 days
@@ -894,7 +896,12 @@ app.post('/login', authLimiter, async (req, res) => {
   res.redirect('/dashboard');
 });
 
-app.post('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
+app.post('/logout', (req, res) => req.session.destroy(() => {
+  // Clear the cookie explicitly with the SAME domain it was set with, otherwise
+  // the browser keeps a .kanzup.com cookie and stays "logged in" on the other host.
+  res.clearCookie('kz.sid', { path: '/', domain: process.env.COOKIE_DOMAIN || undefined });
+  res.redirect('/');
+}));
 
 app.get('/pending', requireLogin, (req, res) => {
   if (req.currentUser.status === 'active') return res.redirect('/dashboard');
