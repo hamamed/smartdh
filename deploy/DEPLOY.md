@@ -184,3 +184,5 @@ scp -r root@46.224.32.64:/var/www/smartdh/data ./backup-$(date +%F)
 | "FATAL: SESSION_SECRET must be set" | `.env` missing or unreadable by the `smartdh` user |
 | Uploads fail | `chown -R smartdh:smartdh /var/www/smartdh/public/uploads` · `client_max_body_size` |
 | Icons/fonts missing | The server needs outbound internet (Bootstrap/Lucide/Chart.js load from CDN) |
+| Forgot-password email never arrives | It needs SMTP. Without `SMTP_HOST` set, reset emails are only printed to the log, not delivered. Set the SMTP block in `.env`, **or** reset a password directly (below). |
+| Locked out / forgot the admin password | On the VPS: `cd /var/www/smartdh && node scripts/set-password.js you@email.com NEWPASS && systemctl restart smartdh` |
