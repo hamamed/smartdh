@@ -17,7 +17,6 @@
             <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_bank') %></span><span class="fw-semibold"><%= depositInfo.bankName %></span></div>
             <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_account') %></span><span class="fw-semibold"><%= depositInfo.accountName %></span></div>
             <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_rib') %></span><span class="fw-semibold" dir="ltr"><%= depositInfo.rib %></span></div>
-            <div class="alert alert-warning mt-3 mb-0 py-2 small d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><span><%= depositInfo.note || t('deposit_warn') %></span></div>
           </div>
           <div class="col-md-4 text-center">
             <% if (depositQR) { %>
