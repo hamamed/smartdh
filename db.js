@@ -82,8 +82,22 @@ function ensureDirs() {
   if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
+// Old sequential code (derived from the id) — kept only to detect and upgrade
+// existing codes to random ones during migration.
 function refCode(id) {
   return 'R' + id.toString(36).toUpperCase().padStart(4, '0');
+}
+
+// Random, unguessable referral code. Excludes easily-confused chars (0/O/1/I).
+function randomRefCode(db) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const taken = new Set(((db && db.users) || []).map(u => u.referralCode).filter(Boolean));
+  let code;
+  do {
+    code = '';
+    for (let i = 0; i < 7; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  } while (taken.has(code));
+  return code;
 }
 
 function migrate(db) {
@@ -168,7 +182,9 @@ function migrate(db) {
     if (u.avatar === undefined) u.avatar = '';
     if (u.onboarded === undefined) u.onboarded = false;
     if (u.reset === undefined) u.reset = null;
-    if (!u.referralCode) u.referralCode = refCode(u.id);
+    // Referral codes are random now. Generate for new users, and upgrade any old
+    // sequential codes (which equalled refCode(id)) to a random one.
+    if (!u.referralCode || u.referralCode === refCode(u.id)) u.referralCode = randomRefCode(db);
     if (u.referredBy === undefined) u.referredBy = null;
     // Email preferences: a per-user token for one-click unsubscribe links, and an
     // opt-out flag honoured by admin broadcasts (account/security mails still send).
@@ -299,4 +315,4 @@ function wipe({ keepUsers = [], keepSettings = true } = {}) {
   return cache;
 }
 
-module.exports = { load, save, refCode, listBackups, replaceAll, wipe };
+module.exports = { load, save, refCode, randomRefCode, listBackups, replaceAll, wipe };

@@ -8,7 +8,7 @@
 // Every account's password is: test1234
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { load, save, refCode } = require('../db');
+const { load, save, randomRefCode } = require('../db');
 
 const COUNT = Number(process.argv[2]) || 300;
 const PASSWORD = 'test1234';
@@ -58,7 +58,7 @@ for (let i = 0; i < COUNT; i++) {
     streak: { count: status === 'active' ? int(0, 12) : 0, lastClaim: null },
     payout: { method: bank ? 'bank' : 'paypal', name, paypal: bank ? '' : `${slug(first)}.${slug(last)}@paypal.com`, rib: bank ? fakeRib() : '' },
     referralEarnings: 0, refAccrued: 0, refLastTx: 0, campaignClaims: 0, campaignRewarded: false,
-    avatar: '', onboarded: true, reset: null, referralCode: refCode(id), referredBy: null,
+    avatar: '', onboarded: true, reset: null, referralCode: randomRefCode(db), referredBy: null,
     emailToken: crypto.randomBytes(16).toString('hex'), emailOptOut: false, gsDismissed: true
   };
   db.users.push(u);

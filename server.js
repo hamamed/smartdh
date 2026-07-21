@@ -6,7 +6,7 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const ejsLayouts = require('express-ejs-layouts');
-const { load, save, refCode, replaceAll, wipe } = require('./db');
+const { load, save, refCode, randomRefCode, replaceAll, wipe } = require('./db');
 const { sendMail, renderEmail, textToHtml } = require('./email');
 const { locales, LANGS, DEFAULT_LANG, t } = require('./locales');
 const QRCode = require('qrcode');
@@ -688,7 +688,7 @@ function createUser(db, { name, email, passwordHash, isAdmin = false, status = '
     avatar: '',
     onboarded: false,
     reset: null,
-    referralCode: refCode(id),
+    referralCode: randomRefCode(db),
     referredBy,
     emailToken: crypto.randomBytes(16).toString('hex'),
     emailOptOut: false,
