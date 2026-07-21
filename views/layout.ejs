@@ -4,6 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= typeof title !== 'undefined' ? title + ' · ' : '' %><%= settings.siteName %></title>
+
+  <!-- Google tag (gtag.js) — page-view + engagement tracking on every page -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0BREKVPJ6X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-0BREKVPJ6X', {
+      page_title: <%- JSON.stringify(typeof title !== 'undefined' && title ? title : settings.siteName) %>,
+      page_path: location.pathname
+    });
+  </script>
+
   <script>try{var th=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',th);}catch(e){}</script>
   <!-- PWA -->
   <link rel="manifest" href="/manifest.webmanifest">
