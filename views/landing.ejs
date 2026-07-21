@@ -117,66 +117,6 @@
   </div>
 </section>
 
-<!-- =============================================================== HOW IT WORKS -->
-<section class="py-5 bg-body border-top">
-  <div class="container">
-    <div class="text-center mb-5">
-      <span class="sec-eyebrow"><%= t('lp_steps_d') %></span>
-      <h2 class="sec-title fw-bold mb-0"><%= t('lp_steps_t') %></h2>
-    </div>
-    <div class="row g-4 lp-steps">
-      <%
-        const steps = [
-          { icon: 'user-plus',   text: t('howto_invest_1') },
-          { icon: 'layers',      text: t('howto_invest_2', { min: money(settings.minAddFunds) }) },
-          { icon: 'shield',      text: t('howto_invest_3') },
-          { icon: 'trending-up', text: t('howto_invest_4') }
-        ];
-      %>
-      <% steps.forEach((s, i) => { %>
-        <div class="col-md-6 col-lg-3">
-          <div class="lp-step h-100">
-            <div class="d-flex align-items-center gap-2 mb-3">
-              <span class="step-num"><%= i + 1 %></span>
-              <span class="tile-icon ti-navy" style="width:44px;height:44px;font-size:1.15rem"><i data-lucide="<%= s.icon %>"></i></span>
-            </div>
-            <p class="text-muted small mb-0 lh-lg"><%= s.text %></p>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  </div>
-</section>
-
-<!-- ================================================================ WAYS TO EARN -->
-<section class="py-5">
-  <div class="container">
-    <div class="text-center mb-5">
-      <span class="sec-eyebrow"><%= t('lp_earn_d') %></span>
-      <h2 class="sec-title fw-bold mb-0"><%= t('howto_earn_t') %></h2>
-    </div>
-    <div class="row g-3">
-      <%
-        const earn = [
-          { icon: 'coins',     tint: 'mint',   t: 'howto_earn_1_t', d: t('howto_earn_1_d') },
-          { icon: 'gift',      tint: 'yellow', t: 'howto_earn_2_t', d: t('howto_earn_2_d', { max: money(settings.dailyBonusBase * 7) }) },
-          { icon: 'user-plus', tint: 'coral',  t: 'howto_earn_3_t', d: t('howto_earn_3_d', { t1: settings.referralTiers[0]*100, t2: settings.referralTiers[1]*100, t3: settings.referralTiers[2]*100 }) },
-          { icon: 'trophy',    tint: 'lilac',  t: 'howto_earn_4_t', d: t('howto_earn_4_d') }
-        ];
-      %>
-      <% earn.forEach(e => { %>
-        <div class="col-md-6 col-lg-3">
-          <div class="lp-card text-center p-4">
-            <span class="tile-icon ti-<%= e.tint %> mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem"><i data-lucide="<%= e.icon %>"></i></span>
-            <h6 class="fw-bold mb-2"><%= t(e.t) %></h6>
-            <p class="text-muted small mb-0 lh-lg"><%= e.d %></p>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  </div>
-</section>
-
 <!-- ========================================================= LEVELS & WITHDRAWALS -->
 <section class="py-5 bg-body border-top">
   <div class="container">
