@@ -35,7 +35,7 @@ if (window.Chart) {
   });
 }
 
-// ---------- Balance history chart ----------
+// ---------- Balance history chart (multi-series + filter chips) ----------
 (function () {
   const el = document.getElementById('balanceChart');
   if (!el || !window.Chart) return;
@@ -44,28 +44,38 @@ if (window.Chart) {
   if (pts.length < 2) return;
   const currency = el.dataset.currency || '';
   const ctx = el.getContext('2d');
+  let T = dvTheme();
+  // Total gets a soft area fill; the other lines are clean strokes.
   const areaFill = (T) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${T.brandRgb},.20)`); g.addColorStop(1, `rgba(${T.brandRgb},0)`); return g; };
 
-  let T = dvTheme();
+  // key → colour (matches the chips in home.ejs)
+  const series = [
+    { key: 'total',    label: el.dataset.ltotal    || 'Total',    color: () => T.brand,  fill: true  },
+    { key: 'invested', label: el.dataset.linvested || 'Invested', color: () => '#2e90fa', fill: false },
+    { key: 'earnings', label: el.dataset.learnings || 'Earnings', color: () => T.accent, fill: false },
+    { key: 'referral', label: el.dataset.lreferral || 'Referral', color: () => '#7c6be0', fill: false }
+  ];
+
   const chart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: pts.map(p => new Date(p.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
-      datasets: [{
-        data: pts.map(p => p.v),
-        borderColor: T.brand,
-        backgroundColor: areaFill(T),
-        borderWidth: 2.5, fill: true, tension: .38,
+      datasets: series.map(s => ({
+        label: s.label,
+        data: pts.map(p => (p[s.key] == null ? null : p[s.key])),
+        borderColor: s.color(),
+        backgroundColor: s.fill ? areaFill(T) : 'transparent',
+        borderWidth: 2.4, fill: s.fill, tension: .38, spanGaps: true,
         pointRadius: 0, pointHoverRadius: 5,
-        pointHoverBackgroundColor: T.brand, pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2
-      }]
+        pointHoverBackgroundColor: s.color(), pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2
+      }))
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (c) => c.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency } }
+        tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + Number(c.parsed.y).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency } }
       },
       scales: {
         x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 6, color: T.muted } },
@@ -73,10 +83,26 @@ if (window.Chart) {
       }
     }
   });
+
+  // Chips: toggle each series on/off
+  const idx = {}; series.forEach((s, i) => idx[s.key] = i);
+  document.querySelectorAll('#balFilters .trend-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const k = chip.dataset.series;
+      const on = !chart.isDatasetVisible(idx[k]);
+      chart.setDatasetVisibility(idx[k], on);
+      chip.classList.toggle('active', on);
+      chart.update();
+    });
+  });
+
   dvOnThemeChange(() => {
     T = dvTheme();
-    const d = chart.data.datasets[0];
-    d.borderColor = T.brand; d.backgroundColor = areaFill(T); d.pointHoverBackgroundColor = T.brand;
+    series.forEach((s, i) => {
+      const d = chart.data.datasets[i];
+      d.borderColor = s.color(); d.pointHoverBackgroundColor = s.color();
+      if (s.fill) d.backgroundColor = areaFill(T);
+    });
     chart.options.scales.x.ticks.color = T.muted;
     chart.options.scales.y.ticks.color = T.muted;
     chart.options.scales.y.grid.color = T.line;

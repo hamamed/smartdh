@@ -302,9 +302,11 @@ h1, h2, h3, h4, h5, h6,
 .wallet-mint   { background: var(--brand-soft) !important;  color: #0b6b4a; border-color: #cdebdd; }
 .wallet-coral  { background: #fcede9 !important;            color: #a44534; border-color: #f6d8d0; }
 .wallet-yellow { background: var(--accent-soft) !important; color: #97600a; border-color: #f6e2bc; }
+.wallet-lilac  { background: #ede9fc !important;            color: #5b4bc4; border-color: #ddd5f7; }
 [data-bs-theme="dark"] .wallet-mint   { background: #123027 !important; color: #86efc0; border-color: #1c4a3a; }
 [data-bs-theme="dark"] .wallet-coral  { background: #34211d !important; color: #f4b3a4; border-color: #4d2e28; }
 [data-bs-theme="dark"] .wallet-yellow { background: #2a2312 !important; color: #fbd07a; border-color: #4a3d1a; }
+[data-bs-theme="dark"] .wallet-lilac  { background: #211c3a !important; color: #b3a4f0; border-color: #322a52; }
 
 /* ---------- Home / admin menu (3-across tiles) ---------- */
 .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }

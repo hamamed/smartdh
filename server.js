@@ -921,7 +921,14 @@ function recordHistory(user) {
   const last = user.history[user.history.length - 1];
   const now = Date.now();
   if (!last || now - last.t >= 60 * 60 * 1000) {
-    user.history.push({ t: now, total: Math.round(totalBalance(user) * 100) / 100 });
+    const r2 = n => Math.round((n || 0) * 100) / 100;
+    user.history.push({
+      t: now,
+      total: r2(totalBalance(user)),
+      invested: r2(totalInvested(user)),
+      earnings: r2(user.earnings),
+      referral: r2(user.referralEarnings)
+    });
     if (user.history.length > 90) user.history = user.history.slice(-90);
   }
 }

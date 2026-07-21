@@ -80,29 +80,37 @@
 
     <!-- Tinted wallet cards with live counters -->
     <div class="row g-3 mb-4">
-      <div class="col-md-4">
+      <div class="col-6 col-lg-3">
         <div class="card wallet wallet-coral rounded-4 h-100">
           <div class="card-body">
             <div class="small d-flex align-items-center gap-1"><i data-lucide="piggy-bank"></i><%= t('c_invested') %></div>
-            <div class="h3 fw-bold mb-0 mt-1"><%= money(totalInvested) %></div>
+            <div class="h4 fw-bold mb-0 mt-1"><%= money(totalInvested) %></div>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-6 col-lg-3">
         <div class="card wallet wallet-mint rounded-4 h-100">
           <div class="card-body">
             <div class="small d-flex align-items-center gap-1"><i data-lucide="coins"></i><%= t('c_earnings') %></div>
-            <div class="h3 fw-bold mb-0 mt-1 live-counter"
+            <div class="h4 fw-bold mb-0 mt-1 live-counter"
                  data-value="<%= currentUser.earnings %>" data-persec="<%= perSecond %>"
                  data-currency="<%= curLabel %>"><%= money(currentUser.earnings) %></div>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-6 col-lg-3">
+        <div class="card wallet wallet-lilac rounded-4 h-100">
+          <div class="card-body">
+            <div class="small d-flex align-items-center gap-1"><i data-lucide="user-plus"></i><%= t('c_referral') %></div>
+            <div class="h4 fw-bold mb-0 mt-1"><%= money(currentUser.referralEarnings || 0) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
         <div class="card wallet wallet-yellow rounded-4 h-100">
           <div class="card-body">
             <div class="small d-flex align-items-center gap-1"><i data-lucide="wallet"></i><%= t('c_total') %></div>
-            <div class="h3 fw-bold mb-0 mt-1 live-counter"
+            <div class="h4 fw-bold mb-0 mt-1 live-counter"
                  data-value="<%= totalBalance %>" data-persec="<%= perSecond %>"
                  data-currency="<%= curLabel %>"><%= money(totalBalance) %></div>
           </div>
@@ -134,12 +142,23 @@
         <% if (history.length < 2) { %>
           <p class="text-muted small mb-0"><%= t('chart_empty') %></p>
         <% } else { %>
+          <!-- Series filters: toggle each line on/off -->
+          <div class="d-flex flex-wrap gap-2 mb-3" id="balFilters">
+            <button type="button" class="trend-chip active" data-series="total"><span class="chip-dot" style="background:#0e9f6e"></span><%= t('c_total') %></button>
+            <button type="button" class="trend-chip active" data-series="invested"><span class="chip-dot" style="background:#2e90fa"></span><%= t('c_invested') %></button>
+            <button type="button" class="trend-chip active" data-series="earnings"><span class="chip-dot" style="background:#f4a62a"></span><%= t('c_earnings') %></button>
+            <button type="button" class="trend-chip active" data-series="referral"><span class="chip-dot" style="background:#7c6be0"></span><%= t('c_referral') %></button>
+          </div>
           <%# fixed-height wrapper: Chart.js fills its parent, so without this the
               canvas and parent grow each other infinitely down the page %>
           <div class="chart-box">
             <canvas id="balanceChart"
-                    data-points='<%- JSON.stringify(history.map(h => ({ t: h.t, v: h.total }))) %>'
-                    data-currency="<%= curLabel %>"></canvas>
+                    data-points='<%- JSON.stringify(history.map(h => ({ t: h.t, total: h.total, invested: h.invested == null ? null : h.invested, earnings: h.earnings == null ? null : h.earnings, referral: h.referral == null ? null : h.referral }))) %>'
+                    data-currency="<%= curLabel %>"
+                    data-ltotal="<%= t('c_total') %>"
+                    data-linvested="<%= t('c_invested') %>"
+                    data-learnings="<%= t('c_earnings') %>"
+                    data-lreferral="<%= t('c_referral') %>"></canvas>
           </div>
         <% } %>
       </div>
