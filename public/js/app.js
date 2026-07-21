@@ -80,30 +80,39 @@ if (window.Chart) {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
+  // Invested + Total are large (the deposited principal), Earnings + Referral are
+  // small (the growth). On one axis the small ones vanish, so split them:
+  //   left axis  (y)  → Invested (bar) + Total (line)
+  //   right axis (y1) → Earnings + Referral (lines, their own scale)
   const bar = (k) => ({
-    type: 'bar', label: S[k].label, key: k,
+    type: 'bar', label: S[k].label, key: k, yAxisID: 'y',
     data: [], backgroundColor: softBar(S[k].rgb()),
-    borderRadius: 6, borderSkipped: false, maxBarThickness: 26, order: 2
+    borderRadius: 6, borderSkipped: false, maxBarThickness: 26, order: 3
+  });
+  const line = (k, axis, order, dash) => ({
+    type: 'line', label: S[k].label, key: k, yAxisID: axis, data: [],
+    borderColor: `rgb(${S[k].rgb()})`, backgroundColor: `rgb(${S[k].rgb()})`,
+    pointBackgroundColor: `rgb(${S[k].rgb()})`, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+    tension: .4, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.4,
+    borderDash: dash ? [5, 4] : [], order: order
   });
   const chart = new Chart(ctx, {
     data: {
       labels: [],
       datasets: [
         bar('invested'),
-        bar('earnings'),
-        bar('referral'),
-        { type: 'line', label: S.total.label, key: 'total', data: [],
-          borderColor: `rgb(${S.total.rgb()})`, backgroundColor: `rgb(${S.total.rgb()})`,
-          pointBackgroundColor: `rgb(${S.total.rgb()})`, pointBorderColor: '#fff', pointBorderWidth: 1.5,
-          tension: .4, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.6, order: 0 }
+        line('total', 'y', 0),
+        line('earnings', 'y1', 1),
+        line('referral', 'y1', 2, true)
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 12, color: T.muted, autoSkip: true } },
-        y: { beginAtZero: true, grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } }
+        x:  { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 12, color: T.muted, autoSkip: true } },
+        y:  { beginAtZero: true, grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } }
       },
       plugins: {
         legend: { display: false },
@@ -150,6 +159,7 @@ if (window.Chart) {
     });
     chart.options.scales.x.ticks.color = T.muted;
     chart.options.scales.y.ticks.color = T.muted;
+    chart.options.scales.y1.ticks.color = T.muted;
     chart.options.scales.y.grid.color = T.line;
     chart.update('none');
   });
