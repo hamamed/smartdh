@@ -93,7 +93,6 @@ function renderEmail(opts = {}) {
         ${logoUrl
           ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
           : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}
-        <div style="font-size:12px;color:rgba(255,255,255,.9);margin-top:6px;">${esc(L.tagline)}</div>
       </td></tr>
       <!-- Body -->
       <tr><td align="${align}" dir="${dir}" style="padding:32px 30px 8px;">
