@@ -363,11 +363,24 @@ h1, h2, h3, h4, h5, h6,
 /* ==========================================================================
    LANDING PAGE — clean, spacious, conversion-focused
    ========================================================================== */
+/* Whole landing sits on white with a soft green wash from the top. */
+.lp-page {
+  background:
+    radial-gradient(1200px 620px at 50% -12%, rgba(14,159,110,.16), transparent 60%),
+    linear-gradient(180deg, rgba(14,159,110,.06) 0%, rgba(255,255,255,0) 32%),
+    #ffffff;
+}
+[data-bs-theme="dark"] .lp-page {
+  background:
+    radial-gradient(1200px 620px at 50% -12%, rgba(52,211,153,.12), transparent 60%),
+    var(--ground);
+}
+/* Sections inside the landing are transparent so the page wash shows through. */
+.lp-page > section { background: transparent; }
+
 .lp-hero {
   position: relative; overflow: hidden;
-  background:
-    radial-gradient(1100px 480px at 80% -10%, rgba(244,166,42,.13), transparent 60%),
-    radial-gradient(920px 520px at 8% 6%, rgba(14,159,110,.14), transparent 58%);
+  background: transparent;   /* the .lp-page green wash shows through here */
 }
 /* faint dotted texture, fading out downward */
 .lp-hero::before {
