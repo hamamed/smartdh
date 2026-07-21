@@ -15,6 +15,9 @@
       page_title: <%- JSON.stringify(typeof title !== 'undefined' && title ? title : settings.siteName) %>,
       page_path: location.pathname
     });
+    <% if (typeof gaEvent !== 'undefined' && gaEvent) { %>
+    gtag('event', <%- JSON.stringify(gaEvent.name) %>, <%- JSON.stringify(gaEvent.params || {}) %>);
+    <% } %>
   </script>
 
   <script>try{var th=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',th);}catch(e){}</script>

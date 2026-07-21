@@ -313,8 +313,16 @@ app.use((req, res, next) => {
   res.locals.curLabel = curLabel;
   res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${curLabel}`;
   res.locals.timeAgo = (ts) => timeAgo(ts, lang);
+  // One-time Google Analytics event: an action sets req.session.gaEvent before a
+  // redirect; here it's popped onto the next rendered page and cleared, so it
+  // fires exactly once. Direct-render routes set res.locals.gaEvent themselves.
+  res.locals.gaEvent = req.session.gaEvent || null;
+  if (req.session.gaEvent) delete req.session.gaEvent;
   next();
 });
+
+// Queue a GA event to fire on the page shown after a redirect.
+function gaTrack(req, name, params) { req.session.gaEvent = { name, params: params || {} }; }
 
 // Facebook-style relative time: "just now", "3 min", "1 h", "2 d", "1 mo", "1 y".
 function timeAgo(ts, lang) {
@@ -904,6 +912,9 @@ app.post('/signup', authLimiter, async (req, res) => {
 
   if (isFirstUser) { req.session.userId = user.id; return res.redirect('/admin'); }
 
+  // Player sign-up event (both render paths below carry it to GA).
+  res.locals.gaEvent = { name: 'sign_up', params: { referred: !!referrer } };
+
   // Email confirmation: the account starts unverified and can't log in until the
   // emailed link is clicked. If SMTP is off we can't deliver it, so auto-verify
   // rather than lock the user out of an app with no email configured.
@@ -947,6 +958,7 @@ app.get('/verify/:token', (req, res) => {
   u.emailVerified = true;
   u.verifyToken = null;
   save(db);
+  res.locals.gaEvent = { name: 'email_verified' };
   res.render('message', {
     title: req.t('verify_done_h'), heading: req.t('verify_done_h'), mBody: req.t('verify_done_b'),
     mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
@@ -982,6 +994,7 @@ app.post('/login', authLimiter, async (req, res) => {
   if (!user.emailVerified)
     return res.render('login', { title: req.t('login_title'), error: req.t('login_verify'), form: { email }, unverified: user.email });
   req.session.userId = user.id;
+  gaTrack(req, 'login', { role: user.isAdmin ? 'admin' : 'player' });
   if (user.isAdmin) return res.redirect('/admin');
   // Non-admins don't belong on the admin subdomain — send them to the main site.
   const dest = user.status !== 'active' ? '/pending' : '/dashboard';
@@ -1175,6 +1188,7 @@ app.post('/campaign/claim', requireActive, (req, res) => {
   addTx(u, 'campaign_reward', st.rewardCoins, 'Invited ' + st.goal + ' players (+' + st.rewardXp + ' XP)');
   checkState(u);
   save(db);
+  gaTrack(req, 'challenge_reward', { value: st.rewardCoins });
   res.redirect(back + '?ok=campaign&amt=' + st.rewardCoins);
 });
 
@@ -1382,6 +1396,7 @@ app.post('/add-funds', requireActive, (req, res) => {
   });
   addTx(u, 'deposit_request', amount, plan.name);
   save(db);
+  gaTrack(req, 'deposit_request', { value: amount, currency: 'MAD', plan: plan.id });
   res.redirect('/invest?ok=deprequested');
 });
 
@@ -1425,6 +1440,7 @@ app.post('/withdraw', requireActive, (req, res) => {
   addTx(u, 'withdraw_request', amount, `From ${label}`);
   award(u, 'first_withdraw');
   save(db);
+  gaTrack(req, 'withdraw_request', { value: amount, currency: 'MAD' });
   res.redirect('/withdraw?ok=withdraw');
 });
 
@@ -1445,6 +1461,7 @@ app.post('/daily-bonus', requireActive, (req, res) => {
   addTx(u, 'daily_bonus', bonus, `Day ${u.streak.count} streak`);
   checkState(u);
   save(db);
+  gaTrack(req, 'daily_bonus', { value: bonus, streak: u.streak.count });
   res.redirect(back + '?ok=bonus&amt=' + bonus);
 });
 
@@ -1472,6 +1489,7 @@ app.post('/transfer', requireActive, (req, res) => {
   award(u, 'generous');
   checkState(recipient);
   save(db);
+  gaTrack(req, 'coins_sent');
   res.redirect('/send?ok=sent');
 });
 
