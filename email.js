@@ -75,6 +75,14 @@ function renderEmail(opts = {}) {
           </td></tr>
         </table>` : '';
 
+  // Header pattern must be a HOSTED image (email clients strip data-URI backgrounds).
+  // The PNG bakes in the brand gradient + dots. Falls back to a CSS gradient when
+  // there's no absolute app URL (local previews), and to the solid bgcolor in Outlook.
+  const patternUrl = /^https?:\/\//.test(appUrl) ? appUrl.replace(/\/$/, '') + '/email/pattern.png' : '';
+  const headerStyle = patternUrl
+    ? `background-color:#0b7d57;background-image:url('${esc(patternUrl)}');background-size:cover;background-position:center;background-repeat:no-repeat;`
+    : 'background:linear-gradient(135deg,#13b07f 0%,#0b7d57 100%);';
+
   return `<!doctype html>
 <html dir="${dir}" lang="en">
 <head>
@@ -88,8 +96,8 @@ function renderEmail(opts = {}) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f3ef;padding:24px 12px;">
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(20,38,28,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-      <!-- Header (dotted pattern over the brand gradient, like the confirmation page) -->
-      <tr><td align="center" bgcolor="#0b7d57" style="background-color:#0b7d57;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84'%3E%3Ccircle cx='14' cy='16' r='3' fill='%23fff' opacity='.20'/%3E%3Ccircle cx='60' cy='34' r='2.4' fill='%23fff' opacity='.15'/%3E%3Ccircle cx='34' cy='62' r='2.6' fill='%23fff' opacity='.18'/%3E%3Ccircle cx='75' cy='73' r='2' fill='%23fff' opacity='.14'/%3E%3Ccircle cx='6' cy='78' r='1.7' fill='%23fff' opacity='.13'/%3E%3C/svg%3E&quot;),linear-gradient(135deg,#13b07f 0%,#0b7d57 100%);background-size:84px 84px,auto;background-repeat:repeat,no-repeat;padding:34px 24px;">
+      <!-- Header (hosted banner: brand gradient + dots, like the confirmation page) -->
+      <tr><td align="center" bgcolor="#0b7d57" ${patternUrl ? `background="${esc(patternUrl)}"` : ''} style="${headerStyle}padding:34px 24px;">
         ${logoUrl
           ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
           : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}
