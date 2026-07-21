@@ -343,6 +343,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// The admin subdomain is admin-only. A logged-in non-admin (who isn't being
+// impersonated by an admin) is sent to the main site instead of landing on a
+// dead-end dashboard here and hitting "access denied" on the admin pages.
+app.use((req, res, next) => {
+  if (onAdminHost(req) && req.currentUser && !req.currentUser.isAdmin && !res.locals.impersonating
+      && !req.originalUrl.startsWith('/logout')) {
+    return res.redirect(APP_URL + (req.originalUrl === '/' ? '/dashboard' : req.originalUrl));
+  }
+  next();
+});
+
 // Verify CSRF on every state-changing request (locals are ready by now).
 // Multipart bodies aren't parsed yet at this point, so those routes run csrfGuard
 // again themselves right after multer — they are never left unchecked.
@@ -893,8 +904,9 @@ app.post('/login', authLimiter, async (req, res) => {
     return res.render('login', { title: req.t('login_title'), error: req.t('err_wrong'), form: { email } });
   req.session.userId = user.id;
   if (user.isAdmin) return res.redirect('/admin');
-  if (user.status !== 'active') return res.redirect('/pending');
-  res.redirect('/dashboard');
+  // Non-admins don't belong on the admin subdomain — send them to the main site.
+  const dest = user.status !== 'active' ? '/pending' : '/dashboard';
+  res.redirect(onAdminHost(req) ? APP_URL + dest : dest);
 });
 
 app.post('/logout', (req, res) => req.session.destroy(() => {
