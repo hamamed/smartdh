@@ -371,7 +371,7 @@ const locales = {
  invite_desc: 'شارك رمزك واربح من أرباح فريقك اليومية عبر 3 مستويات — كل يوم، تلقائياً.',
  your_code: 'رمزك', btn_copy: 'نسخ الرابط', copied: 'تم النسخ!',
  ach_title: 'الإنجازات', locked: 'مقفل',
- activity_title: 'النشاط', no_activity: 'لا يوجد نشاط بعد. أضف بعض العملات للبدء!',
+ activity_title: 'النشاط', act_show_all: 'عرض كل النشاط', chart_desc: 'أموالك المستثمرة وأرباحك ورصيدك بمرور الوقت. اختر مدة.', no_activity: 'لا يوجد نشاط بعد. أضف بعض العملات للبدء!',
 
  deposit_how_title: 'كيفية الإيداع', deposit_how_desc: 'حوّل المبلغ إلى الحساب أدناه، ثم اطلب الإيداع. سيؤكده المشرف وتُضاف عملاتك.',
  deposit_bank: 'البنك', deposit_account: 'اسم صاحب الحساب', deposit_rib: 'رقم الحساب (RIB)',
@@ -815,7 +815,7 @@ const locales = {
  invite_desc: 'Partagez votre code et gagnez sur les gains quotidiens de votre équipe, sur 3 niveaux — chaque jour, automatiquement.',
  your_code: 'Votre code', btn_copy: 'Copier le lien', copied: 'Copié !',
  ach_title: 'Trophées', locked: 'Verrouillé',
- activity_title: 'Activité', no_activity: "Aucune activité. Ajoutez des pièces pour commencer !",
+ activity_title: 'Activité', act_show_all: 'Voir toute l’activité', chart_desc: 'Vos fonds investis, vos gains et votre solde au fil du temps. Choisissez une durée.', no_activity: "Aucune activité. Ajoutez des pièces pour commencer !",
 
  deposit_how_title: 'Comment déposer', deposit_how_desc: "Envoyez le montant sur le compte ci-dessous, puis demandez le dépôt. L'admin le confirmera et vos pièces seront ajoutées.",
  deposit_bank: 'Banque', deposit_account: 'Titulaire du compte', deposit_rib: 'RIB',
@@ -1259,7 +1259,7 @@ const locales = {
  invite_desc: 'Share your code and earn from your team’s daily earnings across 3 tiers — every day, automatically.',
  your_code: 'Your code', btn_copy: 'Copy link', copied: 'Copied!',
  ach_title: 'Achievements', locked: 'Locked',
- activity_title: 'Activity', no_activity: 'No activity yet. Add some coins to get started!',
+ activity_title: 'Activity', act_show_all: 'Show all activity', chart_desc: 'Your invested funds, earnings and balance over time. Pick a range.', no_activity: 'No activity yet. Add some coins to get started!',
 
  deposit_how_title: 'How to deposit', deposit_how_desc: 'Send the amount to the account below, then request the deposit. The admin confirms it and your coins are added.',
  deposit_bank: 'Bank', deposit_account: 'Account holder', deposit_rib: 'RIB',

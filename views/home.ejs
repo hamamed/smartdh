@@ -135,7 +135,7 @@
       </div>
     </div>
 
-    <!-- Balance history -->
+    <!-- Balance history + activity (same card, like the admin trends card) -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
@@ -149,11 +149,12 @@
           </div>
           <% } %>
         </div>
+        <p class="text-muted small mb-3"><%= t('chart_desc') %></p>
         <% if (history.length < 2) { %>
-          <p class="text-muted small mb-0 mt-2"><%= t('chart_empty') %></p>
+          <p class="text-muted small mb-0"><%= t('chart_empty') %></p>
         <% } else { %>
           <!-- Series filters: toggle each series on/off -->
-          <div class="d-flex flex-wrap gap-2 my-3" id="balFilters">
+          <div class="d-flex flex-wrap gap-2 mb-3" id="balFilters">
             <button type="button" class="trend-chip active" data-series="total"><span class="chip-dot" style="background:#f4a62a"></span><%= t('c_total') %></button>
             <button type="button" class="trend-chip active" data-series="invested"><span class="chip-dot" style="background:#e5533e"></span><%= t('c_invested') %></button>
             <button type="button" class="trend-chip active" data-series="earnings"><span class="chip-dot" style="background:#0e9f6e"></span><%= t('c_earnings') %></button>
@@ -169,6 +170,34 @@
                     data-linvested="<%= t('c_invested') %>"
                     data-learnings="<%= t('c_earnings') %>"
                     data-lreferral="<%= t('c_referral') %>"></canvas>
+          </div>
+        <% } %>
+
+        <!-- Recent activity (last 5) — full history on /activity -->
+        <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="list" class="text-primary"></i><%= t('activity_title') %></h6>
+          <% if (activityCount) { %><span class="small text-muted"><%= activityCount %></span><% } %>
+        </div>
+        <% if (!recentActivity.length) { %>
+          <p class="text-muted small mb-0"><%= t('no_activity') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% recentActivity.forEach(tx => { const m = TX[tx.type] || TX.admin_adjust; %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-3 bg-transparent">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-<%= m.cls %>-subtle text-<%= m.cls %> flex-shrink-0"
+                     style="width:38px;height:38px;font-size:1rem"><i data-lucide="<%= m.icon %>"></i></div>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold small text-truncate"><%= txLabel(tx.type) %></div>
+                  <div class="text-muted text-truncate" style="font-size:.76rem"><%= tx.note ? tx.note + ' · ' : '' %><%= new Date(tx.at).toLocaleString() %></div>
+                </div>
+                <% if (tx.amount) { %>
+                  <div class="fw-bold text-<%= m.cls %> text-nowrap"><%= m.sign %><%= money(tx.amount) %></div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+          <div class="text-center mt-3">
+            <a href="/activity" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"><i data-lucide="list"></i><%= t('act_show_all') %></a>
           </div>
         <% } %>
       </div>

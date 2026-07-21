@@ -970,6 +970,9 @@ app.get('/dashboard', requireActive, (req, res) => {
     canClaim: depositOk && !(u.streak && u.streak.lastClaim === dayStr(Date.now())),
     showTour: !u.onboarded || req.query.tour === '1',
     history: u.history || [],
+    // Most recent activity for the dashboard card (full list lives on /activity).
+    recentActivity: (u.transactions || []).slice().reverse().slice(0, 5),
+    activityCount: (u.transactions || []).length,
     checklist, checklistDone: checklist.filter(c => c.done).length,
     checklistHidden: !!u.gsDismissed,
     campaign: campaignStatus(req.db, u)
