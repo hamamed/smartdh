@@ -312,8 +312,28 @@ app.use((req, res, next) => {
   const curLabel = (lang === 'ar' && ['DH', 'MAD'].includes(db.settings.currency)) ? 'درهم' : db.settings.currency;
   res.locals.curLabel = curLabel;
   res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${curLabel}`;
+  res.locals.timeAgo = (ts) => timeAgo(ts, lang);
   next();
 });
+
+// Facebook-style relative time: "just now", "3 min", "1 h", "2 d", "1 mo", "1 y".
+function timeAgo(ts, lang) {
+  if (!ts) return '';
+  const U = {
+    en: { now: 'just now', m: 'min', h: 'h', d: 'd', w: 'w', mo: 'mo', y: 'y' },
+    fr: { now: 'à l’instant', m: 'min', h: 'h', d: 'j', w: 'sem', mo: 'mois', y: 'an' },
+    ar: { now: 'الآن', m: 'دقيقة', h: 'ساعة', d: 'يوم', w: 'أسبوع', mo: 'شهر', y: 'سنة' }
+  };
+  const L = U[lang] || U.en;
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 45) return L.now;
+  const m = Math.floor(s / 60);            if (m < 60) return m + ' ' + L.m;
+  const h = Math.floor(m / 60);            if (h < 24) return h + ' ' + L.h;
+  const d = Math.floor(h / 24);            if (d < 7)  return d + ' ' + L.d;
+  if (d < 30) return Math.floor(d / 7) + ' ' + L.w;
+  const mo = Math.floor(d / 30);           if (mo < 12) return mo + ' ' + L.mo;
+  return Math.floor(d / 365) + ' ' + L.y;
+}
 
 // ---------- Admin subdomain: clean URLs ----------
 // On the admin host the admin panel lives at the root, with no "/admin" in the

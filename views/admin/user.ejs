@@ -32,7 +32,7 @@
             <% const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
             <span class="badge bg-<%= sc %>-subtle text-<%= sc %> mb-3"><%= statusLabel(u.status) %></span>
 
-            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('th_joined') %></span><span><%= new Date(u.createdAt).toLocaleDateString() %></span></div>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2" title="<%= new Date(u.createdAt).toLocaleString() %>"><span><%= t('th_joined') %></span><span><%= timeAgo(u.createdAt) %> · <%= new Date(u.createdAt).toLocaleDateString() %></span></div>
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('your_code') %></span><span class="fw-semibold text-uppercase"><%= u.referralCode %></span></div>
             <% if (referrer) { %>
               <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_by') %></span>
