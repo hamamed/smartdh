@@ -125,6 +125,27 @@ function migrate(db) {
     u.transactions = u.transactions || [];
     u.achievements = u.achievements || [];
     u.history = u.history || [];
+    // Older snapshots only stored `total`. Reconstruct the invested/earnings/
+    // referral split so the dashboard's per-series lines aren't empty. Invested
+    // changes rarely, so assume it was ~constant: earnings ≈ total − invested,
+    // and referral tracks earnings. New snapshots record the real values.
+    if (u.history.length) {
+      const r2 = n => Math.round((n || 0) * 100) / 100;
+      const curInv = Object.values(u.invested || {}).reduce((a, b) => a + (b || 0), 0);
+      const curEarn = u.earnings || 0;
+      const curRef = u.referralEarnings || 0;
+      u.history.forEach(h => {
+        if (h && h.invested === undefined) {
+          // earnings/referral are cumulative (only grow), so a past value can
+          // never exceed today's — clamp to [0, current].
+          const earn = Math.min(curEarn, Math.max(0, (h.total || 0) - curInv));
+          const ref = curEarn > 0 ? curRef * (earn / curEarn) : 0;
+          h.invested = r2(curInv);
+          h.earnings = r2(earn);
+          h.referral = r2(Math.min(earn, curRef, ref));
+        }
+      });
+    }
     u.streak = u.streak || { count: 0, lastClaim: null };
     // Payout used to be { method, details }. Split it into named fields.
     u.payout = u.payout || {};

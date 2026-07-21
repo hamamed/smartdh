@@ -45,14 +45,15 @@ if (window.Chart) {
   const currency = el.dataset.currency || '';
   const ctx = el.getContext('2d');
   let T = dvTheme();
-  // Total gets a soft area fill; the other lines are clean strokes.
-  const areaFill = (T) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${T.brandRgb},.20)`); g.addColorStop(1, `rgba(${T.brandRgb},0)`); return g; };
+  // Total gets a soft amber area fill; the other lines are clean strokes.
+  const areaFill = () => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, 'rgba(244,166,42,.18)'); g.addColorStop(1, 'rgba(244,166,42,0)'); return g; };
 
-  // key → colour (matches the chips in home.ejs)
+  // key → colour — matches the wallet cards: total=amber, invested=coral,
+  // earnings=green, referral=lilac (and the chip dots in home.ejs).
   const series = [
-    { key: 'total',    label: el.dataset.ltotal    || 'Total',    color: () => T.brand,  fill: true  },
-    { key: 'invested', label: el.dataset.linvested || 'Invested', color: () => '#2e90fa', fill: false },
-    { key: 'earnings', label: el.dataset.learnings || 'Earnings', color: () => T.accent, fill: false },
+    { key: 'total',    label: el.dataset.ltotal    || 'Total',    color: () => T.accent, fill: true  },
+    { key: 'invested', label: el.dataset.linvested || 'Invested', color: () => '#e5533e', fill: false },
+    { key: 'earnings', label: el.dataset.learnings || 'Earnings', color: () => T.brand,  fill: false },
     { key: 'referral', label: el.dataset.lreferral || 'Referral', color: () => '#7c6be0', fill: false }
   ];
 
