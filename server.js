@@ -941,7 +941,8 @@ function recordHistory(user) {
       earnings: r2(user.earnings),
       referral: r2(user.referralEarnings)
     });
-    if (user.history.length > 90) user.history = user.history.slice(-90);
+    // Keep ~30 days of hourly snapshots so the Weekly/Monthly views have real days.
+    if (user.history.length > 720) user.history = user.history.slice(-720);
   }
 }
 

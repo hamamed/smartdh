@@ -66,25 +66,29 @@ if (window.Chart) {
     total:    { label: el.dataset.ltotal    || 'Total',    rgb: () => '244,166,42' }
   };
 
-  // Sample the cumulative balances at the chosen granularity. These are "stock"
-  // values (not sums), so each bucket keeps its LAST (end-of-period) point.
+  // Each range is a time WINDOW shown day-by-day (hourly shows the last day by the
+  // hour). Weekly = last 7 days, Monthly = last 30 days — every day is a point, so
+  // no days are hidden. These are "stock" values, so a day keeps its last snapshot.
+  const DAY = 86400000;
   function resample(range) {
+    const now = Date.now();
+    const win = { hourly: 2 * DAY, weekly: 7 * DAY, monthly: 30 * DAY }[range]; // daily = all history
+    const src = win ? pts.filter(p => p.t >= now - win) : pts;
+    const use = src.length >= 2 ? src : pts;     // fall back to everything if the window is empty
     const key = (t) => {
       const d = new Date(t);
-      if (range === 'hourly')  return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours();
-      if (range === 'weekly')  { const j = new Date(d.getFullYear(), 0, 1); return d.getFullYear() + '-W' + Math.ceil((((d - j) / 86400000) + j.getDay() + 1) / 7); }
-      if (range === 'monthly') return d.getFullYear() + '-' + d.getMonth();
-      return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); // daily
+      return range === 'hourly'
+        ? d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours()
+        : d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();   // one point per day
     };
     const m = new Map();
-    pts.forEach(p => m.set(key(p.t), p));        // last point per bucket wins
+    use.forEach(p => m.set(key(p.t), p));         // last snapshot in each hour/day wins
     return Array.from(m.values());
   }
   function labelFor(t, range) {
     const d = new Date(t);
-    if (range === 'hourly')  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    if (range === 'monthly') return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (range === 'hourly') return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });   // exact date, e.g. "Jan 15"
   }
 
   // Invested + Total are large (the deposited principal), Earnings + Referral are
