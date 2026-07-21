@@ -45,6 +45,7 @@
            const earn30 = held * (p.ratePer15Days || 0) * 2; // 30 days = two 15-day cycles %>
         <div class="col-md-4">
           <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden product-card <%= locked ? 'opacity-75' : '' %>">
+            <% if (p.link) { %><a href="<%= p.link %>" target="_blank" rel="noopener noreferrer" class="d-block" title="<%= planName(p) %>"><% } %>
             <div class="product-media">
               <% if (p.imageUrl) { %>
                 <img src="<%= p.imageUrl %>" alt="<%= planName(p) %>">
@@ -53,9 +54,11 @@
               <% } %>
               <span class="badge bg-<%= p.color %> position-absolute top-0 end-0 m-2"><%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %></span>
               <% if (locked) { %><span class="badge bg-dark position-absolute top-0 start-0 m-2 d-inline-flex align-items-center gap-1"><i data-lucide="lock"></i><%= t('level_label') %> <%= p.minLevel %></span><% } %>
+              <% if (p.link) { %><span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-2 d-inline-flex align-items-center"><i data-lucide="external-link" style="width:.9em;height:.9em"></i></span><% } %>
             </div>
+            <% if (p.link) { %></a><% } %>
             <div class="card-body">
-              <h6 class="fw-bold mb-1"><%= planName(p) %></h6>
+              <h6 class="fw-bold mb-1"><% if (p.link) { %><a href="<%= p.link %>" target="_blank" rel="noopener noreferrer" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1"><%= planName(p) %><i data-lucide="external-link" style="width:.72em;height:.72em"></i></a><% } else { %><%= planName(p) %><% } %></h6>
               <p class="text-muted small mb-2"><%= planDesc(p) %></p>
               <div class="d-flex justify-content-between align-items-end gap-2 mb-3 p-2 rounded-3 bg-body-secondary">
                 <div>

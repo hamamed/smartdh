@@ -2457,6 +2457,7 @@ adminRouter.post('/apps/add', requireAdmin, csrfGuard,
         ratePer15Days: Math.max(0, Number(req.body.rate) / 100 || 0),
         color: req.body.color || 'primary',
         desc: (req.body.desc || '').trim(),
+        link: (req.body.link || '').trim(),
         minLevel: Math.max(1, Number(req.body.minLevel) || 1)
       });
       logAudit(db, req.currentUser, 'app.add', name);
@@ -2477,6 +2478,7 @@ adminRouter.post('/apps/edit/:id', requireAdmin, csrfGuard,
       if (req.body.minLevel) p.minLevel = Math.max(1, Number(req.body.minLevel) || 1);
       if (req.body.color) p.color = req.body.color;
       if (req.body.desc !== undefined) p.desc = req.body.desc.trim();
+      if (req.body.link !== undefined) p.link = req.body.link.trim();
       if (req.body.removeImage === '1') { deleteUpload(p.imageUrl); p.imageUrl = ''; }
       else if (req.file || (req.body.imageUrl && req.body.imageUrl.trim() !== p.imageUrl)) {
         deleteUpload(p.imageUrl);            // drop the old uploaded file if any

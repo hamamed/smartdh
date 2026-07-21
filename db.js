@@ -126,6 +126,7 @@ function migrate(db) {
   db.settings.plans.forEach(p => {
     if (p.minLevel === undefined) p.minLevel = 1;
     if (p.imageUrl === undefined) p.imageUrl = '';
+    if (p.link === undefined) p.link = '';   // optional external link opened in a new tab
     if (!p.icon) p.icon = 'trending-up';
   });
   (db.users || []).forEach(u => {
