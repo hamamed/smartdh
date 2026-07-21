@@ -47,10 +47,17 @@ if (window.Chart) {
   const currency = el.dataset.currency || '';
   const ctx = el.getContext('2d');
   const nf = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  // Compact axis labels so big numbers (20,000) don't get clipped: 20K, 1.2M…
+  const fmtAxis = (v) => {
+    const a = Math.abs(v);
+    if (a >= 1e6) return +(v / 1e6).toFixed(1) + 'M';
+    if (a >= 1e3) return +(v / 1e3).toFixed(a >= 1e4 ? 0 : 1) + 'K';
+    return nf(v);
+  };
   let T = dvTheme();
 
-  // Soft vertical gradient for the bars, keyed to the theme.
-  const softBar = (rgb) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${rgb},.95)`); g.addColorStop(1, `rgba(${rgb},.5)`); return g; };
+  // Soft vertical area gradient, keyed to the theme.
+  const areaFill = (rgb) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${rgb},.28)`); g.addColorStop(1, `rgba(${rgb},0)`); return g; };
   // key → colour, matching the wallet cards + chip dots.
   const S = {
     invested: { label: el.dataset.linvested || 'Invested', rgb: () => '229,83,62' },
@@ -81,38 +88,40 @@ if (window.Chart) {
   }
 
   // Invested + Total are large (the deposited principal), Earnings + Referral are
-  // small (the growth). On one axis the small ones vanish, so split them:
-  //   left axis  (y)  → Invested (bar) + Total (line)
-  //   right axis (y1) → Earnings + Referral (lines, their own scale)
-  const bar = (k) => ({
-    type: 'bar', label: S[k].label, key: k, yAxisID: 'y',
-    data: [], backgroundColor: softBar(S[k].rgb()),
-    borderRadius: 6, borderSkipped: false, maxBarThickness: 26, order: 3
-  });
-  const line = (k, axis, order, dash) => ({
-    type: 'line', label: S[k].label, key: k, yAxisID: axis, data: [],
-    borderColor: `rgb(${S[k].rgb()})`, backgroundColor: `rgb(${S[k].rgb()})`,
-    pointBackgroundColor: `rgb(${S[k].rgb()})`, pointBorderColor: '#fff', pointBorderWidth: 1.5,
-    tension: .4, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.4,
-    borderDash: dash ? [5, 4] : [], order: order
-  });
+  // small (the growth). On one axis the small ones vanish, so split them across two:
+  //   left axis  (y)  → Invested (filled) + Total (line on top)
+  //   right axis (y1) → Earnings (filled) + Referral (dashed), their own scale
+  // Filled area lines (not bars) so the chart looks right with 2 points or 200.
+  const line = (k, axis, order, opt) => {
+    opt = opt || {};
+    return {
+      type: 'line', label: S[k].label, key: k, yAxisID: axis, data: [],
+      borderColor: `rgb(${S[k].rgb()})`,
+      backgroundColor: opt.fill ? areaFill(S[k].rgb()) : `rgb(${S[k].rgb()})`,
+      fill: !!opt.fill, filled: !!opt.fill,
+      pointBackgroundColor: `rgb(${S[k].rgb()})`, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+      tension: .35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.4,
+      borderDash: opt.dash ? [5, 4] : [], order: order
+    };
+  };
   const chart = new Chart(ctx, {
     data: {
       labels: [],
       datasets: [
-        bar('invested'),
+        line('invested', 'y', 3, { fill: true }),
         line('total', 'y', 0),
-        line('earnings', 'y1', 1),
-        line('referral', 'y1', 2, true)
+        line('earnings', 'y1', 1, { fill: true }),
+        line('referral', 'y1', 2, { dash: true })
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 10, left: 4, right: 4 } },
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x:  { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 12, color: T.muted, autoSkip: true } },
-        y:  { beginAtZero: true, grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } },
-        y1: { beginAtZero: true, position: 'right', grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } }
+        x:  { offset: false, grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 8, color: T.muted, autoSkip: true, maxRotation: 0 } },
+        y:  { beginAtZero: true, grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => fmtAxis(v) } },
+        y1: { beginAtZero: true, position: 'right', grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => fmtAxis(v) } }
       },
       plugins: {
         legend: { display: false },
@@ -154,8 +163,9 @@ if (window.Chart) {
   dvOnThemeChange(() => {
     T = dvTheme();
     chart.data.datasets.forEach(ds => {
-      if (ds.type === 'bar') ds.backgroundColor = softBar(S[ds.key].rgb());
-      else { const c = `rgb(${S[ds.key].rgb()})`; ds.borderColor = c; ds.backgroundColor = c; ds.pointBackgroundColor = c; }
+      const rgb = S[ds.key].rgb(), c = `rgb(${rgb})`;
+      ds.borderColor = c; ds.pointBackgroundColor = c;
+      ds.backgroundColor = ds.filled ? areaFill(rgb) : c;
     });
     chart.options.scales.x.ticks.color = T.muted;
     chart.options.scales.y.ticks.color = T.muted;
