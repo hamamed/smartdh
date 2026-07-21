@@ -138,12 +138,22 @@
     <!-- Balance history -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body">
-        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="chart-line" class="text-primary"></i><%= t('chart_title') %></h6>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="bar-chart-3" class="text-primary"></i><%= t('chart_title') %></h6>
+          <% if (history.length >= 2) { %>
+          <div class="btn-group btn-group-sm trend-ranges" role="group">
+            <button type="button" class="btn btn-outline-primary" data-range="hourly"><%= t('trend_hourly') %></button>
+            <button type="button" class="btn btn-outline-primary active" data-range="daily"><%= t('trend_daily') %></button>
+            <button type="button" class="btn btn-outline-primary" data-range="weekly"><%= t('trend_weekly') %></button>
+            <button type="button" class="btn btn-outline-primary" data-range="monthly"><%= t('trend_monthly') %></button>
+          </div>
+          <% } %>
+        </div>
         <% if (history.length < 2) { %>
-          <p class="text-muted small mb-0"><%= t('chart_empty') %></p>
+          <p class="text-muted small mb-0 mt-2"><%= t('chart_empty') %></p>
         <% } else { %>
-          <!-- Series filters: toggle each line on/off -->
-          <div class="d-flex flex-wrap gap-2 mb-3" id="balFilters">
+          <!-- Series filters: toggle each series on/off -->
+          <div class="d-flex flex-wrap gap-2 my-3" id="balFilters">
             <button type="button" class="trend-chip active" data-series="total"><span class="chip-dot" style="background:#f4a62a"></span><%= t('c_total') %></button>
             <button type="button" class="trend-chip active" data-series="invested"><span class="chip-dot" style="background:#e5533e"></span><%= t('c_invested') %></button>
             <button type="button" class="trend-chip active" data-series="earnings"><span class="chip-dot" style="background:#0e9f6e"></span><%= t('c_earnings') %></button>

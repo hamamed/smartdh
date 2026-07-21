@@ -35,7 +35,9 @@ if (window.Chart) {
   });
 }
 
-// ---------- Balance history chart (multi-series + filter chips) ----------
+// ---------- Balance history chart (bar+line combo, ranges + filter chips) ----------
+// Same look as the admin trends chart: rounded bars for the amounts, a line for
+// the running total, Hourly/Daily/Weekly/Monthly ranges and toggle chips.
 (function () {
   const el = document.getElementById('balanceChart');
   if (!el || !window.Chart) return;
@@ -44,49 +46,83 @@ if (window.Chart) {
   if (pts.length < 2) return;
   const currency = el.dataset.currency || '';
   const ctx = el.getContext('2d');
+  const nf = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
   let T = dvTheme();
-  // Total gets a soft amber area fill; the other lines are clean strokes.
-  const areaFill = () => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, 'rgba(244,166,42,.18)'); g.addColorStop(1, 'rgba(244,166,42,0)'); return g; };
 
-  // key → colour — matches the wallet cards: total=amber, invested=coral,
-  // earnings=green, referral=lilac (and the chip dots in home.ejs).
-  const series = [
-    { key: 'total',    label: el.dataset.ltotal    || 'Total',    color: () => T.accent, fill: true  },
-    { key: 'invested', label: el.dataset.linvested || 'Invested', color: () => '#e5533e', fill: false },
-    { key: 'earnings', label: el.dataset.learnings || 'Earnings', color: () => T.brand,  fill: false },
-    { key: 'referral', label: el.dataset.lreferral || 'Referral', color: () => '#7c6be0', fill: false }
-  ];
+  // Soft vertical gradient for the bars, keyed to the theme.
+  const softBar = (rgb) => { const g = ctx.createLinearGradient(0, 0, 0, 220); g.addColorStop(0, `rgba(${rgb},.95)`); g.addColorStop(1, `rgba(${rgb},.5)`); return g; };
+  // key → colour, matching the wallet cards + chip dots.
+  const S = {
+    invested: { label: el.dataset.linvested || 'Invested', rgb: () => '229,83,62' },
+    earnings: { label: el.dataset.learnings || 'Earnings', rgb: () => T.brandRgb },
+    referral: { label: el.dataset.lreferral || 'Referral', rgb: () => '124,107,224' },
+    total:    { label: el.dataset.ltotal    || 'Total',    rgb: () => '244,166,42' }
+  };
 
+  // Sample the cumulative balances at the chosen granularity. These are "stock"
+  // values (not sums), so each bucket keeps its LAST (end-of-period) point.
+  function resample(range) {
+    const key = (t) => {
+      const d = new Date(t);
+      if (range === 'hourly')  return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours();
+      if (range === 'weekly')  { const j = new Date(d.getFullYear(), 0, 1); return d.getFullYear() + '-W' + Math.ceil((((d - j) / 86400000) + j.getDay() + 1) / 7); }
+      if (range === 'monthly') return d.getFullYear() + '-' + d.getMonth();
+      return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); // daily
+    };
+    const m = new Map();
+    pts.forEach(p => m.set(key(p.t), p));        // last point per bucket wins
+    return Array.from(m.values());
+  }
+  function labelFor(t, range) {
+    const d = new Date(t);
+    if (range === 'hourly')  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (range === 'monthly') return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  const bar = (k) => ({
+    type: 'bar', label: S[k].label, key: k,
+    data: [], backgroundColor: softBar(S[k].rgb()),
+    borderRadius: 6, borderSkipped: false, maxBarThickness: 26, order: 2
+  });
   const chart = new Chart(ctx, {
-    type: 'line',
     data: {
-      labels: pts.map(p => new Date(p.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
-      datasets: series.map(s => ({
-        label: s.label,
-        data: pts.map(p => (p[s.key] == null ? null : p[s.key])),
-        borderColor: s.color(),
-        backgroundColor: s.fill ? areaFill(T) : 'transparent',
-        borderWidth: 2.4, fill: s.fill, tension: .38, spanGaps: true,
-        pointRadius: 0, pointHoverRadius: 5,
-        pointHoverBackgroundColor: s.color(), pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2
-      }))
+      labels: [],
+      datasets: [
+        bar('invested'),
+        bar('earnings'),
+        bar('referral'),
+        { type: 'line', label: S.total.label, key: 'total', data: [],
+          borderColor: `rgb(${S.total.rgb()})`, backgroundColor: `rgb(${S.total.rgb()})`,
+          pointBackgroundColor: `rgb(${S.total.rgb()})`, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+          tension: .4, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.6, order: 0 }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 12, color: T.muted, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 5, color: T.muted, callback: v => nf(v) } }
+      },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + Number(c.parsed.y).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + currency } }
-      },
-      scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 6, color: T.muted } },
-        y: { grid: { color: T.line }, border: { display: false }, ticks: { maxTicksLimit: 4, color: T.muted } }
       }
     }
   });
 
+  let curRange = 'daily';
+  function draw(range) {
+    curRange = range;
+    const rows = resample(range);
+    chart.data.labels = rows.map(p => labelFor(p.t, range));
+    chart.data.datasets.forEach(ds => { ds.data = rows.map(p => (p[ds.key] == null ? null : p[ds.key])); });
+    chart.update();
+  }
+
   // Chips: toggle each series on/off
-  const idx = {}; series.forEach((s, i) => idx[s.key] = i);
+  const idx = {}; chart.data.datasets.forEach((d, i) => idx[d.key] = i);
   document.querySelectorAll('#balFilters .trend-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const k = chip.dataset.series;
@@ -97,18 +133,28 @@ if (window.Chart) {
     });
   });
 
+  // Range buttons
+  const btns = el.closest('.card-body').querySelectorAll('[data-range]');
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    draw(b.dataset.range);
+  }));
+
+  // Re-key colours to the theme when dark mode flips.
   dvOnThemeChange(() => {
     T = dvTheme();
-    series.forEach((s, i) => {
-      const d = chart.data.datasets[i];
-      d.borderColor = s.color(); d.pointHoverBackgroundColor = s.color();
-      if (s.fill) d.backgroundColor = areaFill(T);
+    chart.data.datasets.forEach(ds => {
+      if (ds.type === 'bar') ds.backgroundColor = softBar(S[ds.key].rgb());
+      else { const c = `rgb(${S[ds.key].rgb()})`; ds.borderColor = c; ds.backgroundColor = c; ds.pointBackgroundColor = c; }
     });
     chart.options.scales.x.ticks.color = T.muted;
     chart.options.scales.y.ticks.color = T.muted;
     chart.options.scales.y.grid.color = T.line;
     chart.update('none');
   });
+
+  draw('daily');
 })();
 
 // ---------- Admin trends chart (hourly / daily / weekly / monthly) ----------
