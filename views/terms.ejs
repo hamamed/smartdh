@@ -3,46 +3,112 @@
     <h2 class="fw-bold mb-4"><%= t('footer_terms') %></h2>
     <div class="text-muted lh-lg">
       <% if (lang === 'ar') { %>
-        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
-          <strong>هذه لعبة.</strong> كل العملات والأرصدة والأرباح والسحوبات هي <strong>أموال افتراضية</strong>. لا يوجد أي مال حقيقي أو استثمار حقيقي أو عوائد مالية حقيقية.</div>
-        <h6 class="fw-bold text-body">1. ما هذا</h6>
-        <p><%= settings.siteName %> هو محاكي ترفيهي خاص بين الأصدقاء والعائلة، موجود للمتعة فقط. ليس بنكاً ولا وسيطاً ولا منصة استثمار ولا خدمة مالية.</p>
-        <h6 class="fw-bold text-body">2. لا مال حقيقي</h6>
-        <p>أي «أرباح» أو «معدلات» أو «عوائد» تظهر هي جزء من اللعبة وليست لها قيمة حقيقية. لا يمكنك إيداع أو سحب أموال حقيقية، والأرقام ليست نصيحة مالية ولا وعداً بربح.</p>
-        <h6 class="fw-bold text-body">3. الحسابات</h6>
-        <p>تتطلب الحسابات موافقة المشرف. احتفظ بكلمة مرورك سرية. يجوز للمشرف تعديل الأرصدة والموافقة أو الرفض وتغيير قواعد اللعبة في أي وقت.</p>
-        <h6 class="fw-bold text-body">4. اللعب النزيه</h6>
-        <p>لا تُسئ الاستخدام أو تحاول اختراق اللعبة. يجوز للمشرف إزالة أي حساب.</p>
-        <h6 class="fw-bold text-body">5. بلا ضمان</h6>
-        <p>تُقدَّم اللعبة «كما هي» للمتعة، دون أي ضمانات.</p>
+        <h6 class="fw-bold text-body">1. القبول بالشروط</h6>
+        <p>بإنشاء حساب أو الوصول إلى هذه المنصة أو استخدامها، فإنك توافق على الالتزام بشروط الاستخدام هذه وجميع القوانين واللوائح المعمول بها. إذا كنت لا توافق، يجب عليك عدم الوصول إلى المنصة أو استخدامها.</p>
+
+        <h6 class="fw-bold text-body">2. الأهلية والتحقق من الحساب (KYC/AML)</h6>
+        <p>
+          <strong>شرط السن:</strong> يجب أن لا يقل عمرك عن 18 عامًا (أو سن الرشد القانوني في مدينتك/دولتك).<br>
+          <strong>التحقق من الهوية:</strong> للالتزام بقوانين مكافحة غسيل الأموال (AML) وتعرف على عميلك (KYC)، يجب عليك تقديم وثائق إثبات شخصية دقيقة وكاملة ومحدثة.<br>
+          <strong>أمان الحساب:</strong> أنت المسؤول الوحيد عن الحفاظ على سرية بيانات تسجيل الدخول الخاصة بك وعن جميع الأنشطة التي تتم تحت حسابك.
+        </p>
+
+        <h6 class="fw-bold text-body">3. مخاطر الاستثمار وعدم تقديم استشارات مالية</h6>
+        <p>
+          <strong>إخلاء مسؤولية المخاطر:</strong> ينطوي الاستثمار على مخاطر كبيرة، بما في ذلك احتمال خسارة رأس المال بالكامل. الأداء السابق ليس مؤشرًا على النتائج المستقبلية.<br>
+          <strong>لا توجد استشارات:</strong> المحتوى والأدوات والعروض المرئية المقدمة على هذه المنصة هي لأغراض إعلامية فقط ولا تشكل نصيحة قانونية أو ضريبية أو استثمارية. يجب على المستخدمين استشارة مستشارين ماليين مستقلين.
+        </p>
+
+        <h6 class="fw-bold text-body">4. الإيداعات والسحوبات والرسوم</h6>
+        <p>
+          <strong>المعاملات:</strong> يجب أن تنشأ جميع الإيداعات والسحوبات من وإلى حسابات مسجلة باسم المستخدم نفسه.<br>
+          <strong>رسوم المنصة:</strong> يوافق المستخدمون على دفع الرسوم المطبقة على المعاملات أو الصيانة أو الإدارة كما هو موضح في جدول الرسوم الحالي.
+        </p>
+
+        <h6 class="fw-bold text-body">5. توافر المنصة والسلوك المحظور</h6>
+        <p>
+          <strong>توفّر الخدمة:</strong> تحتفظ المنصة بالحق في تعليق أو تقييد الوصول لأغراض الصيانة المجدولة أو التحديثات أو الإصلاحات الأمنية الطارئة.<br>
+          <strong>الأفعال المحظورة:</strong> لا يجوز للمستخدمين الهندسة العكسية، أو استغلال الثغرات البرمجية، أو تنفيذ التداول/الكشط الآلي غير المصرح به، أو المشاركة في التلاعب الاحتيالي بالسوق.
+        </p>
+
+        <h6 class="fw-bold text-body">6. حدود المسؤولية</h6>
+        <p>إلى الحجم الأقصى الذي يسمح به القانون، يتم تقديم المنصة على أساس "كما هي" و"كما هي متاحة". لن يكون مالك/مشغل المنصة مسؤولاً عن أي خسائر مباشرة أو غير مباشرة أو عرضية أو تبعية ناتجة عن تقلبات السوق، أو توقف المنصة، أو الوصول غير المصرح به للحساب.</p>
+
+        <h6 class="fw-bold text-body">7. القانون السائد</h6>
+        <p>تخضع هذه الشروط وتُفسر وفقًا لقوانين المملكة المغربية، دون النظر إلى مبادئ تنازع القوانين.</p>
+
       <% } else if (lang === 'fr') { %>
-        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
-          <strong>Ceci est un jeu.</strong> Toutes les pièces, soldes, gains et retraits sont de l'<strong>argent fictif</strong>. Rien n'implique d'argent réel, d'investissement réel ou de rendement réel.</div>
-        <h6 class="fw-bold text-body">1. Ce que c'est</h6>
-        <p><%= settings.siteName %> est un simulateur de divertissement privé entre amis et famille. Il existe uniquement pour s'amuser. Ce n'est ni une banque, ni un courtier, ni une plateforme d'investissement, ni un service financier.</p>
-        <h6 class="fw-bold text-body">2. Pas d'argent réel</h6>
-        <p>Tout « gain », « taux » ou « rendement » affiché fait partie du jeu et n'a aucune valeur réelle. Vous ne pouvez ni déposer ni retirer de l'argent réel ; les chiffres ne sont ni un conseil financier ni une promesse de profit.</p>
-        <h6 class="fw-bold text-body">3. Comptes</h6>
-        <p>Les comptes nécessitent l'approbation de l'admin. Gardez votre mot de passe secret. L'admin peut ajuster les soldes, approuver ou rejeter des comptes et modifier les règles à tout moment.</p>
-        <h6 class="fw-bold text-body">4. Fair-play</h6>
-        <p>N'abusez pas et n'essayez pas de pirater le jeu. L'admin peut supprimer tout compte.</p>
-        <h6 class="fw-bold text-body">5. Aucune garantie</h6>
-        <p>Le jeu est fourni « tel quel » pour le plaisir, sans aucune garantie.</p>
+        <h6 class="fw-bold text-body">1. Acceptation des conditions</h6>
+        <p>En créant un compte, en accédant à cette plateforme ou en l'utilisant, vous acceptez d'être lié par ces conditions d'utilisation et toutes les lois et réglementations applicables. Si vous n'acceptez pas, vous ne devez pas accéder à la plateforme ni l'utiliser.</p>
+
+        <h6 class="fw-bold text-body">2. Éligibilité et vérification du compte (KYC/AML)</h6>
+        <p>
+          <strong>Condition d'âge :</strong> Vous devez être âgé d'au moins 18 ans (ou l'âge légal de la majorité dans votre juridiction).<br>
+          <strong>Vérification d'identité :</strong> Pour vous conformer aux réglementations contre le blanchiment d'argent (AML) et de connaissance du client (KYC), vous devez fournir des documents d'identification exacts, complets et mis à jour.<br>
+          <strong>Sécurité du compte :</strong> Vous êtes seul responsable du maintien de la confidentialité de vos identifiants de connexion et de toutes les activités effectuées sous votre compte.
+        </p>
+
+        <h6 class="fw-bold text-body">3. Risques d'investissement et absence de conseils financiers</h6>
+        <p>
+          <strong>Divulgation des risques :</strong> L'investissement comporte des risques importants, notamment la perte potentielle du capital. Les performances passées ne préjugent pas des résultats futurs.<br>
+          <strong>Aucun conseil :</strong> Le contenu, les outils et les affichages visuels fournis sur cette plateforme sont à titre informatif uniquement et ne constituent pas des conseils juridiques, fiscaux ou d'investissement. Les utilisateurs doivent consulter des conseillers financiers indépendants.
+        </p>
+
+        <h6 class="fw-bold text-body">4. Dépôts, retraits et frais</h6>
+        <p>
+          <strong>Transactions :</strong> Tous les dépôts et retraits doivent provenir de comptes enregistrés au nom de l'utilisateur et y retourner.<br>
+          <strong>Frais de la plateforme :</strong> Les utilisateurs acceptent de payer les frais applicables aux transactions, à la maintenance ou à la gestion, tels que décrits dans le barème des frais actuel.
+        </p>
+
+        <h6 class="fw-bold text-body">5. Disponibilité de la plateforme et conduites interdites</h6>
+        <p>
+          <strong>Disponibilité du service :</strong> La plateforme se réserve le droit de suspendre ou de restreindre l'accès pour la maintenance programmée, les mises à jour ou les correctifs de sécurité d'urgence.<br>
+          <strong>Actes interdits :</strong> Les utilisateurs ne peuvent pas faire d'ingénierie inverse, exploiter des bugs logiciels, exécuter des transactions/scraping automatisés non autorisés ou se livrer à des manipulations frauduleuses du marché.
+        </p>
+
+        <h6 class="fw-bold text-body">6. Limitation de responsabilité</h6>
+        <p>Dans la mesure maximale permise par la loi, la plateforme est fournie « telle quelle » et « selon disponibilité ». Le propriétaire/opérateur de la plateforme ne sera pas responsable des pertes directes, indirectes, accessoires ou consécutives résultant de la volatilité du marché, de l'indisponibilité de la plateforme ou d'un accès non autorisé au compte.</p>
+
+        <h6 class="fw-bold text-body">7. Droit applicable</h6>
+        <p>Ces conditions seront régies et interprétées conformément aux lois du Royaume du Maroc, sans tenir compte de ses principes de conflit de lois.</p>
+
       <% } else { %>
-        <div class="alert alert-warning"><i data-lucide="alert-triangle" class="me-1"></i>
-          <strong>This is a game.</strong> All coins, balances, earnings and withdrawals are <strong>virtual play money</strong>. Nothing here involves real money, real investing, or real financial returns.</div>
-        <h6 class="fw-bold text-body">1. What this is</h6>
-        <p><%= settings.siteName %> is a private entertainment simulator shared between friends and family. It exists purely for fun. It is not a bank, broker, investment platform, or financial service.</p>
-        <h6 class="fw-bold text-body">2. No real money</h6>
-        <p>Any "earnings", "rates", or "returns" shown are part of the game and have no real-world value. You cannot deposit or withdraw real currency, and the numbers are not financial advice or a promise of profit.</p>
-        <h6 class="fw-bold text-body">3. Accounts</h6>
-        <p>Accounts require admin approval. Keep your password private. The admin may adjust balances, approve or reject accounts, and change game rules at any time.</p>
-        <h6 class="fw-bold text-body">4. Fair play</h6>
-        <p>Don't abuse, hack, or attempt to break the game. The admin may remove any account.</p>
-        <h6 class="fw-bold text-body">5. No warranty</h6>
-        <p>The game is provided "as is" for fun, with no guarantees of any kind.</p>
+        <h6 class="fw-bold text-body">1. Acceptance of Terms</h6>
+        <p>By creating an account, accessing, or using this platform, you agree to be bound by these Terms of Use and all applicable laws and regulations. If you do not agree, you must not access or use the platform.</p>
+
+        <h6 class="fw-bold text-body">2. Eligibility & Account Verification (KYC/AML)</h6>
+        <p>
+          <strong>Age Requirement:</strong> You must be at least 18 years of age (or the legal age of majority in your jurisdiction).<br>
+          <strong>Identity Verification:</strong> To comply with Anti-Money Laundering (AML) and Know Your Customer (KYC) regulations, you must provide accurate, complete, and updated identification documents.<br>
+          <strong>Account Security:</strong> You are solely responsible for maintaining the confidentiality of your login credentials and for all activities under your account.
+        </p>
+
+        <h6 class="fw-bold text-body">3. Investment Risks & No Financial Advice</h6>
+        <p>
+          <strong>Risk Disclosure:</strong> Investing involves substantial risk, including the potential loss of principal. Past performance is not indicative of future returns.<br>
+          <strong>No Advice:</strong> The content, tools, and visual displays provided on this platform are for informational purposes only and do not constitute legal, tax, or investment advice. Users should consult independent financial advisors.
+        </p>
+
+        <h6 class="fw-bold text-body">4. Deposits, Withdrawals, and Fees</h6>
+        <p>
+          <strong>Transactions:</strong> All deposits and withdrawals must originate from and return to accounts registered in the user’s name.<br>
+          <strong>Platform Fees:</strong> Users agree to pay applicable fees for transactions, maintenance, or management as outlined in the current Fee Schedule.
+        </p>
+
+        <h6 class="fw-bold text-body">5. Platform Availability & Prohibited Conduct</h6>
+        <p>
+          <strong>Service Availability:</strong> The platform reserves the right to suspend or restrict access for scheduled maintenance, updates, or emergency security fixes.<br>
+          <strong>Prohibited Acts:</strong> Users may not reverse-engineer, exploit software bugs, execute unauthorized automated trading/scraping, or engage in fraudulent market manipulation.
+        </p>
+
+        <h6 class="fw-bold text-body">6. Limitation of Liability</h6>
+        <p>To the maximum extent permitted by law, the platform is provided on an "as-is" and "as-available" basis. The platform owner/operator shall not be liable for direct, indirect, incidental, or consequential losses resulting from market volatility, platform downtime, or unauthorized account access.</p>
+
+        <h6 class="fw-bold text-body">7. Governing Law</h6>
+        <p>These Terms shall be governed by and construed in accordance with the laws of the Kingdom of Morocco, without regard to its conflict of law principles.</p>
       <% } %>
-      <p class="small">2026.</p>
+      
+      <p class="small mt-4">2026.</p>
     </div>
   </div>
 </section>
