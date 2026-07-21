@@ -17,7 +17,7 @@
                      style="width:40px;height:40px;flex:0 0 40px;font-size:1.05rem"><i data-lucide="<%= m.icon %>"></i></div>
                 <div class="flex-grow-1">
                   <div class="fw-semibold small"><%= txLabel(tx.type) %></div>
-                  <div class="text-muted" style="font-size:.78rem"><%= tx.note %> · <%= new Date(tx.at).toLocaleString() %></div>
+                  <div class="text-muted" style="font-size:.78rem"><%= tx.note ? tx.note + ' · ' : '' %><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></div>
                 </div>
                 <% if (tx.amount) { %>
                   <div class="fw-bold text-<%= m.cls %> text-nowrap"><%= m.sign %><%= money(tx.amount) %></div>

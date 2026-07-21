@@ -94,7 +94,7 @@
                     <td class="fw-semibold"><%= money(d.amount) %></td>
                     <td class="small"><%= d.planLabel %></td>
                     <td><span class="badge bg-<%= dc %>-subtle text-<%= dc %>"><%= statusLabel(d.status) %></span></td>
-                    <td class="small text-muted text-end"><%= new Date(d.createdAt).toLocaleDateString() %></td>
+                    <td class="small text-muted text-end"><span data-ago="<%= d.createdAt %>" title="<%= new Date(d.createdAt).toLocaleString() %>"><%= timeAgo(d.createdAt) %></span></td>
                   </tr>
                 <% }) %>
               </tbody>

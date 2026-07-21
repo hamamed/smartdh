@@ -32,7 +32,7 @@
             <% const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
             <span class="badge bg-<%= sc %>-subtle text-<%= sc %> mb-3"><%= statusLabel(u.status) %></span>
 
-            <div class="small text-muted d-flex justify-content-between border-top pt-2" title="<%= new Date(u.createdAt).toLocaleString() %>"><span><%= t('th_joined') %></span><span><%= timeAgo(u.createdAt) %> · <%= new Date(u.createdAt).toLocaleDateString() %></span></div>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('th_joined') %></span><span><span data-ago="<%= u.createdAt %>" title="<%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span> · <%= new Date(u.createdAt).toLocaleDateString() %></span></div>
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('your_code') %></span><span class="fw-semibold text-uppercase"><%= u.referralCode %></span></div>
             <% if (referrer) { %>
               <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_by') %></span>
@@ -370,7 +370,7 @@
                      style="width:34px;height:34px;flex:0 0 34px"><i data-lucide="<%= m.icon %>"></i></div>
                 <div class="flex-grow-1">
                   <div class="fw-semibold small"><%= txLabel(tx.type) %></div>
-                  <div class="text-muted" style="font-size:.75rem"><%= tx.note %> · <%= new Date(tx.at).toLocaleString() %></div>
+                  <div class="text-muted" style="font-size:.75rem"><%= tx.note ? tx.note + ' · ' : '' %><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></div>
                 </div>
                 <% if (tx.amount) { %><div class="fw-bold text-<%= m.cls %> text-nowrap small"><%= m.sign %><%= money(tx.amount) %></div><% } %>
               </div>

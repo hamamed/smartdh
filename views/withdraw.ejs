@@ -81,7 +81,7 @@
                     <td class="fw-semibold"><%= money(w.amount) %></td>
                     <td class="small"><%= w.fromLabel || w.from %></td>
                     <td><span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize"><%= w.status %></span></td>
-                    <td class="small text-muted text-end"><%= new Date(w.createdAt).toLocaleDateString() %></td>
+                    <td class="small text-muted text-end"><span data-ago="<%= w.createdAt %>" title="<%= new Date(w.createdAt).toLocaleString() %>"><%= timeAgo(w.createdAt) %></span></td>
                   </tr>
                 <% }) %>
               </tbody>

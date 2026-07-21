@@ -18,7 +18,7 @@
               <tbody>
                 <% audit.forEach(a => { %>
                   <tr>
-                    <td class="small text-muted text-nowrap"><%= new Date(a.at).toLocaleString() %></td>
+                    <td class="small text-muted text-nowrap"><span data-ago="<%= a.at %>" title="<%= new Date(a.at).toLocaleString() %>"><%= timeAgo(a.at) %></span></td>
                     <td class="small fw-semibold"><%= a.adminName %></td>
                     <td><span class="badge bg-primary-subtle text-primary"><%= a.action %></span></td>
                     <td class="small"><%= a.details %></td>

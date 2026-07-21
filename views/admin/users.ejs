@@ -131,8 +131,8 @@
                           </div>
                           <div class="small text-muted"><%= u.email %></div>
                           <% if (u.createdAt) { %>
-                            <div class="text-muted d-flex align-items-center gap-1" style="font-size:.72rem" title="<%= t('th_joined') %>: <%= new Date(u.createdAt).toLocaleString() %>">
-                              <i data-lucide="clock" style="width:.85em;height:.85em"></i><%= timeAgo(u.createdAt) %>
+                            <div class="text-muted d-flex align-items-center gap-1" style="font-size:.72rem">
+                              <i data-lucide="clock" style="width:.85em;height:.85em"></i><span data-ago="<%= u.createdAt %>" title="<%= t('th_joined') %>: <%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span>
                             </div>
                           <% } %>
                         </div>

@@ -5,6 +5,37 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ---------- Facebook-style relative time (mirrors the server timeAgo) ----------
+function timeAgo(ts) {
+  if (!ts) return '';
+  const U = {
+    en: { now: 'just now', m: 'min', h: 'h', d: 'd', w: 'w', mo: 'mo', y: 'y' },
+    fr: { now: 'à l’instant', m: 'min', h: 'h', d: 'j', w: 'sem', mo: 'mois', y: 'an' },
+    ar: { now: 'الآن', m: 'دقيقة', h: 'ساعة', d: 'يوم', w: 'أسبوع', mo: 'شهر', y: 'سنة' }
+  };
+  const L = U[document.documentElement.lang] || U.en;
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 45) return L.now;
+  const m = Math.floor(s / 60); if (m < 60) return m + ' ' + L.m;
+  const h = Math.floor(m / 60); if (h < 24) return h + ' ' + L.h;
+  const d = Math.floor(h / 24); if (d < 7) return d + ' ' + L.d;
+  if (d < 30) return Math.floor(d / 7) + ' ' + L.w;
+  const mo = Math.floor(d / 30); if (mo < 12) return mo + ' ' + L.mo;
+  return Math.floor(d / 365) + ' ' + L.y;
+}
+// Turn any element with data-ago="<ms timestamp>" into relative time (+ full date on hover).
+function applyTimeAgo(root) {
+  (root || document).querySelectorAll('[data-ago]').forEach(el => {
+    const ts = Number(el.getAttribute('data-ago'));
+    if (!ts) return;
+    if (!el.title) el.title = new Date(ts).toLocaleString();
+    el.textContent = timeAgo(ts);
+  });
+}
+document.addEventListener('DOMContentLoaded', () => applyTimeAgo());
+// Keep them fresh without a page reload.
+setInterval(() => applyTimeAgo(), 60000);
+
 // ---------- Chart theme (reads the Daylight CSS tokens so charts match + adapt) ----------
 function dvTheme() {
   const s = getComputedStyle(document.documentElement);
@@ -254,7 +285,7 @@ if (window.Chart) {
     if (actCount) actCount.textContent = total ? total + '' : '';
     if (!events.length) { actEl.innerHTML = '<p class="text-muted small mb-0">' + esc(L.empty || 'No activity in this range.') + '</p>'; return; }
     const rows = events.map(e => {
-      const when = new Date(e.at).toLocaleString();
+      const when = timeAgo(e.at), whenFull = new Date(e.at).toLocaleString();
       let icon, tint, title, amountHtml = '';
       if (e.kind === 'signup') {
         icon = e.referred ? 'user-round-plus' : 'user-plus';
@@ -281,7 +312,7 @@ if (window.Chart) {
         + '<a href="' + userHref + '" class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 text-reset" style="text-decoration:none">'
         + '<span class="tile-icon ' + tint + ' flex-shrink-0" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="' + icon + '"></i></span>'
         + '<span class="flex-grow-1 min-w-0"><span class="d-block small fw-semibold text-truncate">' + title + '</span>'
-        + '<span class="d-block text-muted text-truncate" style="font-size:.75rem">' + esc(when) + '</span></span></a>'
+        + '<span class="d-block text-muted text-truncate" style="font-size:.75rem" title="' + esc(whenFull) + '">' + esc(when) + '</span></span></a>'
         + '<div class="d-flex align-items-center gap-2 flex-shrink-0">'
         +   '<div class="text-end lh-sm">' + amountHtml + badge + '</div>'
         +   invoice
