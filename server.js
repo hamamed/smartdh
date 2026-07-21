@@ -661,7 +661,11 @@ function createUser(db, { name, email, passwordHash, isAdmin = false, status = '
     referralCode: refCode(id),
     referredBy,
     emailToken: crypto.randomBytes(16).toString('hex'),
-    emailOptOut: false
+    emailOptOut: false,
+    // Verified by default (admin-created / imported / test users). The public
+    // signup route flips this to false and sets verifyToken until they confirm.
+    emailVerified: true,
+    verifyToken: null
   };
   db.users.push(user);
   return user;
@@ -879,15 +883,31 @@ app.post('/signup', authLimiter, async (req, res) => {
 
   if (isFirstUser) { req.session.userId = user.id; return res.redirect('/admin'); }
 
-  await mailUser(user, {
+  // Email confirmation: the account starts unverified and can't log in until the
+  // emailed link is clicked. If SMTP is off we can't deliver it, so auto-verify
+  // rather than lock the user out of an app with no email configured.
+  const verifyToken = crypto.randomBytes(24).toString('hex');
+  user.emailVerified = false;
+  user.verifyToken = verifyToken;
+  save(db);
+  const sent = await mailUser(user, {
     lang: res.locals.lang,
-    subject: req.t('mail_pending_subj'),
-    heading: req.t('mail_pending_h'),
-    lines: [req.t('mail_pending_b')]
+    subject: req.t('mail_verify_subj'),
+    heading: req.t('mail_verify_h'),
+    lines: [req.t('mail_verify_b')],
+    cta: { text: req.t('mail_verify_btn'), url: `${APP_URL}/verify/${verifyToken}` }
   });
+  if (sent && sent.disabled) {
+    user.emailVerified = true; user.verifyToken = null; save(db);
+    return res.render('message', {
+      title: req.t('msg_created_h'), heading: req.t('msg_created_h'), mBody: req.t('msg_created_b'),
+      mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
+    });
+  }
   res.render('message', {
-    title: req.t('msg_created_h'), heading: req.t('msg_created_h'), mBody: req.t('msg_created_b'),
-    mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
+    title: req.t('msg_verify_h'), heading: req.t('msg_verify_h'),
+    mBody: req.t('msg_verify_b', { email: user.email }),
+    mIcon: 'mail-check', mTint: 'ti-mint'
   });
 });
 
@@ -896,12 +916,50 @@ app.get('/login', (req, res) => {
   res.render('login', { title: req.t('login_title'), error: null, form: {} });
 });
 
+// Confirm an email address (link from the signup email).
+app.get('/verify/:token', (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.verifyToken && x.verifyToken === req.params.token);
+  if (!u) return res.status(400).render('error', {
+    title: req.t('verify_bad_t'), code: 400, heading: req.t('verify_bad_t'), mBody: req.t('verify_bad_d')
+  });
+  u.emailVerified = true;
+  u.verifyToken = null;
+  save(db);
+  res.render('message', {
+    title: req.t('verify_done_h'), heading: req.t('verify_done_h'), mBody: req.t('verify_done_b'),
+    mIcon: 'mail-check', mTint: 'ti-mint', mPending: true
+  });
+});
+
+// Resend the confirmation email (shown on the login page for unverified accounts).
+app.post('/resend-verification', authLimiter, async (req, res) => {
+  const db = req.db;
+  const email = (req.body.email || '').trim().toLowerCase();
+  const u = db.users.find(x => x.email.toLowerCase() === email);
+  if (u && !u.emailVerified) {
+    if (!u.verifyToken) u.verifyToken = crypto.randomBytes(24).toString('hex');
+    save(db);
+    await mailUser(u, {
+      lang: res.locals.lang,
+      subject: req.t('mail_verify_subj'), heading: req.t('mail_verify_h'),
+      lines: [req.t('mail_verify_b')],
+      cta: { text: req.t('mail_verify_btn'), url: `${APP_URL}/verify/${u.verifyToken}` }
+    });
+  }
+  // Always the same response, so this can't be used to probe which emails exist.
+  res.render('login', { title: req.t('login_title'), error: null, notice: req.t('verify_resent'), form: { email } });
+});
+
 app.post('/login', authLimiter, async (req, res) => {
   const db = req.db;
   const { email, password } = req.body;
   const user = db.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
   if (!user || !(await bcrypt.compare(password || '', user.passwordHash)))
     return res.render('login', { title: req.t('login_title'), error: req.t('err_wrong'), form: { email } });
+  // Email must be confirmed before the account can be used.
+  if (!user.emailVerified)
+    return res.render('login', { title: req.t('login_title'), error: req.t('login_verify'), form: { email }, unverified: user.email });
   req.session.userId = user.id;
   if (user.isAdmin) return res.redirect('/admin');
   // Non-admins don't belong on the admin subdomain — send them to the main site.

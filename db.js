@@ -171,6 +171,10 @@ function migrate(db) {
     // opt-out flag honoured by admin broadcasts (account/security mails still send).
     if (!u.emailToken) u.emailToken = crypto.randomBytes(16).toString('hex');
     if (u.emailOptOut === undefined) u.emailOptOut = false;
+    // Email confirmation on signup. Existing users are grandfathered as verified;
+    // only new public signups start unverified until they click the email link.
+    if (u.emailVerified === undefined) u.emailVerified = true;
+    if (u.verifyToken === undefined) u.verifyToken = null;
     // Preferred language (for the UI on their next visit and for their emails).
     if (u.lang === undefined) u.lang = null;
     // Test accounts: excluded from the real dashboard, stats and leaderboard;
