@@ -1202,14 +1202,17 @@ app.post('/forgot', authLimiter, async (req, res) => {
   const u = db.users.find(x => x.email.toLowerCase() === email);
   if (u) {
     const token = crypto.randomBytes(32).toString('hex');
-    u.reset = { token, expires: Date.now() + 60 * 60 * 1000 }; // valid 1 hour
+    // Double security: a 6-digit code emailed with the link and required on the
+    // reset page — so the link alone (e.g. prefetched by a mail client) can't reset.
+    const code = String(crypto.randomInt(100000, 1000000));
+    u.reset = { token, code, expires: Date.now() + 60 * 60 * 1000 }; // valid 1 hour
     save(db);
     const link = `${APP_URL}/reset/${token}`;
     await mailUser(u, {
       lang: res.locals.lang,
       subject: req.t('mail_reset_subject'),
       heading: req.t('mail_reset_subject'),
-      lines: [req.t('mail_reset_body'), req.t('mail_reset_expire')],
+      lines: [req.t('mail_reset_body'), req.t('mail_reset_code', { code }), req.t('mail_reset_expire')],
       cta: { text: req.t('reset_save'), url: link }
     });
   }
@@ -1231,9 +1234,14 @@ app.post('/reset/:token', authLimiter, async (req, res) => {
   if (!u) return res.status(400).render('error', {
     title: req.t('reset_bad_t'), code: 400, heading: req.t('reset_bad_t'), mBody: req.t('reset_bad_d')
   });
+  const fail = (msg) => res.render('reset', { title: req.t('reset_title'), token: req.params.token, error: msg });
+  const code = (req.body.code || '').trim();
   const pass = req.body.password || '';
-  if (pass.length < 6)
-    return res.render('reset', { title: req.t('reset_title'), token: req.params.token, error: req.t('pw_too_short') });
+  const confirm = req.body.confirm || '';
+  // Double security: the emailed code must match before we accept the new password.
+  if (!u.reset.code || code !== u.reset.code) return fail(req.t('reset_code_bad'));
+  if (pass.length < 6) return fail(req.t('pw_too_short'));
+  if (pass !== confirm) return fail(req.t('pw_mismatch'));
   u.passwordHash = await bcrypt.hash(pass, 10);
   u.reset = null;
   save(db);
