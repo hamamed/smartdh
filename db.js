@@ -19,9 +19,11 @@ const DEFAULTS = {
   schedules: [],
   settings: {
     siteName: 'KanzUp',
-    // Branding: show the text name, or an uploaded logo image, in the navbar/emails.
+    // Branding: show the text name, or an uploaded logo image, in the navbar.
     logoUrl: '',
     brandMode: 'text',   // 'text' | 'logo'
+    // A SEPARATE logo just for email headers. Empty → emails show the text name.
+    emailLogoUrl: '',
     currency: 'DH',
     announcement: { text: '', enabled: false },
     plans: [
@@ -87,6 +89,7 @@ function refCode(id) {
 function migrate(db) {
   db.settings = Object.assign({}, DEFAULTS.settings, db.settings || {});
   if (db.settings.logoUrl === undefined) db.settings.logoUrl = '';
+  if (db.settings.emailLogoUrl === undefined) db.settings.emailLogoUrl = '';
   if (!['text', 'logo'].includes(db.settings.brandMode)) db.settings.brandMode = 'text';
   if (db.settings.depositLockDays === undefined) db.settings.depositLockDays = 30;
   db.settings.depositInfo = Object.assign({}, DEFAULTS.settings.depositInfo, db.settings.depositInfo || {});

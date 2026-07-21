@@ -68,5 +68,41 @@
         </form>
       </div>
     </div>
+
+    <!-- Email logo: a separate image just for email headers -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('set_emaillogo_t') %></h6>
+        <p class="text-muted small mb-3"><%= t('set_emaillogo_d') %></p>
+
+        <div class="mb-3">
+          <div class="small text-muted mb-1"><%= t('set_brand_preview') %></div>
+          <div class="d-inline-flex align-items-center gap-1 rounded-3 px-3 py-2" style="background:linear-gradient(135deg,#13b07f,#0b7d57)">
+            <% if (settings.emailLogoUrl) { %>
+              <img src="<%= settings.emailLogoUrl %>" alt="email logo" style="height:34px;max-height:34px;width:auto;display:block">
+            <% } else { %>
+              <span class="fw-bold text-white"><%= settings.siteName %></span>
+            <% } %>
+          </div>
+          <% if (!settings.emailLogoUrl) { %><div class="form-text"><%= t('set_emaillogo_none') %></div><% } %>
+        </div>
+
+        <form action="/admin/settings/email-logo?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="mb-3">
+            <label class="form-label small"><%= t('set_brand_upload') %></label>
+            <input type="file" name="emailLogo" accept="image/*" class="form-control">
+            <div class="form-text"><%= t('set_emaillogo_hint') %></div>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+            <% if (settings.emailLogoUrl) { %>
+              <button name="remove" value="1" class="btn btn-outline-danger d-inline-flex align-items-center gap-1"
+                      onclick="return confirm('<%= t('set_brand_remove_c') %>')"><i data-lucide="trash-2"></i><%= t('set_brand_remove') %></button>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </section>

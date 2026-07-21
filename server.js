@@ -709,7 +709,8 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
     siteName: settings.siteName,
     appUrl: APP_URL,
     // Emails need an absolute URL for the logo (relative paths don't load in inboxes).
-    logoUrl: (settings.brandMode === 'logo' && settings.logoUrl) ? APP_URL + settings.logoUrl : '',
+    // Emails use their own logo (separate from the site logo). Empty → text name.
+    logoUrl: settings.emailLogoUrl ? APP_URL + settings.emailLogoUrl : '',
     unsubscribeUrl: `${APP_URL}/unsubscribe/${user.emailToken}`,
     heading, intro: intro != null ? intro : tr('mail_hi', { name: user.name }),
     lines, bodyHtml, cta,
@@ -2669,6 +2670,23 @@ adminRouter.post('/settings/logo', requireAdmin, csrfGuard,
       s.brandMode = (req.body.brandMode === 'logo' && s.logoUrl) ? 'logo' : 'text';
     }
     logAudit(db, req.currentUser, 'settings.logo', s.brandMode + (s.logoUrl ? ' ' + s.logoUrl : ''));
+    save(db);
+    res.redirect('/admin/settings/general?ok=1');
+  });
+
+// Separate logo just for email headers (independent of the site logo).
+adminRouter.post('/settings/email-logo', requireAdmin, csrfGuard,
+  (req, res, next) => uploadLogo.single('emailLogo')(req, res, () => next()),
+  (req, res) => {
+    const db = req.db, s = db.settings;
+    if (req.body.remove === '1') {
+      if (s.emailLogoUrl) deleteUpload(s.emailLogoUrl);
+      s.emailLogoUrl = '';
+    } else if (req.file) {
+      if (s.emailLogoUrl) deleteUpload(s.emailLogoUrl); // drop the previous file
+      s.emailLogoUrl = '/uploads/' + req.file.filename;
+    }
+    logAudit(db, req.currentUser, 'settings.emailLogo', s.emailLogoUrl || 'removed');
     save(db);
     res.redirect('/admin/settings/general?ok=1');
   });
