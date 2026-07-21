@@ -702,7 +702,7 @@ function mailUser(user, { subject, heading, intro, lines, bodyHtml, cta, broadca
     labels: {
       tagline: tr('email_tagline'),
       unsubscribe: tr('email_unsub'),
-      visit: tr('email_visit')
+      visit: tr('email_visit', { site: settings.siteName })
     }
   });
   return sendMail(user.email, subject, html);

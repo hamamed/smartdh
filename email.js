@@ -36,7 +36,7 @@ function textToHtml(text) {
 
 // Build a full, email-client-safe HTML message that matches the site's look:
 // a sunset-gradient header, a white card body, a CTA button and a footer with
-// the play-money disclaimer + unsubscribe link. Uses tables + inline styles so
+// an unsubscribe link. Uses tables + inline styles so
 // it renders in Gmail/Outlook/Apple Mail (which strip <style> and flexbox).
 function renderEmail(opts = {}) {
   const {
@@ -55,10 +55,9 @@ function renderEmail(opts = {}) {
   } = opts;
 
   const L = Object.assign({
-    disclaimer: 'This is a game. All coins, balances and earnings are virtual play money — nothing here involves real money or real investing.',
-    tagline: 'A play-money game between friends & family.',
+    tagline: '',
     unsubscribe: 'Unsubscribe from these emails',
-    visit: 'Open the game'
+    visit: 'Open ' + siteName
   }, labels);
 
   const align = dir === 'rtl' ? 'right' : 'left';
@@ -102,14 +101,6 @@ function renderEmail(opts = {}) {
         ${intro ? `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${esc(intro)}</p>` : ''}
         ${body}
         ${button}
-      </td></tr>
-      <!-- Disclaimer -->
-      <tr><td style="padding:8px 30px 26px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff7e6;border:1px solid #ffe3a8;border-radius:12px;">
-          <tr><td style="padding:12px 14px;color:#8a6d1e;font-size:12px;line-height:1.5;" align="${align}" dir="${dir}">
-            ⚠️ ${esc(L.disclaimer)}
-          </td></tr>
-        </table>
       </td></tr>
       <!-- Footer -->
       <tr><td align="center" style="padding:20px 24px 28px;border-top:1px solid #e5eae2;">
