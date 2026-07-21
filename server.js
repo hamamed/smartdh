@@ -153,8 +153,10 @@ if (!SESSION_SECRET) {
 const ASSET_V = (() => {
   try {
     const h = crypto.createHash('sha1');
-    for (const f of ['public/css/style.css', 'public/js/app.js']) {
-      h.update(fs.readFileSync(path.join(__dirname, f)));
+    // Include the icons so replacing a favicon changes the version and Chrome
+    // (which caches favicons very aggressively) is forced to refetch it.
+    for (const f of ['public/css/style.css', 'public/js/app.js', 'public/icons/icon-192.png', 'public/icons/icon-512.png']) {
+      try { h.update(fs.readFileSync(path.join(__dirname, f))); } catch (_) { /* file may not exist */ }
     }
     return h.digest('hex').slice(0, 8);
   } catch (e) {
