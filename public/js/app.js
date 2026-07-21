@@ -537,6 +537,36 @@ function dvConfirmBulk(form) {
   return true;
 }
 
+// ---------- Generic copy buttons ([data-copy="text to copy"]) ----------
+(function () {
+  const M = window.MSG || { copied: 'Copied!' };
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const text = btn.getAttribute('data-copy');
+    const original = btn.innerHTML;
+    const done = () => {
+      btn.innerHTML = '<i data-lucide="check"></i>';
+      btn.classList.add('text-success');
+      if (btn.title) btn.setAttribute('data-title', btn.title), btn.title = M.copied;
+      if (window.renderIcons) window.renderIcons();
+      setTimeout(() => {
+        btn.innerHTML = original;
+        btn.classList.remove('text-success');
+        if (btn.getAttribute('data-title')) btn.title = btn.getAttribute('data-title');
+        if (window.renderIcons) window.renderIcons();
+      }, 1400);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done);
+    else {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta); done();
+    }
+  });
+})();
+
 // ---------- Referral copy ----------
 (function () {
   const btn = document.getElementById('copyRef');

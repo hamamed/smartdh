@@ -15,8 +15,18 @@
         <div class="row g-3 align-items-center">
           <div class="col-md-8">
             <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_bank') %></span><span class="fw-semibold"><%= depositInfo.bankName %></span></div>
-            <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_account') %></span><span class="fw-semibold"><%= depositInfo.accountName %></span></div>
-            <div class="d-flex justify-content-between border-bottom py-1"><span class="text-muted small"><%= t('deposit_rib') %></span><span class="fw-semibold" dir="ltr"><%= depositInfo.rib %></span></div>
+            <div class="d-flex justify-content-between align-items-center border-bottom py-1 gap-2">
+              <span class="text-muted small"><%= t('deposit_account') %></span>
+              <span class="fw-semibold d-inline-flex align-items-center gap-1"><%= depositInfo.accountName %>
+                <button type="button" class="btn btn-link btn-icon p-0 text-muted" style="width:1.4em;height:1.4em" data-copy="<%= depositInfo.accountName %>" title="<%= t('btn_copy') %>" aria-label="<%= t('btn_copy') %>"><i data-lucide="copy" style="width:.9em;height:.9em"></i></button>
+              </span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-bottom py-1 gap-2">
+              <span class="text-muted small"><%= t('deposit_rib') %></span>
+              <span class="fw-semibold d-inline-flex align-items-center gap-1" dir="ltr"><%= depositInfo.rib %>
+                <button type="button" class="btn btn-link btn-icon p-0 text-muted" style="width:1.4em;height:1.4em" data-copy="<%= depositInfo.rib %>" title="<%= t('btn_copy') %>" aria-label="<%= t('btn_copy') %>"><i data-lucide="copy" style="width:.9em;height:.9em"></i></button>
+              </span>
+            </div>
           </div>
           <div class="col-md-4 text-center">
             <% if (depositQR) { %>
