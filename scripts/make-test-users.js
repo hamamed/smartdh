@@ -87,9 +87,11 @@ while (rows.length <= COUNT) {
   const payMethod = bank ? 'bank' : 'paypal';
   const payAccount = bank ? fakeRib() : `${slug(first)}.${slug(last)}@paypal.com`;
 
-  // ~60% of active earners have withdrawn some of their earnings over the 3 months.
-  // The import spreads this total across 1–3 random "paid" withdrawals in that window.
-  const withdrawn = (status === 'active' && earnings > 0 && Math.random() < 0.6)
+  // ~60% of active earners who actually invested have withdrawn some earnings over
+  // the 3 months. No deposit → no withdrawal. The import spreads this total across
+  // 1–3 random "paid" withdrawals in that window.
+  const hasInvested = invested.some(v => v > 0);
+  const withdrawn = (status === 'active' && hasInvested && earnings > 0 && Math.random() < 0.6)
     ? Math.round(earnings * (0.1 + Math.random() * 0.4) / 100) * 100 : 0;
 
   rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount, withdrawn]);

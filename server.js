@@ -2438,8 +2438,10 @@ adminRouter.post('/import/users', requireAdmin, csrfGuard, uploadData.single('fi
         }
         db.deposits.filter(x => x.userId === u.id).forEach(dep => { dep.createdAt = now - 90 * D; dep.approvedAt = now - 90 * D; });
       }
+      // Only create withdrawals for players who actually deposited (have a deposit).
       let withdrawn = Math.max(0, Number(get('withdrawn')) || 0);
-      if (withdrawn > 0) {
+      const hasDeposit = db.deposits.some(x => x.userId === u.id);
+      if (withdrawn > 0 && hasDeposit) {
         const n = 1 + Math.floor(Math.random() * 3);    // 1–3 withdrawals spread over 3 months
         for (let k = 0; k < n && withdrawn > 0; k++) {
           const amount = k === n - 1 ? withdrawn : Math.max(1, Math.round(withdrawn / (n - k) * (0.5 + Math.random())));
