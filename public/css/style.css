@@ -459,6 +459,14 @@ h1, h2, h3, h4, h5, h6,
 .faq .accordion-button:focus { box-shadow: 0 0 0 3px rgba(14,159,110,.15); }
 
 /* ---------- Product (app) cards ---------- */
+/* Small round thumbnail beside the app name (the big cover image is separate). */
+.app-thumb {
+  width: 30px; height: 30px; border-radius: 9px; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .95rem; line-height: 1;
+}
+.app-thumb > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.app-thumb > svg { width: 1em; height: 1em; }
 .product-media { position: relative; height: 150px; background: var(--surface-2); overflow: hidden; }
 .product-media > img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s var(--ease); }
 .product-card:hover .product-media > img { transform: scale(1.04); }

@@ -58,7 +58,12 @@
             </div>
             <% if (p.link) { %></a><% } %>
             <div class="card-body">
-              <h6 class="fw-bold mb-1"><% if (p.link) { %><a href="<%= p.link %>" target="_blank" rel="noopener noreferrer" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1"><%= planName(p) %><i data-lucide="external-link" style="width:.72em;height:.72em"></i></a><% } else { %><%= planName(p) %><% } %></h6>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="app-thumb ti-<%= p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))) %> flex-shrink-0">
+                  <% if (p.imageUrl) { %><img src="<%= p.imageUrl %>" alt=""><% } else { %><i data-lucide="<%= p.icon %>"></i><% } %>
+                </span>
+                <h6 class="fw-bold mb-0 text-truncate"><% if (p.link) { %><a href="<%= p.link %>" target="_blank" rel="noopener noreferrer" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1"><%= planName(p) %><i data-lucide="external-link" style="width:.72em;height:.72em"></i></a><% } else { %><%= planName(p) %><% } %></h6>
+              </div>
               <p class="text-muted small mb-2"><%= planDesc(p) %></p>
               <div class="d-flex justify-content-between align-items-end gap-2 mb-3 p-2 rounded-3 bg-body-secondary">
                 <div>
