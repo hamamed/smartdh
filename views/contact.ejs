@@ -1,10 +1,15 @@
-<section class="py-5">
+<section class="py-4 py-lg-5">
   <div class="container" style="max-width: 520px;">
+
+    <!-- header -->
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <a href="<%= currentUser ? '/dashboard' : '/' %>" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h2 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('contact_title') %></h2>
+    </div>
+    <p class="text-muted mb-4"><%= t('contact_sub') %></p>
+
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body p-4 p-md-5">
-        <h3 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('contact_title') %></h3>
-        <p class="text-muted mb-4"><%= t('contact_sub') %></p>
-
         <% if (sent) { %>
           <div class="alert alert-success d-flex align-items-start gap-2">
             <i data-lucide="check-circle" class="flex-shrink-0 mt-1"></i>
