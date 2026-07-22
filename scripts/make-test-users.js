@@ -48,7 +48,7 @@ const fakeRib = () => {
 // is_test=yes so these import straight into the Test Lab, kept out of the real
 // dashboard, totals and leaderboard. payout_* lets you test withdrawals.
 const rows = [['name', 'email', 'status', 'is_test', 'xp', 'earnings', 'password',
-  ...APPS.map(a => 'invested_' + a), 'payout_method', 'payout_name', 'payout_account']];
+  ...APPS.map(a => 'invested_' + a), 'payout_method', 'payout_name', 'payout_account', 'withdrawn']];
 const seen = new Set();
 
 while (rows.length <= COUNT) {
@@ -87,7 +87,12 @@ while (rows.length <= COUNT) {
   const payMethod = bank ? 'bank' : 'paypal';
   const payAccount = bank ? fakeRib() : `${slug(first)}.${slug(last)}@paypal.com`;
 
-  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount]);
+  // ~60% of active earners have withdrawn some of their earnings over the 3 months.
+  // The import spreads this total across 1–3 random "paid" withdrawals in that window.
+  const withdrawn = (status === 'active' && earnings > 0 && Math.random() < 0.6)
+    ? Math.round(earnings * (0.1 + Math.random() * 0.4) / 100) * 100 : 0;
+
+  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount, withdrawn]);
 }
 
 fs.writeFileSync(OUT, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'utf8');

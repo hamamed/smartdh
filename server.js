@@ -2423,6 +2423,39 @@ adminRouter.post('/import/users', requireAdmin, csrfGuard, uploadData.single('fi
         rib: bank ? payAccount : ''
       };
     }
+
+    // For NEW players: backfill ~3 months of history (earnings ramping up), back-date
+    // the deposits, and create random past "paid" withdrawals from a `withdrawn`
+    // column — so imported players look like they've been active for months.
+    if (isNew) {
+      const now = Date.now(), D = 86400000;
+      const curInv = totalInvested(u), curEarn = u.earnings || 0;
+      if (curInv > 0 || curEarn > 0) {
+        u.history = [];
+        for (let d = 90; d >= 0; d -= 2) {              // a point every 2 days over 3 months
+          const earn = Math.round(curEarn * ((90 - d) / 90) * 100) / 100;
+          u.history.push({ t: now - d * D, total: Math.round((curInv + earn) * 100) / 100, invested: curInv, earnings: earn, referral: 0 });
+        }
+        db.deposits.filter(x => x.userId === u.id).forEach(dep => { dep.createdAt = now - 90 * D; dep.approvedAt = now - 90 * D; });
+      }
+      let withdrawn = Math.max(0, Number(get('withdrawn')) || 0);
+      if (withdrawn > 0) {
+        const n = 1 + Math.floor(Math.random() * 3);    // 1–3 withdrawals spread over 3 months
+        for (let k = 0; k < n && withdrawn > 0; k++) {
+          const amount = k === n - 1 ? withdrawn : Math.max(1, Math.round(withdrawn / (n - k) * (0.5 + Math.random())));
+          const amt = Math.min(withdrawn, amount);
+          withdrawn -= amt;
+          const at = now - (2 + Math.floor(Math.random() * 88)) * D;
+          db.withdrawals.push({
+            id: db.nextWithdrawId++, userId: u.id, userName: u.name,
+            amount: amt, from: 'earnings', fromLabel: 'Earnings',
+            method: u.payout.method, payoutName: u.payout.name, payoutAccount: payoutAccount(u.payout),
+            status: 'paid', createdAt: at, paidAt: at
+          });
+          addTx(u, 'withdraw_paid', amt, 'Withdrawal');
+        }
+      }
+    }
     checkState(u); // balance-based achievements
   }
 

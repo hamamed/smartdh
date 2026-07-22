@@ -1,0 +1,41 @@
+﻿name,email,status,is_test,xp,earnings,password,invested_safe,invested_balanced,invested_risky,payout_method,payout_name,payout_account,withdrawn
+Chaima Lahlou,chaima.lahlou@example.com,active,yes,1256,13394,test1234,8000,0,0,paypal,Chaima Lahlou,chaima.lahlou@paypal.com,0
+Zineb El Amrani,zineb.elamrani@example.com,pending,yes,0,0,test1234,0,0,0,bank,Zineb El Amrani,212 895 2203115793254462 33,0
+Ayoub Idrissi,ayoub.idrissi@example.com,active,yes,1354,21831,test1234,15000,0,16000,bank,Ayoub Idrissi,221 208 8280572642780053 80,0
+Asma Kettani,asma.kettani@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Asma Kettani,asma.kettani@paypal.com,0
+Amina Cherkaoui,amina.cherkaoui@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Amina Cherkaoui,amina.cherkaoui@paypal.com,0
+Asma El Mansouri,asma.elmansouri@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Asma El Mansouri,asma.elmansouri@paypal.com,0
+Samir Tazi,samir.tazi@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Samir Tazi,samir.tazi@paypal.com,0
+Soufiane Tazi,soufiane.tazi@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Soufiane Tazi,soufiane.tazi@paypal.com,0
+Aicha Ziani,aicha.ziani@example.com,active,yes,1725,31345,test1234,19500,12000,16000,paypal,Aicha Ziani,aicha.ziani@paypal.com,0
+Younes Bennani,younes.bennani@example.com,pending,yes,0,0,test1234,0,0,0,bank,Younes Bennani,847 268 2350371618550628 36,0
+Soufiane Zouhair,soufiane.zouhair@example.com,active,yes,300,459,test1234,6500,7000,16000,bank,Soufiane Zouhair,401 707 2850882626858986 94,100
+Omar Alaoui,omar.alaoui@example.com,pending,yes,0,0,test1234,0,0,0,bank,Omar Alaoui,425 372 3914524257201615 22,0
+Laila Sekkat,laila.sekkat@example.com,active,yes,1868,13357,test1234,17000,0,0,bank,Laila Sekkat,231 338 9845142288288226 78,1500
+Badr Ziani,badr.ziani@example.com,active,yes,386,644,test1234,1500,7000,14000,bank,Badr Ziani,883 233 5871756069579917 06,100
+Wafa Belhaj,wafa.belhaj@example.com,active,yes,1405,33550,test1234,0,5000,5000,bank,Wafa Belhaj,936 171 1000544284892091 28,0
+Amine Ghazi,amine.ghazi@example.com,active,yes,969,352,test1234,19000,15000,0,bank,Amine Ghazi,353 436 9744118607428988 50,100
+Ghita El Amrani,ghita.elamrani@example.com,pending,yes,0,0,test1234,0,0,0,bank,Ghita El Amrani,901 954 2634747827513907 79,0
+Samir Fikri,samir.fikri@example.com,active,yes,1693,32233,test1234,0,0,13500,bank,Samir Fikri,304 224 1345827945269565 55,5200
+Jamal Sekkat,jamal.sekkat@example.com,active,yes,1521,35266,test1234,2000,1500,19500,bank,Jamal Sekkat,945 008 5028688809739552 84,0
+Wafa Rachidi,wafa.rachidi@example.com,active,yes,1666,27286,test1234,2000,500,0,paypal,Wafa Rachidi,wafa.rachidi@paypal.com,0
+Yassine Squalli,yassine.squalli@example.com,active,yes,2244,5241,test1234,3500,3500,1500,bank,Yassine Squalli,530 129 9328063181600704 67,0
+Zineb Jebli,zineb.jebli@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Zineb Jebli,zineb.jebli@paypal.com,0
+Aziz Naciri,aziz.naciri@example.com,active,yes,2021,14311,test1234,17500,4500,16000,bank,Aziz Naciri,854 110 4261523929160370 64,0
+Ghita Hakimi,ghita.hakimi@example.com,active,yes,517,35557,test1234,1000,18000,0,paypal,Ghita Hakimi,ghita.hakimi@paypal.com,6900
+Aziz Lahlou,aziz.lahlou@example.com,active,yes,500,25880,test1234,4500,3500,10000,paypal,Aziz Lahlou,aziz.lahlou@paypal.com,4300
+Rachid Jebli,rachid.jebli@example.com,pending,yes,0,0,test1234,0,0,0,bank,Rachid Jebli,464 562 4829015943940777 55,0
+Imane Bouhali,imane.bouhali@example.com,active,yes,1326,10704,test1234,7500,19000,0,bank,Imane Bouhali,435 350 7036582512425676 19,1900
+Ikram Zouhair,ikram.zouhair@example.com,active,yes,1128,30299,test1234,0,18000,0,paypal,Ikram Zouhair,ikram.zouhair@paypal.com,12100
+Amine Bouzid,amine.bouzid@example.com,active,yes,1631,17916,test1234,2000,3000,0,bank,Amine Bouzid,939 913 3379885055897135 53,0
+Anas Bouzid,anas.bouzid@example.com,active,yes,706,1897,test1234,15000,14500,15000,bank,Anas Bouzid,376 721 7530486248788990 00,800
+Laila Naciri,laila.naciri@example.com,active,yes,2087,13315,test1234,19000,14000,0,bank,Laila Naciri,374 925 2938292771757119 49,4400
+Zineb Jebli,zineb.jebli2@example.com,pending,yes,0,0,test1234,0,0,0,bank,Zineb Jebli,778 303 3896730626601046 72,0
+Rayan Kettani,rayan.kettani@example.com,active,yes,1079,36670,test1234,2500,6500,0,paypal,Rayan Kettani,rayan.kettani@paypal.com,0
+Mehdi Cherkaoui,mehdi.cherkaoui@example.com,active,yes,1240,30557,test1234,9500,11500,0,paypal,Mehdi Cherkaoui,mehdi.cherkaoui@paypal.com,7300
+Othmane Jebli,othmane.jebli@example.com,active,yes,345,26144,test1234,0,14000,0,bank,Othmane Jebli,338 069 3994057553148016 11,6600
+Zineb El Amrani,zineb.elamrani2@example.com,active,yes,87,2320,test1234,9000,0,0,bank,Zineb El Amrani,561 596 3877866128938778 04,1000
+Younes Idrissi,younes.idrissi@example.com,pending,yes,0,0,test1234,0,0,0,bank,Younes Idrissi,038 549 2094644284690776 61,0
+Karima El Amrani,karima.elamrani@example.com,active,yes,1646,35417,test1234,0,12000,0,paypal,Karima El Amrani,karima.elamrani@paypal.com,9900
+Rachid Squalli,rachid.squalli@example.com,active,yes,869,31286,test1234,13000,5000,0,bank,Rachid Squalli,741 161 7309325822997068 37,10200
+Tarik Bennani,tarik.bennani@example.com,pending,yes,0,0,test1234,0,0,0,paypal,Tarik Bennani,tarik.bennani@paypal.com,0
