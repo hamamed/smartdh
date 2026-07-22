@@ -10,6 +10,12 @@
         <% } %>
 
         <form method="post" action="/signup"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="_t" value="<%= Date.now() %>">
+          <!-- honeypot: hidden from humans; only bots fill it -->
+          <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden">
+            <label>Website</label>
+            <input type="text" name="website" tabindex="-1" autocomplete="off">
+          </div>
           <div class="mb-3">
             <label class="form-label"><%= t('lbl_name') %></label>
             <input name="name" class="form-control" value="<%= form.name || '' %>" required>

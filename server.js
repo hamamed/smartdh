@@ -890,6 +890,16 @@ app.post('/signup', authLimiter, async (req, res) => {
   const db = req.db;
   const { name, email, password, agree, ref } = req.body;
   const form = { name, email, ref };
+  // Bot traps: a honeypot field only bots fill, and a minimum time-to-submit.
+  // On a hit, pretend it worked (so bots don't probe) but create nothing / send nothing.
+  const tooFast = Date.now() - Number(req.body._t || 0) < 2000;
+  if ((req.body.website || '').trim() || tooFast) {
+    return res.render('message', {
+      title: req.t('msg_verify_h'), heading: req.t('msg_verify_h'),
+      mBody: req.t('msg_verify_b', { email: (email || '').trim() }),
+      mIcon: 'mail-check', mTint: 'ti-mint'
+    });
+  }
   if (!name || !email || !password) return res.render('signup', { title: req.t('signup_title'), error: req.t('err_fill'), form });
   if (!agree) return res.render('signup', { title: req.t('signup_title'), error: req.t('err_agree'), form });
   if (db.users.find(u => u.email.toLowerCase() === email.toLowerCase()))
