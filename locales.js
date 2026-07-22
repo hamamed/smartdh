@@ -320,7 +320,7 @@ const locales = {
     tour_4_t: 'اربح وارتقِ', tour_4_d: 'احصل على مكافأتك اليومية، واكسب نقاط خبرة لترتقي، وافتح تطبيقات أعلى. تنافس مع أصدقائك على القمة!',
     tour_5_t: 'أنت جاهز!', tour_5_d: 'استمتع. يمكنك فتح هذا الدليل في أي وقت من زر «كيف تلعب».',
  footer_strong: '© KanzUp ·', footer_rest: 'جميع الحقوق محفوظة',
- footer_terms: 'شروط الاستخدام', footer_privacy: 'سياسة الخصوصية',
+ footer_terms: 'شروط الاستخدام', footer_privacy: 'سياسة الخصوصية', footer_contact: 'اتصل بنا', contact_title: 'اتصل بنا', contact_sub: 'لديك سؤال أو مشكلة؟ راسلنا وسنرد عليك.', contact_subject: 'الموضوع', contact_msg: 'رسالتك', contact_send: 'إرسال', contact_sent_h: 'تم إرسال رسالتك', contact_sent_b: 'شكراً! سنرد عليك عبر البريد الإلكتروني قريباً.', contact_from: 'من', contact_or_email: 'أو راسلنا مباشرة على',
 
  hero_badge: 'اربح معنا',
  hero_title: 'شاهد عملاتك تنمو.',
@@ -765,7 +765,7 @@ const locales = {
     tour_4_t: 'Gagnez et montez de niveau', tour_4_d: 'Réclamez le bonus quotidien, gagnez de lXP pour monter de niveau et débloquer des applications. Grimpez au classement !',
     tour_5_t: 'Vous êtes prêt !', tour_5_d: 'Amusez-vous. Rouvrez ce guide via le bouton « Comment jouer ».',
  footer_strong: '© KanzUp ·', footer_rest: "Tous droits réservés",
- footer_terms: "Conditions d'utilisation", footer_privacy: 'Politique de confidentialité',
+ footer_terms: "Conditions d'utilisation", footer_privacy: 'Politique de confidentialité', footer_contact: 'Contact', contact_title: 'Contactez-nous', contact_sub: 'Une question ou un souci ? Écrivez-nous, nous vous répondrons.', contact_subject: 'Sujet', contact_msg: 'Votre message', contact_send: 'Envoyer', contact_sent_h: 'Message envoyé', contact_sent_b: 'Merci ! Nous vous répondrons par e-mail bientôt.', contact_from: 'De', contact_or_email: 'Ou écrivez-nous directement à',
 
  hero_badge: 'Gagnez avec nous',
  hero_title: 'Regardez vos pièces grandir.',
@@ -1210,7 +1210,7 @@ const locales = {
     tour_4_t: 'Earn & level up', tour_4_d: 'Claim your daily bonus, earn XP to level up, and unlock higher apps. Climb the leaderboard against your friends!',
     tour_5_t: 'You are ready!', tour_5_d: 'Have fun. Reopen this guide anytime from the “How to play” button.',
  footer_strong: '© KanzUp ·', footer_rest: 'All rights reserved',
- footer_terms: 'Terms of Use', footer_privacy: 'Privacy Policy',
+ footer_terms: 'Terms of Use', footer_privacy: 'Privacy Policy', footer_contact: 'Contact us', contact_title: 'Contact us', contact_sub: 'Got a question or an issue? Send us a message and we will get back to you.', contact_subject: 'Subject', contact_msg: 'Your message', contact_send: 'Send message', contact_sent_h: 'Message sent', contact_sent_b: 'Thanks! We will reply by email soon.', contact_from: 'From', contact_or_email: 'Or email us directly at',
 
  hero_badge: 'Win with us',
  hero_title: 'Watch your coins grow.',

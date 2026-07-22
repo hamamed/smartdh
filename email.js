@@ -125,16 +125,18 @@ function renderEmail(opts = {}) {
 </html>`;
 }
 
-async function sendMail(to, subject, html) {
+async function sendMail(to, subject, html, opts = {}) {
   if (!transporter) {
     console.log(`\n[email disabled] To: ${to}\nSubject: ${subject}\n(HTML ${String(html).length} chars)\n`);
     return { ok: true, disabled: true };
   }
   try {
-    await transporter.sendMail({
+    const msg = {
       from: process.env.SMTP_FROM || 'KanzUp <no-reply@kanzup.com>',
       to, subject, html
-    });
+    };
+    if (opts.replyTo) msg.replyTo = opts.replyTo;  // e.g. reply straight to a contact-form sender
+    await transporter.sendMail(msg);
     return { ok: true };
   } catch (e) {
     console.error('Failed to send email:', e.message);

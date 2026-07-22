@@ -880,6 +880,40 @@ app.get('/guide', (req, res) => res.render('guide', { title: req.t('guide_title'
 app.get('/terms', (req, res) => res.render('terms', { title: req.t('footer_terms') }));
 app.get('/privacy', (req, res) => res.render('privacy', { title: req.t('footer_privacy') }));
 
+// ---------- Contact us ----------
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@kanzup.com';
+app.get('/contact', (req, res) => {
+  const u = req.currentUser;
+  res.render('contact', {
+    title: req.t('contact_title'), contactEmail: CONTACT_EMAIL,
+    form: { name: u ? u.name : '', email: u ? u.email : '' }, sent: false, error: null
+  });
+});
+
+app.post('/contact', authLimiter, async (req, res) => {
+  const db = req.db;
+  const name = (req.body.name || '').trim();
+  const email = (req.body.email || '').trim();
+  const subjectIn = (req.body.subject || '').trim();
+  const message = (req.body.message || '').trim();
+  const form = { name, email, subject: subjectIn };
+  const view = (extra) => res.render('contact', Object.assign({ title: req.t('contact_title'), contactEmail: CONTACT_EMAIL, form, sent: false, error: null }, extra));
+  // Bot traps (honeypot + min time): pretend success, send nothing.
+  if ((req.body.website || '').trim() || Date.now() - Number(req.body._t || 0) < 2000)
+    return view({ sent: true, form: {} });
+  if (!name || !email || !message) return view({ error: req.t('err_fill') });
+  const lines = [`${req.t('contact_from')}: ${name} <${email}>`];
+  if (subjectIn) lines.push(`${req.t('contact_subject')}: ${subjectIn}`);
+  lines.push(message);
+  const html = renderEmail({
+    siteName: db.settings.siteName, appUrl: APP_URL,
+    heading: req.t('contact_title'), lines
+  });
+  // Send to the support inbox, with reply-to set to the sender so admins reply directly.
+  await sendMail(CONTACT_EMAIL, `[Contact] ${subjectIn || name}`, html, { replyTo: `${name} <${email}>` });
+  view({ sent: true, form: {} });
+});
+
 // ---------- Auth ----------
 app.get('/signup', (req, res) => {
   if (req.currentUser) return res.redirect('/dashboard');

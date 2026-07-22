@@ -1,0 +1,55 @@
+<section class="py-5">
+  <div class="container" style="max-width: 520px;">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h3 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('contact_title') %></h3>
+        <p class="text-muted mb-4"><%= t('contact_sub') %></p>
+
+        <% if (sent) { %>
+          <div class="alert alert-success d-flex align-items-start gap-2">
+            <i data-lucide="check-circle" class="flex-shrink-0 mt-1"></i>
+            <div><div class="fw-semibold"><%= t('contact_sent_h') %></div><div class="small"><%= t('contact_sent_b') %></div></div>
+          </div>
+          <a href="/" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1"><i data-lucide="arrow-left"></i><%= t('back_home') %></a>
+        <% } else { %>
+          <% if (error) { %>
+            <div class="alert alert-danger py-2 d-flex align-items-center gap-1"><i data-lucide="alert-triangle"></i><%= error %></div>
+          <% } %>
+
+          <form method="post" action="/contact"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="_t" value="<%= Date.now() %>">
+            <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden">
+              <label>Website</label><input type="text" name="website" tabindex="-1" autocomplete="off">
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label"><%= t('lbl_name') %></label>
+                <input name="name" class="form-control" value="<%= form.name || '' %>" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"><%= t('lbl_email') %></label>
+                <input name="email" type="email" class="form-control" value="<%= form.email || '' %>" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label"><%= t('contact_subject') %> <span class="text-muted small"><%= t('opt') %></span></label>
+                <input name="subject" class="form-control" value="<%= form.subject || '' %>">
+              </div>
+              <div class="col-12">
+                <label class="form-label"><%= t('contact_msg') %></label>
+                <textarea name="message" class="form-control" rows="5" required></textarea>
+              </div>
+              <div class="col-12">
+                <button class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="send"></i><%= t('contact_send') %></button>
+              </div>
+            </div>
+          </form>
+
+          <p class="text-center text-muted small mt-4 mb-0">
+            <%= t('contact_or_email') %>
+            <a href="mailto:<%= contactEmail %>" class="fw-semibold"><%= contactEmail %></a>
+          </p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
