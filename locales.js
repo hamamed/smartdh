@@ -1335,8 +1335,8 @@ const locales = {
  }
 };
 
-const LANGS = ['en', 'fr', 'ar'];
-const DEFAULT_LANG = 'en';
+const LANGS = ['ar', 'en', 'fr'];
+const DEFAULT_LANG = 'ar';
 
 function t(lang, key, vars) {
  const table = locales[lang] || locales[DEFAULT_LANG];
