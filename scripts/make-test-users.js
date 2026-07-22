@@ -45,8 +45,8 @@ const fakeRib = () => {
   return d.replace(/(\d{3})(\d{3})(\d{16})(\d{2})/, '$1 $2 $3 $4');
 };
 
-// is_test=yes so these import straight into the Test Lab, kept out of the real
-// dashboard, totals and leaderboard. payout_* lets you test withdrawals.
+// is_test=no → these import as REAL players (shown on the dashboard, totals and
+// leaderboard). payout_* lets them withdraw; `withdrawn` seeds past withdrawals.
 const rows = [['name', 'email', 'status', 'is_test', 'xp', 'earnings', 'password',
   ...APPS.map(a => 'invested_' + a), 'payout_method', 'payout_name', 'payout_account', 'withdrawn']];
 const seen = new Set();
@@ -94,7 +94,7 @@ while (rows.length <= COUNT) {
   const withdrawn = (status === 'active' && hasInvested && earnings > 0 && Math.random() < 0.6)
     ? Math.round(earnings * (0.1 + Math.random() * 0.4) / 100) * 100 : 0;
 
-  rows.push([name, email, status, 'yes', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount, withdrawn]);
+  rows.push([name, email, status, 'no', xp, earnings, PASSWORD, ...invested, payMethod, name, payAccount, withdrawn]);
 }
 
 fs.writeFileSync(OUT, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'utf8');

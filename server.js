@@ -1160,6 +1160,7 @@ app.get('/withdraw', requireActive, (req, res) => {
     title: req.t('withdraw_title'),
     payoutOk: !payoutMissing(u.payout),          // payout comes from the profile
     payoutAccount: payoutAccount(u.payout),
+    depositOk: hasApprovedDeposit(db, u),        // must have deposited to withdraw
     lockDays: depositLockDays(db),
     funds,
     myWithdrawals: db.withdrawals.filter(w => w.userId === u.id).sort((a, b) => b.createdAt - a.createdAt)
@@ -1451,6 +1452,8 @@ app.post('/withdraw', requireActive, (req, res) => {
   const u = req.currentUser;
   const s = db.settings;
   accrue(u, db);
+  // No withdrawals until the player has made a deposit (an approved one).
+  if (!hasApprovedDeposit(db, u)) return res.redirect('/withdraw?err=needdeposit');
   const amount = Math.floor(Number(req.body.amount));
   const from = req.body.from; // 'earnings' or a plan id
   const payout = u.payout;    // taken from the profile — not re-entered here
