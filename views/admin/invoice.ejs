@@ -69,6 +69,9 @@
 
     <div class="amount">
       <% if (rec.status === 'approved' || rec.status === 'paid') { %>
+        <div style="width:72px;height:72px;margin:0 auto 12px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -8px rgba(14,159,110,.55);-webkit-print-color-adjust:exact;print-color-adjust:exact">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
         <div style="margin:0 0 8px;font-weight:800;font-size:1.35rem;color:var(--brand);letter-spacing:-.01em"><%= inflow ? t('inv_deposited_ok') : t('inv_withdrawn_ok') %></div>
       <% } %>
       <div class="big" style="color:var(--brand)"><%= money(rec.amount) %></div>
