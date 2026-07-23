@@ -28,7 +28,14 @@
                 <%= admin ? (msg.authorName || t('sup_support')) : ticket.userName %>
                 <span class="text-muted fw-normal" style="font-size:.72rem" title="<%= new Date(msg.at).toLocaleString() %>">· <span data-ago="<%= msg.at %>"><%= timeAgo(msg.at) %></span></span>
               </div>
-              <div class="small" style="white-space:pre-wrap"><%= msg.text %></div>
+              <% if (msg.text) { %><div class="small" style="white-space:pre-wrap"><%= msg.text %></div><% } %>
+              <% if (msg.file) { %>
+                <% if ((msg.fileType||'').startsWith('image/')) { %>
+                  <a href="<%= msg.file %>" target="_blank" rel="noopener" class="d-inline-block mt-2"><img src="<%= msg.file %>" alt="<%= msg.fileName %>" style="max-width:240px;max-height:240px;border-radius:10px;border:1px solid var(--line)"></a>
+                <% } else { %>
+                  <a href="<%= msg.file %>" target="_blank" rel="noopener" download class="d-inline-flex align-items-center gap-1 mt-2 small fw-semibold text-primary text-decoration-none"><i data-lucide="paperclip"></i><%= msg.fileName || t('sup_attachment') %></a>
+                <% } %>
+              <% } %>
             </div>
           </div>
         <% }) %>
@@ -38,8 +45,12 @@
     <!-- reply -->
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">
-        <form method="post" action="/admin/tickets/<%= ticket.id %>/reply"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <textarea name="message" class="form-control mb-2" rows="4" maxlength="4000" placeholder="<%= t('sup_reply_ph') %>" required></textarea>
+        <form method="post" action="/admin/tickets/<%= ticket.id %>/reply?_csrf=<%= csrfToken %>" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <textarea name="message" class="form-control mb-2" rows="4" maxlength="4000" placeholder="<%= t('sup_reply_ph') %>"></textarea>
+          <div class="mb-2">
+            <label class="form-label small d-flex align-items-center gap-1"><i data-lucide="paperclip"></i><%= t('sup_attach') %></label>
+            <input name="file" type="file" accept="image/*,application/pdf,.doc,.docx,.txt" class="form-control form-control-sm">
+          </div>
           <div class="d-flex flex-wrap gap-2 align-items-center">
             <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="send"></i><%= t('sup_reply') %></button>
             <button name="close" value="1" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1"><i data-lucide="check-check"></i><%= t('sup_reply') %> + <%= t('sup_status_closed') %></button>

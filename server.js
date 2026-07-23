@@ -65,6 +65,25 @@ const uploadReceipt = multer({
   fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
 });
 
+// Support-ticket attachments: images, PDF and common documents.
+const ALLOWED_ATTACH = Object.assign({}, ALLOWED_IMAGES, {
+  'application/pdf': '.pdf', 'text/plain': '.txt',
+  'application/msword': '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+});
+const uploadTicket = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, 'tk-' + crypto.randomBytes(10).toString('hex') + (ALLOWED_ATTACH[file.mimetype] || '.bin'))
+  }),
+  limits: { fileSize: 6 * 1024 * 1024, files: 1 }, // 6 MB
+  fileFilter: (req, file, cb) => cb(null, !!ALLOWED_ATTACH[file.mimetype])
+});
+// Pull the uploaded attachment (if any) off a multipart request into a message field.
+function attachOf(req) {
+  return req.file ? { file: '/uploads/' + req.file.filename, fileName: req.file.originalname, fileType: req.file.mimetype } : {};
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
@@ -1248,17 +1267,18 @@ app.get('/support/new', requireActive, (req, res) => {
   res.render('support-new', { title: req.t('sup_new'), topic, topics: SUPPORT_TOPICS });
 });
 
-app.post('/support/new', requireActive, authLimiter, async (req, res) => {
+app.post('/support/new', requireActive, authLimiter, csrfGuard,
+  (req, res, next) => uploadTicket.single('file')(req, res, () => next()), async (req, res) => {
   const db = req.db, u = req.currentUser;
   const topic = topicOk(req.body.topic) ? req.body.topic : 'other';
   const subject = (req.body.subject || '').trim().slice(0, 140) || req.t('sup_t_' + topic);
   const message = (req.body.message || '').trim().slice(0, 4000);
-  if (!message) return res.redirect('/support/new?topic=' + topic);
+  if (!message && !req.file) return res.redirect('/support/new?topic=' + topic);
   const now = Date.now();
   const ticket = {
     id: db.nextTicketId++, userId: u.id, userName: u.name, email: u.email,
     topic, subject, status: 'open',
-    messages: [{ from: 'user', authorName: u.name, text: message, at: now }],
+    messages: [Object.assign({ from: 'user', authorName: u.name, text: message, at: now }, attachOf(req))],
     createdAt: now, updatedAt: now
   };
   db.tickets.push(ticket);
@@ -1278,13 +1298,14 @@ app.get('/support/:id', requireActive, (req, res) => {
   res.render('support-ticket', { title: req.t('sup_title'), ticket });
 });
 
-app.post('/support/:id/reply', requireActive, (req, res) => {
+app.post('/support/:id/reply', requireActive, csrfGuard,
+  (req, res, next) => uploadTicket.single('file')(req, res, () => next()), (req, res) => {
   const db = req.db, u = req.currentUser;
   const ticket = db.tickets.find(t => t.id === Number(req.params.id) && t.userId === u.id);
   if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
   const text = (req.body.message || '').trim().slice(0, 4000);
-  if (text && ticket.status !== 'closed') {
-    ticket.messages.push({ from: 'user', authorName: u.name, text, at: Date.now() });
+  if ((text || req.file) && ticket.status !== 'closed') {
+    ticket.messages.push(Object.assign({ from: 'user', authorName: u.name, text, at: Date.now() }, attachOf(req)));
     ticket.status = 'open'; ticket.updatedAt = Date.now();
     save(db);
   }
@@ -2374,13 +2395,14 @@ adminRouter.get('/tickets/:id', requireAdmin, (req, res) => {
   res.render('admin/ticket', { title: req.t('tab_tickets'), counts: adminCounts(db), ticket, tuser: db.users.find(x => x.id === ticket.userId) || null });
 });
 
-adminRouter.post('/tickets/:id/reply', requireAdmin, async (req, res) => {
+adminRouter.post('/tickets/:id/reply', requireAdmin, csrfGuard,
+  (req, res, next) => uploadTicket.single('file')(req, res, () => next()), async (req, res) => {
   const db = req.db;
   const ticket = db.tickets.find(t => t.id === Number(req.params.id));
   if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
   const text = (req.body.message || '').trim().slice(0, 4000);
-  if (text) {
-    ticket.messages.push({ from: 'admin', authorName: req.currentUser.name, text, at: Date.now() });
+  if (text || req.file) {
+    ticket.messages.push(Object.assign({ from: 'admin', authorName: req.currentUser.name, text, at: Date.now() }, attachOf(req)));
     ticket.status = req.body.close === '1' ? 'closed' : 'answered';
     ticket.updatedAt = Date.now();
     logAudit(db, req.currentUser, 'ticket.reply', '#' + ticket.id + (req.body.close === '1' ? ' (closed)' : ''));
