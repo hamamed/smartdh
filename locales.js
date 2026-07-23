@@ -333,7 +333,7 @@ const locales = {
  how2_t: '2. أضف عملات واربح', how2_d: 'أضف عملات وشاهد الأرباح اليومية ولكل 15 يوماً والشهرية.',
  how3_t: '3. اسحب في الموعد', how3_d: 'اسحب عملاتك كل {days} يوماً.',
 
- signup_title: 'أنشئ حسابك', signup_sub: 'انضم إلى اللعبة — مجاناً وكلها أموال افتراضية.',
+ signup_title: 'أنشئ حسابك', signup_sub: 'انضم الان وابدأ الربح من الانترنت',
  lbl_name: 'الاسم', lbl_email: 'البريد الإلكتروني', lbl_password: 'كلمة المرور',
  lbl_ref: 'رمز الإحالة', opt: '(اختياري)', ref_ph: 'مثال: R000A',
  agree_html: 'أوافق على <a href="/terms" target="_blank">شروط الاستخدام</a> و<a href="/privacy" target="_blank">سياسة الخصوصية</a>.',
@@ -832,7 +832,7 @@ const locales = {
  how2_t: '2. Ajoutez des pièces et gagnez', how2_d: 'Ajoutez des pièces et voyez vos gains quotidiens, sur 15 jours et mensuels.',
  how3_t: '3. Retirez selon le calendrier', how3_d: 'Retirez vos pièces tous les {days} jours.',
 
- signup_title: 'Créez votre compte', signup_sub: "Rejoignez le jeu — c'est gratuit et tout est fictif.",
+ signup_title: 'Créez votre compte', signup_sub: "Inscrivez-vous maintenant et commencez à gagner de l'argent en ligne.",
  lbl_name: 'Nom', lbl_email: 'E-mail', lbl_password: 'Mot de passe',
  lbl_ref: 'Code de parrainage', opt: '(facultatif)', ref_ph: 'ex. R000A',
  agree_html: "J'accepte les <a href=\"/terms\" target=\"_blank\">Conditions d'utilisation</a> et la <a href=\"/privacy\" target=\"_blank\">Politique de confidentialité</a>.",
@@ -1331,7 +1331,7 @@ const locales = {
  how2_t: '2. Add coins & earn', how2_d: 'Put coins in and watch daily, 15-day and monthly earnings roll in.',
  how3_t: '3. Withdraw on schedule', how3_d: 'Cash out your coins every {days} days.',
 
- signup_title: 'Create your account', signup_sub: "Join the game — it's free and it's all play money.",
+ signup_title: 'Create your account', signup_sub: "Join now and start earning money online",
  lbl_name: 'Name', lbl_email: 'Email', lbl_password: 'Password',
  lbl_ref: 'Referral code', opt: '(optional)', ref_ph: 'e.g. R000A',
  agree_html: 'I agree to the <a href="/terms" target="_blank">Terms of Use</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.',
