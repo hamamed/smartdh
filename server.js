@@ -1197,6 +1197,9 @@ app.get('/invoice/:type/:id', requireActive, (req, res) => {
     detail: type === 'deposit'
       ? { source: rec.planLabel || '', note: rec.note || '', receipt: rec.receipt || '' }
       : { source: rec.fromLabel || rec.from || '', method: rec.method || '', account: rec.payoutAccount || '', payoutName: rec.payoutName || '' },
+    // Player invoices go back to the page they came from, never the admin panel.
+    backUrl: type === 'withdraw' ? '/withdraw' : '/invest',
+    backLabel: req.t(type === 'withdraw' ? 'withdraw_title' : 'plans_title'),
     generatedAt: Date.now()
   });
 });
@@ -2024,6 +2027,7 @@ adminRouter.get('/invoice/:type/:id', requireAdmin, (req, res) => {
     detail: type === 'deposit'
       ? { source: rec.planLabel || '', note: rec.note || '', receipt: rec.receipt || '' }
       : { source: rec.fromLabel || rec.from || '', method: rec.method || '', account: rec.payoutAccount || '', payoutName: rec.payoutName || '' },
+    backUrl: u ? '/admin/users/' + u.id : null, backLabel: req.t('btn_manage'),
     generatedAt: Date.now()
   });
 });

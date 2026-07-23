@@ -47,7 +47,7 @@
      const sc = (rec.status === 'approved' || rec.status === 'paid') ? 'b-ok' : (rec.status === 'rejected' ? 'b-rejected' : 'b-pending'); %>
   <div class="bar">
     <button class="btn btn-p" onclick="window.print()">🖨 <%= t('stmt_print') %></button>
-    <% if (u) { %><a class="btn btn-o" href="/admin/users/<%= u.id %>">← <%= t('btn_manage') %></a><% } %>
+    <% if (typeof backUrl !== 'undefined' && backUrl) { %><a class="btn btn-o" href="<%= backUrl %>">← <%= backLabel %></a><% } %>
   </div>
 
   <div class="sheet">
