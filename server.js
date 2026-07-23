@@ -2365,6 +2365,24 @@ adminRouter.get('/withdrawals', requireAdmin, (req, res) => {
   });
 });
 
+// All invoices (deposits + withdrawals) in one place, each links to its printable invoice.
+adminRouter.get('/invoices', requireAdmin, (req, res) => {
+  const db = req.db;
+  const type = ['deposit', 'withdraw'].includes(req.query.type) ? req.query.type : '';
+  const q = (req.query.q || '').trim().toLowerCase();
+  let list = [];
+  if (type !== 'withdraw') list = list.concat(db.deposits.map(d => ({ kind: 'deposit', id: d.id, amount: d.amount, userName: d.userName, userId: d.userId, source: d.planLabel || '', status: d.status, at: d.createdAt })));
+  if (type !== 'deposit') list = list.concat(db.withdrawals.map(w => ({ kind: 'withdraw', id: w.id, amount: w.amount, userName: w.userName, userId: w.userId, source: w.fromLabel || w.from || '', status: w.status, at: w.createdAt })));
+  if (q) list = list.filter(x => (x.userName || '').toLowerCase().includes(q));
+  list.sort((a, b) => b.at - a.at);
+  const pg = paginate(list, req.query.page, req.query.per);
+  res.render('admin/invoices', {
+    title: req.t('tab_invoices'), counts: adminCounts(db),
+    invoices: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
+    type, q, depCount: db.deposits.length, wdCount: db.withdrawals.length
+  });
+});
+
 adminRouter.get('/audit', requireAdmin, (req, res) => {
   const db = req.db;
   res.render('admin/audit', {

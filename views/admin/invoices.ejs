@@ -1,0 +1,54 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <%- include('_head', { heading: t('tab_invoices') }) %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <!-- type filter + search -->
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <div class="d-flex flex-wrap gap-2">
+            <% const tabs = [['', t('filter_all'), depCount + wdCount], ['deposit', t('tab_deposits'), depCount], ['withdraw', t('tab_withdrawals'), wdCount]]; %>
+            <% tabs.forEach(([val, label, n]) => { const on = type === val; %>
+              <a href="/admin/invoices<%= val ? '?type=' + val : '' %>" class="btn btn-sm <%= on ? 'btn-primary' : 'btn-outline-secondary' %>">
+                <%= label %> <span class="badge <%= on ? 'bg-white text-primary' : 'bg-body-secondary text-muted' %> ms-1"><%= n %></span>
+              </a>
+            <% }) %>
+          </div>
+          <form method="get" action="/admin/invoices" class="d-flex gap-2 ms-auto" style="max-width:280px">
+            <% if (type) { %><input type="hidden" name="type" value="<%= type %>"><% } %>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i data-lucide="search"></i></span>
+              <input name="q" class="form-control" placeholder="<%= t('search_player') %>" value="<%= q %>">
+            </div>
+            <button class="btn btn-sm btn-primary"><%= t('btn_search') %></button>
+          </form>
+        </div>
+
+        <% if (!invoices.length) { %>
+          <p class="text-muted small mb-0"><%= t('no_results') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% invoices.forEach(x => {
+                 const dep = x.kind === 'deposit';
+                 const sc = (x.status==='approved'||x.status==='paid')?'success':(x.status==='rejected'?'danger':'warning'); %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
+                <span class="tile-icon <%= dep ? 'ti-mint' : 'ti-coral' %> flex-shrink-0" style="width:38px;height:38px;font-size:.95rem"><i data-lucide="<%= dep ? 'arrow-down-circle' : 'arrow-up-circle' %>"></i></span>
+                <div class="flex-grow-1 min-w-0">
+                  <a href="/admin/users/<%= x.userId %>" class="fw-semibold small text-truncate d-block text-reset text-decoration-none"><%= x.userName %></a>
+                  <div class="text-muted text-truncate" style="font-size:.75rem"><%= (dep ? 'D' : 'W') + x.id %> · <%= x.source %> · <span data-ago="<%= x.at %>" title="<%= new Date(x.at).toLocaleString() %>"><%= timeAgo(x.at) %></span></div>
+                </div>
+                <span class="badge bg-<%= sc %>-subtle text-<%= sc %> flex-shrink-0"><%= statusLabel(x.status) || x.status %></span>
+                <div class="fw-bold text-nowrap flex-shrink-0 small"><%= money(x.amount) %></div>
+                <a href="/admin/invoice/<%= x.kind %>/<%= x.id %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="<%= t('inv_title') %>"><i data-lucide="file-text"></i></a>
+              </div>
+            <% }) %>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="small text-muted"><%= total %></span>
+            <%- include('_pager', { base: '/admin/invoices', qs: (type ? '&type=' + type : '') + (q ? '&q=' + encodeURIComponent(q) : ''), page: page, pages: pages }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

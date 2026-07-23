@@ -178,6 +178,10 @@
         <% if (counts.openTickets) { %><span class="badge bg-danger position-absolute top-0 end-0 m-2"><%= counts.openTickets %></span><% } %>
       </a>
       <% } %>
+      <a class="menu-tile" href="/admin/invoices">
+        <span class="tile-icon ti-mint"><i data-lucide="file-text"></i></span>
+        <span class="tile-label"><%= t('tab_invoices') %></span>
+      </a>
       <% if (can('audit')) { %>
       <a class="menu-tile" href="/admin/audit">
         <span class="tile-icon ti-navy"><i data-lucide="history"></i></span>
