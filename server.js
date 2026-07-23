@@ -1183,6 +1183,24 @@ app.get('/rewards', requireActive, (req, res) => {
   });
 });
 
+// Printable invoice / receipt for a player's OWN deposit or withdrawal.
+app.get('/invoice/:type/:id', requireActive, (req, res) => {
+  const db = req.db;
+  const u = req.currentUser;
+  const type = req.params.type === 'withdraw' ? 'withdraw' : 'deposit';
+  const id = Number(req.params.id);
+  // userId match → players can only ever see their own invoices.
+  const rec = (type === 'deposit' ? db.deposits : db.withdrawals).find(x => x.id === id && x.userId === u.id);
+  if (!rec) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  res.render('admin/invoice', {
+    layout: false, type, rec, u,
+    detail: type === 'deposit'
+      ? { source: rec.planLabel || '', note: rec.note || '', receipt: rec.receipt || '' }
+      : { source: rec.fromLabel || rec.from || '', method: rec.method || '', account: rec.payoutAccount || '', payoutName: rec.payoutName || '' },
+    generatedAt: Date.now()
+  });
+});
+
 // ---------- Achievements ----------
 app.get('/achievements', requireActive, (req, res) => {
   res.render('achievements', { title: req.t('ach_title') });

@@ -113,6 +113,7 @@
                 </div>
                 <span class="badge bg-<%= dc %>-subtle text-<%= dc %> flex-shrink-0"><%= statusLabel(d.status) %></span>
                 <div class="fw-bold text-nowrap flex-shrink-0 small"><%= money(d.amount) %></div>
+                <a href="/invoice/deposit/<%= d.id %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="<%= t('inv_title') %>"><i data-lucide="file-text"></i></a>
               </div>
             <% }) %>
           </div>
