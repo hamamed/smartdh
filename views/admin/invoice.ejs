@@ -68,8 +68,10 @@
     </div>
 
     <div class="amount">
+      <% if (rec.status === 'approved' || rec.status === 'paid') { %>
+        <div class="lbl" style="margin:0 0 6px;font-weight:600"><%= inflow ? t('inv_deposited_ok') : t('inv_withdrawn_ok') %></div>
+      <% } %>
       <div class="big <%= inflow ? 'in' : 'out' %>"><%= inflow ? '+' : '−' %><%= money(rec.amount) %></div>
-      <div class="lbl"><%= inflow ? t('inv_credited') : t('inv_debited') %></div>
     </div>
 
     <div class="rows">
