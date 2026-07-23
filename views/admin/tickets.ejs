@@ -1,0 +1,40 @@
+<section class="py-4 py-lg-5">
+  <div class="container">
+    <%- include('_head', { heading: t('tab_tickets') }) %>
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <!-- status filter -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <% const filters = [['', t('filter_all')], ['open', t('sup_status_open')], ['answered', t('sup_status_answered')], ['closed', t('sup_status_closed')]]; %>
+          <% filters.forEach(([val, label]) => { const on = status === val; const n = val ? (statusCounts[val] || 0) : total; %>
+            <a href="/admin/tickets<%= val ? '?status=' + val : '' %>" class="btn btn-sm <%= on ? 'btn-primary' : 'btn-outline-secondary' %>">
+              <%= label %> <span class="badge <%= on ? 'bg-white text-primary' : 'bg-body-secondary text-muted' %> ms-1"><%= n %></span>
+            </a>
+          <% }) %>
+        </div>
+
+        <% if (!tickets.length) { %>
+          <p class="text-muted small mb-0"><%= t('sup_no_tickets') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% tickets.forEach(tk => { const sc = tk.status==='closed'?'secondary':(tk.status==='answered'?'success':'warning'); %>
+              <a href="/admin/tickets/<%= tk.id %>" class="list-group-item list-group-item-action px-0 d-flex align-items-center gap-2 bg-transparent text-reset">
+                <span class="tile-icon <%= tk.status==='open'?'ti-yellow':'ti-navy' %> flex-shrink-0" style="width:38px;height:38px;font-size:.95rem"><i data-lucide="<%= tk.status==='open'?'mail':'mail-open' %>"></i></span>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold small text-truncate">#<%= tk.id %> · <%= tk.subject %></div>
+                  <div class="text-muted text-truncate" style="font-size:.75rem"><%= tk.userName %> · <%= t('sup_t_' + tk.topic) %> · <span data-ago="<%= tk.updatedAt %>" title="<%= new Date(tk.updatedAt).toLocaleString() %>"><%= timeAgo(tk.updatedAt) %></span></div>
+                </div>
+                <span class="badge bg-<%= sc %>-subtle text-<%= sc %> flex-shrink-0"><%= t('sup_status_' + tk.status) %></span>
+              </a>
+            <% }) %>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="small text-muted"><%= total %></span>
+            <%- include('_pager', { base: '/admin/tickets', qs: (status ? '&status=' + status : ''), page: page, pages: pages }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

@@ -92,11 +92,11 @@ const adminRouter = express.Router();
 // admins). Order here = order shown in the UI.
 const ROLES = {
   owner:     { perms: ['*'] },
-  manager:   { perms: ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'audit', 'test'] },
-  moderator: { perms: ['users', 'deposits', 'withdrawals', 'audit'] },
-  support:   { perms: ['users', 'audit'] }
+  manager:   { perms: ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'audit', 'test', 'tickets'] },
+  moderator: { perms: ['users', 'deposits', 'withdrawals', 'audit', 'tickets'] },
+  support:   { perms: ['tickets', 'users'] }   // a support-only admin: handle tickets, look up users
 };
-const PERMS = ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'data', 'audit', 'test', 'admins'];
+const PERMS = ['users', 'deposits', 'withdrawals', 'email', 'apps', 'settings', 'data', 'audit', 'test', 'tickets', 'admins'];
 
 function roleOf(u) { return (u && u.isAdmin) ? (ROLES[u.role] ? u.role : 'owner') : null; }
 function hasPerm(u, perm) {
@@ -118,6 +118,7 @@ function permForPath(p) {
   if (p.startsWith('/data') || p.startsWith('/export') || p.startsWith('/import') || p.startsWith('/restore') || p.startsWith('/wipe')) return 'data';
   if (p.startsWith('/audit')) return 'audit';
   if (p.startsWith('/test')) return 'test';
+  if (p.startsWith('/tickets')) return 'tickets';
   return null;
 }
 // Enforce role permissions across the whole admin router. requireAdmin on each
@@ -1218,6 +1219,78 @@ app.get('/activity', requireActive, (req, res) => {
   });
 });
 
+// ---------- Support / help centre (player) ----------
+// The problems a player can pick from before opening a ticket. Each has a
+// self-help answer (sup_h_<key>) shown first, so most issues resolve without a ticket.
+const SUPPORT_TOPICS = [
+  { key: 'deposit',    icon: 'plus-circle',        tint: 'ti-mint' },
+  { key: 'withdrawal', icon: 'arrow-down-to-line', tint: 'ti-coral' },
+  { key: 'approval',   icon: 'user-check',         tint: 'ti-yellow' },
+  { key: 'account',    icon: 'lock',               tint: 'ti-sky' },
+  { key: 'earnings',   icon: 'trending-up',        tint: 'ti-mint' },
+  { key: 'payout',     icon: 'landmark',           tint: 'ti-navy' },
+  { key: 'referral',   icon: 'user-plus',          tint: 'ti-lilac' },
+  { key: 'bonus',      icon: 'gift',               tint: 'ti-yellow' },
+  { key: 'invest',     icon: 'layers',             tint: 'ti-coral' },
+  { key: 'bug',        icon: 'bug',                tint: 'ti-coral' },
+  { key: 'other',      icon: 'help-circle',        tint: 'ti-navy' }
+];
+const topicOk = (k) => SUPPORT_TOPICS.some(t => t.key === k);
+
+app.get('/support', requireActive, (req, res) => {
+  const u = req.currentUser;
+  const my = req.db.tickets.filter(t => t.userId === u.id).sort((a, b) => b.updatedAt - a.updatedAt);
+  res.render('support', { title: req.t('sup_title'), topics: SUPPORT_TOPICS, myTickets: my });
+});
+
+app.get('/support/new', requireActive, (req, res) => {
+  const topic = topicOk(req.query.topic) ? req.query.topic : 'other';
+  res.render('support-new', { title: req.t('sup_new'), topic, topics: SUPPORT_TOPICS });
+});
+
+app.post('/support/new', requireActive, authLimiter, async (req, res) => {
+  const db = req.db, u = req.currentUser;
+  const topic = topicOk(req.body.topic) ? req.body.topic : 'other';
+  const subject = (req.body.subject || '').trim().slice(0, 140) || req.t('sup_t_' + topic);
+  const message = (req.body.message || '').trim().slice(0, 4000);
+  if (!message) return res.redirect('/support/new?topic=' + topic);
+  const now = Date.now();
+  const ticket = {
+    id: db.nextTicketId++, userId: u.id, userName: u.name, email: u.email,
+    topic, subject, status: 'open',
+    messages: [{ from: 'user', authorName: u.name, text: message, at: now }],
+    createdAt: now, updatedAt: now
+  };
+  db.tickets.push(ticket);
+  save(db);
+  // Ping the support inbox so someone sees it (reply-to the player).
+  await sendMail(CONTACT_EMAIL, `[Ticket #${ticket.id}] ${subject}`,
+    renderEmail({ siteName: db.settings.siteName, appUrl: APP_URL, heading: 'New support ticket',
+      lines: [`#${ticket.id} · ${u.name} <${u.email}>`, req.t('sup_t_' + topic), '', message] }),
+    { replyTo: `${u.name} <${u.email}>` });
+  res.redirect('/support/' + ticket.id);
+});
+
+app.get('/support/:id', requireActive, (req, res) => {
+  const u = req.currentUser;
+  const ticket = req.db.tickets.find(t => t.id === Number(req.params.id) && t.userId === u.id);
+  if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  res.render('support-ticket', { title: req.t('sup_title'), ticket });
+});
+
+app.post('/support/:id/reply', requireActive, (req, res) => {
+  const db = req.db, u = req.currentUser;
+  const ticket = db.tickets.find(t => t.id === Number(req.params.id) && t.userId === u.id);
+  if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  const text = (req.body.message || '').trim().slice(0, 4000);
+  if (text && ticket.status !== 'closed') {
+    ticket.messages.push({ from: 'user', authorName: u.name, text, at: Date.now() });
+    ticket.status = 'open'; ticket.updatedAt = Date.now();
+    save(db);
+  }
+  res.redirect('/support/' + ticket.id);
+});
+
 // ---------- Referral ----------
 app.get('/referral', requireActive, (req, res) => {
   const db = req.db;
@@ -1606,6 +1679,7 @@ function adminCounts(db) {
     pendingWithdrawals: db.withdrawals.filter(w => w.status === 'pending' && !testIds.has(w.userId)).length,
     users: db.users.filter(isRealUser).length,
     testUsers: testIds.size,
+    openTickets: (db.tickets || []).filter(t => t.status !== 'closed' && t.status !== 'answered').length,
     apps: db.settings.plans.length
   };
 }
@@ -2277,6 +2351,55 @@ adminRouter.get('/audit', requireAdmin, (req, res) => {
     counts: adminCounts(db),
     audit: db.audit.slice().sort((a, b) => b.at - a.at).slice(0, 200)
   });
+});
+
+// ---------- Support tickets (admin) ----------
+adminRouter.get('/tickets', requireAdmin, (req, res) => {
+  const db = req.db;
+  const status = req.query.status || '';
+  let list = db.tickets.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  if (status) list = list.filter(t => t.status === status);
+  const pg = paginate(list, req.query.page, req.query.per);
+  res.render('admin/tickets', {
+    title: req.t('tab_tickets'), counts: adminCounts(db),
+    tickets: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
+    status, statusCounts: countBy(db.tickets)
+  });
+});
+
+adminRouter.get('/tickets/:id', requireAdmin, (req, res) => {
+  const db = req.db;
+  const ticket = db.tickets.find(t => t.id === Number(req.params.id));
+  if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  res.render('admin/ticket', { title: req.t('tab_tickets'), counts: adminCounts(db), ticket, tuser: db.users.find(x => x.id === ticket.userId) || null });
+});
+
+adminRouter.post('/tickets/:id/reply', requireAdmin, async (req, res) => {
+  const db = req.db;
+  const ticket = db.tickets.find(t => t.id === Number(req.params.id));
+  if (!ticket) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+  const text = (req.body.message || '').trim().slice(0, 4000);
+  if (text) {
+    ticket.messages.push({ from: 'admin', authorName: req.currentUser.name, text, at: Date.now() });
+    ticket.status = req.body.close === '1' ? 'closed' : 'answered';
+    ticket.updatedAt = Date.now();
+    logAudit(db, req.currentUser, 'ticket.reply', '#' + ticket.id + (req.body.close === '1' ? ' (closed)' : ''));
+    save(db);
+    // Email the player that support replied.
+    const tu = db.users.find(x => x.id === ticket.userId);
+    if (tu) await mailUser(tu, {
+      subject: req.t('sup_reply_subj', { id: ticket.id }), heading: req.t('sup_reply_subj', { id: ticket.id }),
+      lines: [ticket.subject, '', text], cta: { text: req.t('sup_view_ticket'), url: APP_URL + '/support/' + ticket.id }
+    });
+  }
+  res.redirect('/admin/tickets/' + ticket.id);
+});
+
+adminRouter.post('/tickets/:id/close', requireAdmin, (req, res) => {
+  const db = req.db;
+  const ticket = db.tickets.find(t => t.id === Number(req.params.id));
+  if (ticket) { ticket.status = 'closed'; ticket.updatedAt = Date.now(); logAudit(db, req.currentUser, 'ticket.close', '#' + ticket.id); save(db); }
+  res.redirect('/admin/tickets' + (ticket ? '/' + ticket.id : ''));
 });
 
 // ---------- Settings hub + focused settings pages ----------

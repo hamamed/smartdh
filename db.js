@@ -17,6 +17,7 @@ const DEFAULTS = {
   deposits: [],
   audit: [],
   schedules: [],
+  tickets: [],
   settings: {
     siteName: 'KanzUp',
     // Branding: show the text name, or an uploaded logo image, in the navbar.
@@ -71,7 +72,8 @@ const DEFAULTS = {
   nextWithdrawId: 1,
   nextDepositId: 1,
   nextAppId: 1,
-  nextAuditId: 1
+  nextAuditId: 1,
+  nextTicketId: 1
 };
 
 let cache = null;
@@ -119,6 +121,8 @@ function migrate(db) {
   db.withdrawals = db.withdrawals || [];
   db.audit = db.audit || [];
   db.schedules = db.schedules || [];
+  db.tickets = db.tickets || [];
+  db.nextTicketId = db.nextTicketId || 1;
   db.nextDepositId = db.nextDepositId || 1;
   db.nextAppId = db.nextAppId || 1;
   db.nextAuditId = db.nextAuditId || 1;

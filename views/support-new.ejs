@@ -1,0 +1,38 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 620px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/support" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0"><%= t('sup_t_' + topic) %></h3>
+    </div>
+
+    <!-- Quick self-help first -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="tile-icon ti-mint" style="width:40px;height:40px;font-size:1.05rem"><i data-lucide="lightbulb"></i></span>
+          <h6 class="fw-bold mb-0"><%= t('sup_help_title') %></h6>
+        </div>
+        <p class="text-muted mb-0 lh-lg"><%= t('sup_h_' + topic) %></p>
+      </div>
+    </div>
+
+    <!-- Still need help → open a ticket -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="message-square-plus" class="text-primary"></i><%= t('sup_still_need') %></h6>
+        <form method="post" action="/support/new"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="topic" value="<%= topic %>">
+          <div class="mb-3">
+            <label class="form-label small"><%= t('sup_subject') %></label>
+            <input name="subject" class="form-control" maxlength="140" value="<%= t('sup_t_' + topic) %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small"><%= t('sup_message') %></label>
+            <textarea name="message" class="form-control" rows="5" maxlength="4000" required autofocus></textarea>
+          </div>
+          <button class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="send"></i><%= t('sup_send') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

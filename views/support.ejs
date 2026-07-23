@@ -1,0 +1,46 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 720px;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="life-buoy" class="text-primary"></i><%= t('sup_title') %></h3>
+    </div>
+    <p class="text-muted mb-4"><%= t('sup_sub') %></p>
+
+    <!-- Pick a problem -->
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="help-circle" class="text-primary"></i><%= t('sup_pick') %></h6>
+    <div class="row g-2 mb-4">
+      <% topics.forEach(tp => { %>
+        <div class="col-md-6">
+          <a href="/support/new?topic=<%= tp.key %>" class="d-flex align-items-center gap-3 p-3 rounded-4 text-reset text-decoration-none border h-100 topic-card">
+            <span class="tile-icon <%= tp.tint %> flex-shrink-0" style="width:44px;height:44px;font-size:1.15rem"><i data-lucide="<%= tp.icon %>"></i></span>
+            <span class="fw-semibold small"><%= t('sup_t_' + tp.key) %></span>
+          </a>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Your tickets -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="inbox" class="text-primary"></i><%= t('sup_my_tickets') %></h6>
+        <% if (!myTickets.length) { %>
+          <p class="text-muted small mb-0"><%= t('sup_no_tickets') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% myTickets.forEach(tk => {
+                 const sc = tk.status==='closed'?'secondary':(tk.status==='answered'?'success':'warning'); %>
+              <a href="/support/<%= tk.id %>" class="list-group-item list-group-item-action px-0 d-flex align-items-center gap-2 bg-transparent text-reset">
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold small text-truncate">#<%= tk.id %> · <%= tk.subject %></div>
+                  <div class="text-muted text-truncate" style="font-size:.75rem"><%= t('sup_t_' + tk.topic) %> · <span data-ago="<%= tk.updatedAt %>" title="<%= new Date(tk.updatedAt).toLocaleString() %>"><%= timeAgo(tk.updatedAt) %></span></div>
+                </div>
+                <span class="badge bg-<%= sc %>-subtle text-<%= sc %> flex-shrink-0"><%= t('sup_status_' + tk.status) %></span>
+                <i data-lucide="chevron-right" class="text-muted flex-shrink-0"></i>
+              </a>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
