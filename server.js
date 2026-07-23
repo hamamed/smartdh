@@ -894,6 +894,24 @@ app.get('/', (req, res) => {
   } : null;
   res.render('landing', { title: req.t('hero_title'), stats });
 });
+
+// Dedicated high-conversion landing page for ad campaigns (single goal: sign up).
+// Keeps the ?ref referral code so paid-traffic signups still credit a referrer.
+['/start', '/join', '/go'].forEach(p => app.get(p, (req, res) => {
+  if (req.currentUser) return res.redirect('/dashboard');
+  const db = req.db;
+  const players = db.users.filter(u => u.status === 'active' && !u.isAdmin);
+  const stats = players.length >= 3 ? {
+    players: players.length,
+    coins: players.reduce((s, u) => s + totalBalance(u), 0),
+    apps: db.settings.plans.length,
+    payouts: db.withdrawals.filter(w => w.status === 'paid').length
+  } : null;
+  const ref = (req.query.ref || '').trim().toUpperCase().slice(0, 16);
+  const signup = '/signup' + (ref ? '?ref=' + encodeURIComponent(ref) : '');
+  res.render('start', { title: req.t('start_h1'), stats, ref, signup, layout: false });
+}));
+
 // Public on purpose: new players can read it before signing up.
 app.get('/guide', (req, res) => res.render('guide', { title: req.t('guide_title') }));
 

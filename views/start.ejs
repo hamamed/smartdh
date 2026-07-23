@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= t('start_h1') %> · <%= settings.siteName %></title>
+  <meta name="description" content="<%= t('start_sub') %>">
+  <script>try{var th=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',th);}catch(e){}</script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0BREKVPJ6X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-0BREKVPJ6X', { page_title: 'Ad landing', page_path: location.pathname });
+  </script>
+
+  <meta name="theme-color" content="#0e9f6e">
+  <link rel="icon" href="/icons/icon-192.png?v=<%= assetV %>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <% if (dir === 'rtl') { %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <% } else { %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <% } %>
+  <link href="/css/style.css?v=<%= assetV %>" rel="stylesheet">
+</head>
+<body class="lp-page d-flex flex-column min-vh-100">
+
+  <!-- minimal header: logo only + a discreet log-in link (few exits, one goal) -->
+  <header class="container d-flex align-items-center justify-content-between py-3">
+    <a href="/" class="navbar-brand fw-bold text-primary d-inline-flex align-items-center gap-2 mb-0" style="text-decoration:none">
+      <% if (settings.brandMode === 'logo' && settings.logoUrl) { %>
+        <img src="<%= settings.logoUrl %>" alt="<%= settings.siteName %>" class="brand-logo">
+      <% } else { %>
+        <i data-lucide="trending-up"></i><%= settings.siteName %>
+      <% } %>
+    </a>
+    <a href="/login" class="btn btn-sm btn-outline-secondary"><%= t('btn_login') %></a>
+  </header>
+
+  <main class="flex-grow-1">
+  <!-- ============ HERO ============ -->
+  <section class="lp-hero py-4 py-lg-5">
+    <div class="container">
+      <div class="row align-items-center g-5">
+        <div class="col-lg-6">
+          <span class="lp-eyebrow mb-3"><i data-lucide="sparkles"></i><%= t('start_badge') %></span>
+          <h1 class="lp-title fw-bold mb-3"><%= t('start_h1') %></h1>
+          <p class="lp-lead text-muted mb-4"><%= t('start_sub') %></p>
+
+          <a href="<%= signup %>" class="btn btn-primary btn-lg px-4 d-inline-flex align-items-center gap-2 mb-3">
+            <i data-lucide="rocket"></i><%= t('start_cta') %>
+          </a>
+
+          <div class="lp-trust">
+            <% [['badge-check','start_free'], ['shield-check','start_secure'], ['arrow-down-to-line','start_fast']].forEach(([icon, key]) => { %>
+              <span class="chip"><i data-lucide="<%= icon %>"></i><%= t(key) %></span>
+            <% }) %>
+          </div>
+        </div>
+
+        <!-- Earnings calculator -->
+        <div class="col-lg-6">
+          <div class="card calc-card border-0 rounded-4">
+            <div class="card-body">
+              <h5 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="calculator" class="text-primary"></i><%= t('calc_title') %></h5>
+              <label class="form-label small text-muted mb-1"><%= t('calc_choose_plan') %></label>
+              <select id="calcPlan" class="form-select mb-3">
+                <% plans.forEach(p => { %>
+                  <option value="<%= p.ratePer15Days %>" <%= p.id==='balanced'?'selected':'' %>>
+                    <%= planName(p) %> — <%= (p.ratePer15Days*100).toFixed(1) %>% <%= t('per15_suffix') %>
+                  </option>
+                <% }) %>
+              </select>
+              <label class="form-label small text-muted mb-1"><%= t('calc_ifinvest') %></label>
+              <div class="input-group input-group-lg mb-4">
+                <span class="input-group-text"><i data-lucide="wallet"></i></span>
+                <input type="number" id="calcAmount" class="form-control" value="10000" min="0" step="100">
+                <span class="input-group-text"><%= curLabel %></span>
+              </div>
+              <div class="row g-2 text-center" data-currency="<%= curLabel %>">
+                <div class="col-4"><div class="calc-out wallet wallet-coral"><div class="small mb-1"><%= t('lbl_daily') %></div><div class="fw-bold" id="calcDaily">—</div></div></div>
+                <div class="col-4"><div class="calc-out wallet wallet-mint"><div class="small mb-1"><%= t('lbl_15days') %></div><div class="fw-bold" id="calc15">—</div></div></div>
+                <div class="col-4"><div class="calc-out wallet wallet-yellow"><div class="small mb-1"><%= t('lbl_monthly') %></div><div class="fw-bold" id="calcMonthly">—</div></div></div>
+              </div>
+              <a href="<%= signup %>" class="btn btn-primary w-100 mt-3 d-inline-flex align-items-center justify-content-center gap-2"><i data-lucide="rocket"></i><%= t('start_cta') %></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS (real numbers only) ============ -->
+  <% if (stats) { %>
+    <section class="pb-2">
+      <div class="container">
+        <div class="card border-0 shadow-sm rounded-4"><div class="card-body py-4">
+          <div class="row g-3 text-center">
+            <% [
+                 ['users','ti-coral', stats.players.toLocaleString(), 'stat_players'],
+                 ['coins','ti-mint', money(stats.coins), 'stat_total'],
+                 ['layers','ti-sky', stats.apps, 'plans_title'],
+                 ['banknote','ti-yellow', stats.payouts.toLocaleString(), 'lp_stat_payouts']
+               ].forEach(([icon, tint, value, key]) => { %>
+              <div class="col-6 col-lg-3">
+                <span class="tile-icon <%= tint %> mx-auto mb-2" style="width:46px;height:46px;font-size:1.2rem"><i data-lucide="<%= icon %>"></i></span>
+                <div class="h4 fw-bold mb-0"><%= value %></div>
+                <div class="small text-muted"><%= t(key) %></div>
+              </div>
+            <% }) %>
+          </div>
+        </div></div>
+      </div>
+    </section>
+  <% } %>
+
+  <!-- ============ BENEFITS ============ -->
+  <section class="py-5">
+    <div class="container">
+      <div class="text-center mx-auto mb-5" style="max-width:640px">
+        <span class="sec-eyebrow"><%= t('start_badge') %></span>
+        <h2 class="sec-title fw-bold mb-0"><%= t('lp_what_t', { site: settings.siteName }) %></h2>
+      </div>
+      <div class="row g-3">
+        <% [
+             { icon:'shield-check', tint:'mint',  t:'lp_pillar_1_t', d:'lp_pillar_1_d' },
+             { icon:'layers',       tint:'coral', t:'lp_pillar_2_t', d:'lp_pillar_2_d' },
+             { icon:'medal',        tint:'yellow',t:'lp_pillar_3_t', d:'lp_pillar_3_d' }
+           ].forEach(p => { %>
+          <div class="col-md-4">
+            <div class="lp-card text-center p-4">
+              <span class="tile-icon ti-<%= p.tint %> mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem"><i data-lucide="<%= p.icon %>"></i></span>
+              <h6 class="fw-bold mb-2"><%= t(p.t) %></h6>
+              <p class="text-muted small mb-0 lh-lg"><%= t(p.d) %></p>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="py-5">
+    <div class="container">
+      <div class="text-center mb-5">
+        <span class="sec-eyebrow"><%= t('lp_steps_d') %></span>
+        <h2 class="sec-title fw-bold mb-0"><%= t('lp_steps_t') %></h2>
+      </div>
+      <div class="row g-4 lp-steps">
+        <% const steps = [
+             { icon:'user-plus',   text: t('howto_invest_1') },
+             { icon:'layers',      text: t('howto_invest_2', { min: money(settings.minAddFunds) }) },
+             { icon:'shield',      text: t('howto_invest_3') },
+             { icon:'trending-up', text: t('howto_invest_4') }
+           ]; %>
+        <% steps.forEach((s, i) => { %>
+          <div class="col-md-6 col-lg-3">
+            <div class="lp-step h-100">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="step-num"><%= i + 1 %></span>
+                <span class="tile-icon ti-navy" style="width:44px;height:44px;font-size:1.15rem"><i data-lucide="<%= s.icon %>"></i></span>
+              </div>
+              <p class="text-muted small mb-0 lh-lg"><%= s.text %></p>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="pb-5">
+    <div class="container">
+      <div class="cta-band text-center px-3 px-md-5 py-5">
+        <h2 class="fw-bold mb-2"><%= t('lp_ready_t') %></h2>
+        <p class="cta-note mb-4 mx-auto" style="max-width:46ch"><%= t('lp_ready_d') %></p>
+        <a href="<%= signup %>" class="btn btn-light btn-lg px-4 d-inline-flex align-items-center gap-2"><i data-lucide="rocket"></i><%= t('start_cta') %></a>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="container py-4 text-center small text-muted">
+    <%= t('footer_strong') %> <%= t('footer_rest') %>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script>window.renderIcons = function(){ if (window.lucide) lucide.createIcons(); }; window.MSG = { cur: "<%= curLabel %>", earn30: "<%= t('earn_30d') %>" };</script>
+  <script src="/js/app.js?v=<%= assetV %>"></script>
+  <script>window.renderIcons();</script>
+</body>
+</html>
