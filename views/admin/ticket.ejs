@@ -49,7 +49,8 @@
           <textarea name="message" class="form-control mb-2" rows="4" maxlength="4000" placeholder="<%= t('sup_reply_ph') %>"></textarea>
           <div class="mb-2">
             <label class="form-label small d-flex align-items-center gap-1"><i data-lucide="paperclip"></i><%= t('sup_attach') %></label>
-            <input name="file" type="file" accept="image/*,application/pdf,.doc,.docx,.txt" class="form-control form-control-sm">
+            <input name="file" type="file" accept="image/*,application/pdf,.doc,.docx,.txt" class="form-control form-control-sm" data-preview="#admReplyPrev">
+            <div id="admReplyPrev"></div>
           </div>
           <div class="d-flex flex-wrap gap-2 align-items-center">
             <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="send"></i><%= t('sup_reply') %></button>

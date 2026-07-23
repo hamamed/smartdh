@@ -537,6 +537,49 @@ function dvConfirmBulk(form) {
   return true;
 }
 
+// ---------- File-attachment preview (input[type=file][data-preview="#box"]) ----------
+document.addEventListener('change', (e) => {
+  const input = e.target;
+  if (!input || !input.matches || !input.matches('input[type=file][data-preview]')) return;
+  const box = document.querySelector(input.getAttribute('data-preview'));
+  if (!box) return;
+  box.innerHTML = '';
+  const f = input.files && input.files[0];
+  if (!f) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'd-flex align-items-center gap-2 p-2 rounded-3 border mt-2';
+
+  if (/^image\//.test(f.type)) {
+    const img = document.createElement('img');
+    img.alt = ''; img.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:8px;flex:0 0 auto';
+    const r = new FileReader(); r.onload = () => { img.src = r.result; }; r.readAsDataURL(f);
+    wrap.appendChild(img);
+  } else {
+    const ic = document.createElement('span');
+    ic.className = 'tile-icon ti-coral'; ic.style.cssText = 'width:44px;height:44px;font-size:1.1rem;flex:0 0 auto';
+    ic.innerHTML = '<i data-lucide="' + (/pdf/.test(f.type) ? 'file-text' : 'file') + '"></i>';
+    wrap.appendChild(ic);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'flex-grow-1 min-w-0';
+  const name = document.createElement('div'); name.className = 'small fw-semibold text-truncate'; name.textContent = f.name;
+  const size = document.createElement('div'); size.className = 'text-muted'; size.style.fontSize = '.72rem';
+  size.textContent = (f.size / 1024 < 1024 ? (f.size / 1024).toFixed(0) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB');
+  meta.appendChild(name); meta.appendChild(size);
+  wrap.appendChild(meta);
+
+  const rm = document.createElement('button');
+  rm.type = 'button'; rm.className = 'btn btn-sm btn-outline-secondary btn-icon flex-shrink-0';
+  rm.style.cssText = 'width:30px;height:30px'; rm.title = 'Remove'; rm.innerHTML = '<i data-lucide="x"></i>';
+  rm.addEventListener('click', () => { input.value = ''; box.innerHTML = ''; });
+  wrap.appendChild(rm);
+
+  box.appendChild(wrap);
+  if (window.renderIcons) window.renderIcons();
+});
+
 // ---------- Generic copy buttons ([data-copy="text to copy"]) ----------
 (function () {
   const M = window.MSG || { copied: 'Copied!' };
