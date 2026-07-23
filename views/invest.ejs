@@ -104,19 +104,17 @@
       <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body">
           <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="receipt" class="text-primary"></i><%= t('deposit_pending_title') %></h6>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-              <tbody>
-                <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
-                  <tr>
-                    <td class="fw-semibold"><%= money(d.amount) %></td>
-                    <td class="small"><%= d.planLabel %></td>
-                    <td><span class="badge bg-<%= dc %>-subtle text-<%= dc %>"><%= statusLabel(d.status) %></span></td>
-                    <td class="small text-muted text-end"><span data-ago="<%= d.createdAt %>" title="<%= new Date(d.createdAt).toLocaleString() %>"><%= timeAgo(d.createdAt) %></span></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
+          <div class="list-group list-group-flush">
+            <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold small text-truncate"><%= d.planLabel %></div>
+                  <div class="text-muted" style="font-size:.75rem"><span data-ago="<%= d.createdAt %>" title="<%= new Date(d.createdAt).toLocaleString() %>"><%= timeAgo(d.createdAt) %></span></div>
+                </div>
+                <span class="badge bg-<%= dc %>-subtle text-<%= dc %> flex-shrink-0"><%= statusLabel(d.status) %></span>
+                <div class="fw-bold text-nowrap flex-shrink-0 small"><%= money(d.amount) %></div>
+              </div>
+            <% }) %>
           </div>
         </div>
       </div>

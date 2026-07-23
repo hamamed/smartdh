@@ -151,7 +151,7 @@ if (window.Chart) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 10, left: 4, right: 4 } },
+      layout: { padding: { top: 14, left: 6, right: 6 } },
       interaction: { mode: 'index', intersect: false },
       scales: {
         x:  { offset: false, grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 8, color: T.muted, autoSkip: true, maxRotation: 0 } },
