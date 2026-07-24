@@ -1078,6 +1078,13 @@ app.post('/login', authLimiter, async (req, res) => {
   if (!user.emailVerified)
     return res.render('login', { title: req.t('login_title'), error: req.t('login_verify'), form: { email }, unverified: user.email });
   req.session.userId = user.id;
+  // Record the login time (+ IP) for the admin — keep the last 30.
+  const nowLogin = Date.now();
+  user.lastLogin = nowLogin;
+  user.logins = user.logins || [];
+  user.logins.push({ at: nowLogin, ip: req.ip || '' });
+  if (user.logins.length > 30) user.logins = user.logins.slice(-30);
+  save(db);
   gaTrack(req, 'login', { role: user.isAdmin ? 'admin' : 'player' });
   if (user.isAdmin) return res.redirect('/admin');
   // Non-admins don't belong on the admin subdomain — send them to the main site.

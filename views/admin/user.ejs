@@ -33,6 +33,7 @@
             <span class="badge bg-<%= sc %>-subtle text-<%= sc %> mb-3"><%= statusLabel(u.status) %></span>
 
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('th_joined') %></span><span><span data-ago="<%= u.createdAt %>" title="<%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span> · <%= new Date(u.createdAt).toLocaleDateString() %></span></div>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('adm_last_login') %></span><span><% if (u.lastLogin) { %><span data-ago="<%= u.lastLogin %>" title="<%= new Date(u.lastLogin).toLocaleString() %>"><%= timeAgo(u.lastLogin) %></span><% } else { %><%= t('adm_never') %><% } %></span></div>
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('your_code') %></span><span class="fw-semibold text-uppercase"><%= u.referralCode %></span></div>
             <% if (referrer) { %>
               <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_by') %></span>
@@ -138,6 +139,31 @@
             </form>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Login history -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="log-in" class="text-primary"></i><%= t('adm_logins') %></h6>
+        <% const logins = (u.logins || []).slice().reverse(); %>
+        <% if (!logins.length) { %>
+          <p class="text-muted small mb-0"><%= t('adm_never') %></p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% logins.slice(0, 15).forEach(l => { %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
+                <span class="tile-icon ti-navy flex-shrink-0" style="width:34px;height:34px;font-size:.9rem"><i data-lucide="log-in"></i></span>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="small fw-semibold"><%= new Date(l.at).toLocaleString() %></div>
+                  <% if (l.ip) { %><div class="text-muted" style="font-size:.72rem" dir="ltr">IP · <%= l.ip %></div><% } %>
+                </div>
+                <span class="text-muted small flex-shrink-0" data-ago="<%= l.at %>"><%= timeAgo(l.at) %></span>
+              </div>
+            <% }) %>
+          </div>
+          <% if (logins.length > 15) { %><p class="text-muted small mb-0 mt-2"><%= (logins.length - 15) %> <%= t('adm_more') %></p><% } %>
+        <% } %>
       </div>
     </div>
 
