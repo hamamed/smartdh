@@ -286,18 +286,19 @@ if (window.Chart) {
     if (!events.length) { actEl.innerHTML = '<p class="text-muted small mb-0">' + esc(L.empty || 'No activity in this range.') + '</p>'; return; }
     const rows = events.map(e => {
       const when = timeAgo(e.at), whenFull = new Date(e.at).toLocaleString();
-      let icon, tint, title, amountHtml = '';
+      let icon, tint, title, amountHtml = '', metaText = '';
       if (e.kind === 'signup') {
         icon = e.referred ? 'user-round-plus' : 'user-plus';
         tint = e.referred ? 'ti-lilac' : 'ti-yellow';
-        title = esc(e.name) + ' · ' + esc(L.joined || 'joined');
-        if (e.referred) title += ' · ' + esc(L.invited_by || 'invited by') + ' ' + esc(e.referrer || '');
+        title = esc(e.name);
+        metaText = (L.joined || 'joined') + (e.referred ? ' · ' + (L.invited_by || 'invited by') + ' ' + (e.referrer || '') : '');
       } else {
         const dep = e.kind === 'deposit';
         icon = dep ? 'arrow-down-circle' : 'arrow-up-circle';
         tint = dep ? 'ti-mint' : 'ti-coral';
-        title = esc(e.name) + (e.app ? ' · ' + esc(e.app) : '');
-        amountHtml = '<div class="fw-semibold text-nowrap text-' + (dep ? 'success' : 'danger') + '">' + (dep ? '+' : '−') + nf(e.amount) + ' ' + esc(cur) + '</div>';
+        title = esc(e.name);
+        amountHtml = '<div class="fw-bold small text-' + (dep ? 'success' : 'danger') + '">' + (dep ? '+' : '−') + nf(e.amount) + ' ' + esc(cur) + '</div>';
+        metaText = e.app || '';
       }
       const statusTxt = L[e.status] || e.status || '';
       const badge = e.status ? '<span class="badge bg-' + statusClass(e.status) + '-subtle text-' + statusClass(e.status) + '">' + esc(statusTxt) + '</span>' : '';
@@ -308,15 +309,16 @@ if (window.Chart) {
           + 'href="/admin/invoice/' + (e.kind === 'deposit' ? 'deposit' : 'withdraw') + '/' + e.id + '" target="_blank" rel="noopener">'
           + '<i data-lucide="file-text"></i></a>'
         : '';
+      // 3 lines: name, amount, then status + meta (app / joined) · time
       return '<div class="act-row d-flex align-items-center gap-2 py-2 border-top">'
-        + '<a href="' + userHref + '" class="d-flex align-items-center gap-2 flex-grow-1 min-w-0 text-reset" style="text-decoration:none">'
-        + '<span class="tile-icon ' + tint + ' flex-shrink-0" style="width:34px;height:34px;font-size:.95rem"><i data-lucide="' + icon + '"></i></span>'
-        + '<span class="flex-grow-1 min-w-0"><span class="d-block small fw-semibold text-truncate">' + title + '</span>'
-        + '<span class="d-block text-muted text-truncate" style="font-size:.75rem" title="' + esc(whenFull) + '">' + esc(when) + '</span></span></a>'
-        + '<div class="d-flex align-items-center gap-2 flex-shrink-0">'
-        +   '<div class="text-end lh-sm">' + amountHtml + badge + '</div>'
-        +   invoice
+        + '<a href="' + userHref + '" class="tile-icon ' + tint + ' flex-shrink-0" style="width:36px;height:36px;font-size:.95rem;text-decoration:none"><i data-lucide="' + icon + '"></i></a>'
+        + '<div class="flex-grow-1 min-w-0">'
+        +   '<a href="' + userHref + '" class="d-block small fw-semibold text-truncate text-reset" style="text-decoration:none">' + title + '</a>'
+        +   amountHtml
+        +   '<div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem">' + badge
+        +     '<span class="text-muted text-truncate" title="' + esc(whenFull) + '">' + (metaText ? esc(metaText) + ' · ' : '') + esc(when) + '</span></div>'
         + '</div>'
+        + invoice
         + '</div>';
     }).join('');
     actEl.innerHTML = rows;

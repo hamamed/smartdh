@@ -98,66 +98,46 @@
             </div>
           </div>
 
-          <div class="table-responsive">
-            <table class="table align-middle mb-0" id="usersTable">
-              <thead class="text-muted small">
-                <tr>
-                  <th style="width:34px">
-                    <input type="checkbox" class="form-check-input" id="checkAll" title="<%= t('bulk_selectall') %>">
-                  </th>
-                  <th><%= t('th_user') %></th><th><%= t('th_status') %></th><th><%= t('level_label') %></th>
-                  <th><%= t('th_invested') %></th><th><%= t('th_earnings') %></th><th class="text-end"><%= t('th_action') %></th>
-                </tr>
-              </thead>
-              <tbody>
-                <% users.forEach(u => { const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
-                  <tr>
-                    <td>
-                      <input type="checkbox" class="form-check-input row-check" form="bulkForm"
-                             name="ids" value="<%= u.id %>"
-                             <%= u.id === currentUser.id ? 'disabled title="' + t('bulk_notyou') + '"' : '' %>>
-                    </td>
-                    <td>
-                      <div class="d-flex align-items-center gap-2">
-                        <% if (u.avatar) { %>
-                          <img src="<%= u.avatar %>" class="rounded-circle" style="width:36px;height:36px;object-fit:cover" alt="">
-                        <% } else { %>
-                          <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
-                               style="width:36px;height:36px;flex:0 0 36px"><%= u.name.charAt(0).toUpperCase() %></div>
-                        <% } %>
-                        <div>
-                          <div class="fw-semibold"><%= u.name %>
-                            <% if (u.isAdmin) { %><span class="badge bg-primary-subtle text-primary ms-1"><%= t('badge_admin') %></span><% } %>
-                          </div>
-                          <div class="small text-muted"><%= u.email %></div>
-                          <% if (u.createdAt) { %>
-                            <div class="text-muted d-flex align-items-center gap-1" style="font-size:.72rem">
-                              <i data-lucide="clock" style="width:.85em;height:.85em"></i><span data-ago="<%= u.createdAt %>" title="<%= t('th_joined') %>: <%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span>
-                            </div>
-                          <% } %>
-                        </div>
-                      </div>
-                    </td>
-                    <td><span class="badge bg-<%= sc %>-subtle text-<%= sc %>"><%= statusLabel(u.status) %></span></td>
-                    <td><span class="badge bg-body-secondary text-muted"><%= levelForXp(u.xp) %></span></td>
-                    <td class="fw-semibold"><%= money(totalInvested(u)) %></td>
-                    <td class="fw-semibold text-success"><%= money(u.earnings) %></td>
-                    <td class="text-end text-nowrap">
-                      <% if (u.status === 'pending') { %>
-                        <form action="/admin/approve/<%= u.id %>" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                          <button class="btn btn-sm btn-success"><i data-lucide="check" class="me-1"></i><%= t('btn_approve') %></button>
-                        </form>
-                        <form action="/admin/reject/<%= u.id %>" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                          <button class="btn btn-sm btn-outline-danger"><i data-lucide="x"></i></button>
-                        </form>
-                      <% } %>
-                      <a href="/admin/users/<%= u.id %>" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
-                        <i data-lucide="eye"></i><%= t('btn_manage') %></a>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
+          <div class="d-flex align-items-center gap-2 mb-2 px-1">
+            <input type="checkbox" class="form-check-input" id="checkAll" title="<%= t('bulk_selectall') %>">
+            <span class="small text-muted"><%= t('bulk_selectall') %></span>
+          </div>
+          <div class="list-group list-group-flush" id="usersTable">
+            <% users.forEach(u => { const sc = u.status==='active'?'success':(u.status==='rejected'?'danger':'warning'); %>
+              <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
+                <input type="checkbox" class="form-check-input row-check flex-shrink-0" form="bulkForm"
+                       name="ids" value="<%= u.id %>"
+                       <%= u.id === currentUser.id ? 'disabled title="' + t('bulk_notyou') + '"' : '' %>>
+                <% if (u.avatar) { %>
+                  <img src="<%= u.avatar %>" class="rounded-circle flex-shrink-0" style="width:38px;height:38px;object-fit:cover" alt="">
+                <% } else { %>
+                  <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                       style="width:38px;height:38px"><%= u.name.charAt(0).toUpperCase() %></div>
+                <% } %>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold small text-truncate"><%= u.name %>
+                    <% if (u.isAdmin) { %><span class="badge bg-primary-subtle text-primary ms-1"><%= t('badge_admin') %></span><% } %>
+                  </div>
+                  <div class="small text-muted text-truncate"><%= u.email %></div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap mt-1" style="font-size:.72rem">
+                    <span class="badge bg-<%= sc %>-subtle text-<%= sc %>"><%= statusLabel(u.status) %></span>
+                    <span class="badge bg-body-secondary text-muted">L<%= levelForXp(u.xp) %></span>
+                    <span class="text-muted"><%= t('th_invested') %>: <span class="fw-semibold text-body"><%= money(totalInvested(u)) %></span></span>
+                    <span class="text-muted"><%= t('th_earnings') %>: <span class="fw-semibold text-success"><%= money(u.earnings) %></span></span>
+                    <% if (u.createdAt) { %><span class="text-muted"><span data-ago="<%= u.createdAt %>" title="<%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span></span><% } %>
+                  </div>
+                </div>
+                <div class="d-flex gap-1 flex-shrink-0">
+                  <% if (u.status === 'pending') { %>
+                    <form action="/admin/approve/<%= u.id %>" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button class="btn btn-sm btn-success btn-icon" style="width:32px;height:32px" title="<%= t('btn_approve') %>"><i data-lucide="check"></i></button></form>
+                    <form action="/admin/reject/<%= u.id %>" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button class="btn btn-sm btn-outline-danger btn-icon" style="width:32px;height:32px"><i data-lucide="x"></i></button></form>
+                  <% } %>
+                  <a href="/admin/users/<%= u.id %>" class="btn btn-sm btn-outline-primary btn-icon" style="width:32px;height:32px" title="<%= t('btn_manage') %>"><i data-lucide="eye"></i></a>
+                </div>
+              </div>
+            <% }) %>
           </div>
 
           <% const kept = (status ? '&status=' + status : '') + (q ? '&q=' + encodeURIComponent(q) : ''); %>
