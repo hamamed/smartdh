@@ -87,13 +87,11 @@
             <% myWithdrawals.forEach(w => { const wc = w.status==='paid'?'success':(w.status==='rejected'?'danger':'warning'); %>
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <div class="flex-grow-1 min-w-0">
-                  <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="fw-semibold small text-truncate"><%= w.fromLabel || w.from %></span>
-                    <span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize flex-shrink-0"><%= w.status %></span>
-                  </div>
-                  <div class="d-flex align-items-center gap-2 mt-1">
-                    <span class="fw-bold small"><%= money(w.amount) %></span>
-                    <span class="text-muted" style="font-size:.72rem">· <span data-ago="<%= w.createdAt %>" title="<%= new Date(w.createdAt).toLocaleString() %>"><%= timeAgo(w.createdAt) %></span></span>
+                  <div class="fw-semibold small text-truncate"><%= w.fromLabel || w.from %></div>
+                  <div class="fw-bold small text-danger"><%= money(w.amount) %></div>
+                  <div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem">
+                    <span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize"><%= w.status %></span>
+                    <span class="text-muted"><span data-ago="<%= w.createdAt %>" title="<%= new Date(w.createdAt).toLocaleString() %>"><%= timeAgo(w.createdAt) %></span></span>
                   </div>
                 </div>
                 <a href="/invoice/withdraw/<%= w.id %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="<%= t('inv_title') %>"><i data-lucide="file-text"></i></a>
