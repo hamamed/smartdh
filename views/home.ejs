@@ -188,7 +188,7 @@
                 <div class="flex-grow-1 min-w-0">
                   <div class="fw-semibold small text-truncate"><%= txLabel(tx.type) %></div>
                   <div class="d-flex align-items-center gap-2">
-                    <% if (tx.amount) { %><span class="fw-bold small text-<%= m.cls %> flex-shrink-0"><%= m.sign %><%= money(tx.amount) %></span><% } %>
+                    <% if (tx.amount) { %><span class="fw-bold small flex-shrink-0 text-<%= m.sign === '-' ? 'danger' : 'success' %>"><%= m.sign %><%= money(tx.amount) %></span><% } %>
                     <span class="text-muted text-truncate" style="font-size:.72rem"><%= tx.note ? tx.note + ' · ' : '' %><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></span>
                   </div>
                 </div>
