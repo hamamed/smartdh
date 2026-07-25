@@ -108,11 +108,15 @@
             <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <div class="flex-grow-1 min-w-0">
-                  <div class="fw-semibold small text-truncate"><%= d.planLabel %></div>
-                  <div class="text-muted" style="font-size:.75rem"><span data-ago="<%= d.createdAt %>" title="<%= new Date(d.createdAt).toLocaleString() %>"><%= timeAgo(d.createdAt) %></span></div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-semibold small text-truncate"><%= d.planLabel %></span>
+                    <span class="badge bg-<%= dc %>-subtle text-<%= dc %> flex-shrink-0"><%= statusLabel(d.status) %></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="fw-bold small"><%= money(d.amount) %></span>
+                    <span class="text-muted" style="font-size:.72rem">· <span data-ago="<%= d.createdAt %>" title="<%= new Date(d.createdAt).toLocaleString() %>"><%= timeAgo(d.createdAt) %></span></span>
+                  </div>
                 </div>
-                <span class="badge bg-<%= dc %>-subtle text-<%= dc %> flex-shrink-0"><%= statusLabel(d.status) %></span>
-                <div class="fw-bold text-nowrap flex-shrink-0 small"><%= money(d.amount) %></div>
                 <a href="/invoice/deposit/<%= d.id %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="<%= t('inv_title') %>"><i data-lucide="file-text"></i></a>
               </div>
             <% }) %>

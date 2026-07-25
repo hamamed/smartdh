@@ -34,11 +34,15 @@
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <span class="tile-icon <%= dep ? 'ti-mint' : 'ti-coral' %> flex-shrink-0" style="width:38px;height:38px;font-size:.95rem"><i data-lucide="<%= dep ? 'arrow-down-circle' : 'arrow-up-circle' %>"></i></span>
                 <div class="flex-grow-1 min-w-0">
-                  <a href="/admin/users/<%= x.userId %>" class="fw-semibold small text-truncate d-block text-reset text-decoration-none"><%= x.userName %></a>
-                  <div class="text-muted text-truncate" style="font-size:.75rem"><%= (dep ? 'D' : 'W') + x.id %> · <%= x.source %> · <span data-ago="<%= x.at %>" title="<%= new Date(x.at).toLocaleString() %>"><%= timeAgo(x.at) %></span></div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="/admin/users/<%= x.userId %>" class="fw-semibold small text-truncate text-reset text-decoration-none"><%= x.userName %></a>
+                    <span class="badge bg-<%= sc %>-subtle text-<%= sc %> flex-shrink-0"><%= statusLabel(x.status) || x.status %></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="fw-bold small"><%= money(x.amount) %></span>
+                    <span class="text-muted text-truncate" style="font-size:.72rem"><%= (dep ? 'D' : 'W') + x.id %> · <%= x.source %> · <span data-ago="<%= x.at %>" title="<%= new Date(x.at).toLocaleString() %>"><%= timeAgo(x.at) %></span></span>
+                  </div>
                 </div>
-                <span class="badge bg-<%= sc %>-subtle text-<%= sc %> flex-shrink-0"><%= statusLabel(x.status) || x.status %></span>
-                <div class="fw-bold text-nowrap flex-shrink-0 small"><%= money(x.amount) %></div>
                 <a href="/admin/invoice/<%= x.kind %>/<%= x.id %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary btn-icon flex-shrink-0" style="width:30px;height:30px" title="<%= t('inv_title') %>"><i data-lucide="file-text"></i></a>
               </div>
             <% }) %>

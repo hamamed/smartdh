@@ -20,10 +20,10 @@
               </div>
               <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"
                    style="width:42px;height:42px;flex:0 0 42px"><%= r.name.charAt(0) %></div>
-              <div class="flex-grow-1">
-                <div class="fw-semibold"><%= r.name %><% if (r.isSelf) { %> <span class="badge bg-primary ms-1"><%= t('lb_you') %></span><% } %></div>
+              <div class="flex-grow-1 min-w-0">
+                <div class="fw-semibold text-truncate"><%= r.name %><% if (r.isSelf) { %> <span class="badge bg-primary ms-1"><%= t('lb_you') %></span><% } %></div>
+                <div class="fw-bold small text-success"><%= money(r.total) %></div>
               </div>
-              <div class="fw-bold"><%= money(r.total) %></div>
             </div>
           <% }) %>
         </div>
