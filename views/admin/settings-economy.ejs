@@ -64,6 +64,18 @@
             </div>
           </div>
 
+          <!-- On/off toggles -->
+          <div class="d-flex flex-wrap gap-4 mb-3 pt-2 border-top">
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" role="switch" name="dailyBonusEnabled" value="1" id="dbSwitch" <%= settings.dailyBonusEnabled ? 'checked' : '' %>>
+              <label class="form-check-label d-flex align-items-center gap-1" for="dbSwitch"><i data-lucide="gift"></i><%= t('set_dailybonus') %></label>
+            </div>
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" role="switch" name="leaderboardEnabled" value="1" id="lbSwitch" <%= settings.leaderboardEnabled ? 'checked' : '' %>>
+              <label class="form-check-label d-flex align-items-center gap-1" for="lbSwitch"><i data-lucide="medal"></i><%= t('set_leaderboard') %></label>
+            </div>
+          </div>
+
           <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
         </form>
       </div>

@@ -36,6 +36,9 @@ const DEFAULTS = {
     minWithdraw: 100,
     minTransfer: 10,
     withdrawEveryDays: 15,
+    // Admin toggles: hide the leaderboard, and turn the daily bonus on/off.
+    leaderboardEnabled: true,
+    dailyBonusEnabled: true,
     // Deposited funds are locked (can't be withdrawn) for this many days after the
     // deposit. 0 disables the lock. Earnings are never locked.
     depositLockDays: 30,
@@ -127,10 +130,14 @@ function migrate(db) {
   db.nextAppId = db.nextAppId || 1;
   db.nextAuditId = db.nextAuditId || 1;
   db.nextScheduleId = db.nextScheduleId || 1;
+  if (db.settings.leaderboardEnabled === undefined) db.settings.leaderboardEnabled = true;
+  if (db.settings.dailyBonusEnabled === undefined) db.settings.dailyBonusEnabled = true;
   db.settings.plans.forEach(p => {
     if (p.minLevel === undefined) p.minLevel = 1;
     if (p.imageUrl === undefined) p.imageUrl = '';
     if (p.link === undefined) p.link = '';   // optional external link opened in a new tab
+    // Fixed deposit amount for this plan (0 = the player can invest any amount).
+    if (p.fixedAmount === undefined) p.fixedAmount = 0;
     if (!p.icon) p.icon = 'trending-up';
   });
   (db.users || []).forEach(u => {

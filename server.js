@@ -1219,6 +1219,7 @@ app.get('/send', requireActive, (req, res) => {
 
 // ---------- Rewards (daily bonus + streak) ----------
 app.get('/rewards', requireActive, (req, res) => {
+  if (!req.db.settings.dailyBonusEnabled) return res.redirect('/dashboard');
   const u = req.currentUser;
   const depositOk = hasApprovedDeposit(req.db, u);
   res.render('rewards', {
@@ -1570,10 +1571,11 @@ app.post('/add-funds', requireActive, (req, res) => {
   const db = req.db;
   const u = req.currentUser;
   const s = db.settings;
-  const amount = Math.floor(Number(req.body.amount));
   const plan = s.plans.find(p => p.id === req.body.plan);
   if (!plan) return res.redirect('/invest?err=plan');
-  if (!amount || amount < s.minAddFunds) return res.redirect('/invest?err=amount');
+  // Fixed-amount plans always deposit the set amount, whatever the form sent.
+  const amount = plan.fixedAmount > 0 ? plan.fixedAmount : Math.floor(Number(req.body.amount));
+  if (!amount || (plan.fixedAmount <= 0 && amount < s.minAddFunds)) return res.redirect('/invest?err=amount');
   if (levelForXp(u.xp) < (plan.minLevel || 1)) return res.redirect('/invest?err=locked');
 
   db.deposits.push({
@@ -1635,6 +1637,7 @@ app.post('/withdraw', requireActive, (req, res) => {
 
 app.post('/daily-bonus', requireActive, (req, res) => {
   const db = req.db;
+  if (!db.settings.dailyBonusEnabled) return res.redirect('/dashboard');
   const u = req.currentUser;
   const back = req.body.redirect === 'home' ? '/dashboard' : '/rewards';
   // Locked until they've made at least one approved deposit.
@@ -1685,6 +1688,7 @@ app.post('/transfer', requireActive, (req, res) => {
 // ---------- Leaderboard (masked names) ----------
 app.get('/leaderboard', requireActive, (req, res) => {
   const db = req.db;
+  if (!db.settings.leaderboardEnabled) return res.redirect('/dashboard');
   db.users.forEach(x => accrue(x, db));
   save(db);
   const mask = (n) => n.slice(0, 1).toUpperCase() + '*'.repeat(Math.max(1, n.length - 1));
@@ -2750,6 +2754,7 @@ adminRouter.post('/apps/add', requireAdmin, csrfGuard,
         color: req.body.color || 'primary',
         desc: (req.body.desc || '').trim(),
         link: (req.body.link || '').trim(),
+        fixedAmount: Math.max(0, Math.floor(Number(req.body.fixedAmount) || 0)),
         minLevel: Math.max(1, Number(req.body.minLevel) || 1)
       });
       logAudit(db, req.currentUser, 'app.add', name);
@@ -2768,6 +2773,7 @@ adminRouter.post('/apps/edit/:id', requireAdmin, csrfGuard,
       if (req.body.icon !== undefined && req.body.icon.trim()) p.icon = req.body.icon.trim();
       if (req.body.rate !== undefined && req.body.rate !== '') p.ratePer15Days = Math.max(0, Number(req.body.rate) / 100);
       if (req.body.minLevel) p.minLevel = Math.max(1, Number(req.body.minLevel) || 1);
+      if (req.body.fixedAmount !== undefined) p.fixedAmount = Math.max(0, Math.floor(Number(req.body.fixedAmount) || 0));
       if (req.body.color) p.color = req.body.color;
       if (req.body.desc !== undefined) p.desc = req.body.desc.trim();
       if (req.body.link !== undefined) p.link = req.body.link.trim();
@@ -3034,6 +3040,8 @@ adminRouter.post('/settings/economy', requireAdmin, (req, res) => {
   s.depositLockDays = Math.max(0, Math.floor(Number(req.body.depositLockDays) || 0));
   s.referralTiers = [1, 2, 3].map(i => Math.max(0, Number(req.body['tier' + i]) / 100 || 0));
   s.dailyBonusBase = Math.max(0, Number(req.body.dailyBonusBase) || 0);
+  s.dailyBonusEnabled = req.body.dailyBonusEnabled === '1';
+  s.leaderboardEnabled = req.body.leaderboardEnabled === '1';
   logAudit(db, req.currentUser, 'settings.economy',
     'Limits, tiers (' + s.referralTiers.map(x => (x * 100).toFixed(2) + '%').join('/') + ') and daily bonus updated');
   save(db);

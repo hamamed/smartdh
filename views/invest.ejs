@@ -79,6 +79,11 @@
                 <div class="alert alert-secondary py-2 small mb-0 text-center d-flex align-items-center justify-content-center gap-1">
                   <i data-lucide="lock"></i><%= t('locked_at', { n: p.minLevel }) %>
                 </div>
+              <% } else if (p.fixedAmount > 0) { %>
+                <form action="/add-funds" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="plan" value="<%= p.id %>">
+                  <button class="btn btn-<%= p.color %> w-100 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="plus"></i><%= t('invest_fixed', { amt: money(p.fixedAmount) }) %></button>
+                </form>
               <% } else { %>
                 <form action="/add-funds" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="plan" value="<%= p.id %>">
