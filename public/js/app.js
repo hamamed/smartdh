@@ -539,6 +539,20 @@ function dvConfirmBulk(form) {
   return true;
 }
 
+// ---------- Fixed-plan invest confirmation modal ----------
+(function () {
+  const modal = document.getElementById('investConfirm');
+  if (!modal) return;
+  modal.addEventListener('show.bs.modal', (e) => {
+    const btn = e.relatedTarget;
+    if (!btn) return;
+    const set = (id, val) => { const el = modal.querySelector(id); if (el) { if (el.tagName === 'INPUT') el.value = val; else el.textContent = val; } };
+    set('#icPlan', btn.getAttribute('data-plan') || '');
+    set('#icName', btn.getAttribute('data-name') || '');
+    set('#icAmount', btn.getAttribute('data-amount') || '');
+  });
+})();
+
 // ---------- File-attachment preview (input[type=file][data-preview="#box"]) ----------
 document.addEventListener('change', (e) => {
   const input = e.target;

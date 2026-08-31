@@ -80,10 +80,10 @@
                   <i data-lucide="lock"></i><%= t('locked_at', { n: p.minLevel }) %>
                 </div>
               <% } else if (p.fixedAmount > 0) { %>
-                <form action="/add-funds" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <input type="hidden" name="plan" value="<%= p.id %>">
-                  <button class="btn btn-<%= p.color %> w-100 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="plus"></i><%= t('invest_fixed', { amt: money(p.fixedAmount) }) %></button>
-                </form>
+                <button type="button" class="btn btn-<%= p.color %> w-100 d-inline-flex align-items-center justify-content-center gap-1"
+                        data-bs-toggle="modal" data-bs-target="#investConfirm"
+                        data-plan="<%= p.id %>" data-name="<%= planName(p) %>" data-amount="<%= money(p.fixedAmount) %>">
+                  <i data-lucide="plus"></i><%= t('invest_fixed', { amt: money(p.fixedAmount) }) %></button>
               <% } else { %>
                 <form action="/add-funds" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="plan" value="<%= p.id %>">
@@ -129,3 +129,29 @@
     <% } %>
   </div>
 </section>
+
+<!-- Fixed-plan invest confirmation (prevents accidental clicks) -->
+<div class="modal fade" id="investConfirm" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2"><i data-lucide="shield-check" class="text-primary"></i><%= t('invest_confirm_t') %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('btn_cancel') %>"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3"><%= t('invest_confirm_d') %></p>
+        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 bg-body-secondary">
+          <span class="fw-semibold" id="icName"></span>
+          <span class="fw-bold text-success" id="icAmount"></span>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('btn_cancel') %></button>
+        <form method="post" action="/add-funds" class="m-0"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="plan" id="icPlan" value="">
+          <button class="btn btn-success d-inline-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('invest_confirm_yes') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
