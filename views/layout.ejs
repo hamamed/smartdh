@@ -119,6 +119,27 @@
 
   <main class="flex-grow-1"><%- body %></main>
 
+  <%# App-style bottom navigation — mobile only, for signed-in active players %>
+  <% if (currentUser && currentUser.status === 'active' && !currentUser.isAdmin && typeof reqPath !== 'undefined') {
+       const nav = [
+         { href: '/dashboard', icon: 'home',              label: t('nav_home'),       match: ['/dashboard'] },
+         { href: '/invest',    icon: 'layers',            label: t('plans_title'),    match: ['/invest'] },
+         { href: '/withdraw',  icon: 'arrow-down-to-line', label: t('withdraw_title'), match: ['/withdraw'] },
+         { href: '/support',   icon: 'life-buoy',         label: t('sup_title'),      match: ['/support'] },
+         { href: '/profile',   icon: 'user',              label: t('profile_title'),  match: ['/profile'] }
+       ];
+       const isActive = (m) => m.some(p => reqPath === p || reqPath.indexOf(p + '/') === 0);
+  %>
+    <nav class="bottom-nav d-lg-none" aria-label="app navigation">
+      <% nav.forEach(n => { const on = isActive(n.match); %>
+        <a href="<%= n.href %>" class="bn-item <%= on ? 'active' : '' %>">
+          <span class="bn-ic"><i data-lucide="<%= n.icon %>"></i></span>
+          <span class="bn-lb"><%= n.label %></span>
+        </a>
+      <% }) %>
+    </nav>
+  <% } %>
+
   <footer class="bg-body border-top py-4">
     <div class="container small text-muted">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">

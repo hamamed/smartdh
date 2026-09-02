@@ -335,6 +335,7 @@ app.use((req, res, next) => {
   res.locals.curLabel = curLabel;
   res.locals.money = (n) => `${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${curLabel}`;
   res.locals.timeAgo = (ts) => timeAgo(ts, lang);
+  res.locals.reqPath = req.path;   // for highlighting the active bottom-nav item
   // One-time Google Analytics event: an action sets req.session.gaEvent before a
   // redirect; here it's popped onto the next rendered page and cleared, so it
   // fires exactly once. Direct-render routes set res.locals.gaEvent themselves.
