@@ -539,6 +539,31 @@ function dvConfirmBulk(form) {
   return true;
 }
 
+// ---------- PWA install ([data-pwa-install] buttons) ----------
+(function () {
+  let deferred = null;
+  const buttons = () => document.querySelectorAll('[data-pwa-install]');
+  const showButtons = (on) => buttons().forEach(b => { b.hidden = !on; });
+  // Hidden by default; shown only when the browser says the app is installable.
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferred = e; showButtons(true);
+  });
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest && e.target.closest('[data-pwa-install]');
+    if (!btn) return;
+    e.preventDefault();
+    if (!deferred) return;                 // Safari/iOS: no prompt API — the page shows manual steps
+    deferred.prompt();
+    try { await deferred.userChoice; } catch (_) {}
+    deferred = null; showButtons(false);
+  });
+  window.addEventListener('appinstalled', () => { deferred = null; showButtons(false); });
+  // If already running as an installed app, hide install buttons.
+  if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+    document.addEventListener('DOMContentLoaded', () => showButtons(false));
+  }
+})();
+
 // ---------- Fixed-plan invest confirmation modal ----------
 (function () {
   const modal = document.getElementById('investConfirm');

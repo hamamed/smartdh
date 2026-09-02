@@ -1,7 +1,7 @@
 {
-  "name": "KanzUp — play-money investing game",
+  "name": "KanzUp",
   "short_name": "KanzUp",
-  "description": "A play-money investing simulator game for friends and family.",
+  "description": "Invest, watch your earnings grow, and withdraw on time.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

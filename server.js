@@ -919,6 +919,9 @@ app.get('/guide', (req, res) => res.render('guide', { title: req.t('guide_title'
 app.get('/terms', (req, res) => res.render('terms', { title: req.t('footer_terms') }));
 app.get('/privacy', (req, res) => res.render('privacy', { title: req.t('footer_privacy') }));
 
+// Download / install-the-app page. APK_URL (a GitHub release link) enables the APK button.
+app.get('/download', (req, res) => res.render('download', { title: req.t('dl_title'), apkUrl: process.env.APK_URL || '' }));
+
 // ---------- Contact us ----------
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@kanzup.com';
 app.get('/contact', (req, res) => {
