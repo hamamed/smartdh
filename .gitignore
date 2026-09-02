@@ -4,3 +4,6 @@ data/
 npm-debug.log*
 public/uploads/*
 !public/uploads/.gitkeep
+# Android signing key — NEVER commit this. It lives only on your machine + GitHub secrets.
+*.keystore
+android.keystore
