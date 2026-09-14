@@ -4,7 +4,7 @@
 
     <% if (ok) { %>
       <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i>
-        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : t('profile_saved') %>
+        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : ok === 'earnings' ? t('earn_ok') : t('profile_saved') %>
       </div>
     <% } %>
     <% if (err) { %>
@@ -115,6 +115,17 @@
               </div>
               <button class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
               <div class="form-text"><%= t('adjust_hint') %></div>
+            </form>
+
+            <hr>
+            <form action="/admin/users/<%= u.id %>/earnings" method="post" class="mb-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <label class="form-label small mb-1 d-flex align-items-center gap-1"><i data-lucide="gift" class="text-success"></i><%= t('add_earn') %></label>
+              <div class="input-group input-group-sm">
+                <input name="amount" type="number" step="1" class="form-control" placeholder="0" required>
+                <input name="note" type="text" class="form-control" placeholder="<%= t('add_earn_note') %>">
+                <button class="btn btn-success"><i data-lucide="plus"></i></button>
+              </div>
+              <div class="form-text"><%= t('add_earn_hint') %></div>
             </form>
 
             <hr>

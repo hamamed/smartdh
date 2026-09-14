@@ -217,7 +217,8 @@ const TX = {
   achievement:        { icon: 'trophy',       label: 'Achievement unlocked',  cls: 'warning',   sign: '' },
   campaign_reward:    { icon: 'party-popper',  label: 'Challenge reward',      cls: 'success',   sign: '+' },
   campaign_invite:    { icon: 'user-check',    label: 'Invite bonus',          cls: 'success',   sign: '+' },
-  admin_adjust:       { icon: 'shield',       label: 'Admin adjustment',      cls: 'secondary', sign: '' }
+  admin_adjust:       { icon: 'shield',       label: 'Admin adjustment',      cls: 'secondary', sign: '' },
+  earnings_credit:    { icon: 'gift',          label: 'Earnings added',        cls: 'success',   sign: '+' }
 };
 
 // ---------- View engine ----------
@@ -2912,6 +2913,26 @@ adminRouter.post('/adjust/:id', requireAdmin, (req, res) => {
     save(db);
   }
   res.redirect('/admin/users/' + req.params.id);
+});
+
+// Add (or subtract) earnings for a player — recorded as a transaction they can see,
+// unlike /adjust which silently overwrites the total.
+adminRouter.post('/users/:id/earnings', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.redirect('/admin/users');
+  const amount = Math.floor(Number(req.body.amount));
+  if (!amount) return res.redirect('/admin/users/' + u.id + '?err=earnings');
+  const note = (req.body.note || '').trim();
+
+  accrue(u, db);
+  u.earnings = Math.max(0, (u.earnings || 0) + amount);
+  // Positive credit shows green; a deduction is logged as a neutral adjustment.
+  if (amount > 0) addTx(u, 'earnings_credit', amount, note || 'Added by admin');
+  else addTx(u, 'admin_adjust', Math.abs(amount), note || 'Earnings removed by admin');
+  logAudit(db, req.currentUser, 'user.earnings', u.name + ' ' + (amount > 0 ? '+' : '') + amount + (note ? ' (' + note + ')' : ''));
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=earnings');
 });
 
 adminRouter.post('/toggle-admin/:id', requireAdmin, (req, res) => {
