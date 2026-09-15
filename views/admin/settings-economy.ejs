@@ -77,7 +77,7 @@
           </div>
 
           <!-- Landing "social proof" growth: Users + Payouts climb daily -->
-          <% const hs = settings.homeStats || {}; const gu = hs.users || {}; const gp = hs.payouts || {}; %>
+          <% const hs = settings.homeStats || {}; const gu = hs.users || {}; const gp = hs.payouts || {}; const gco = hs.coins || {}; %>
           <div class="pt-3 border-top">
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" role="switch" name="growthEnabled" value="1" id="grSwitch" <%= hs.enabled !== false ? 'checked' : '' %>>
@@ -85,7 +85,7 @@
             </div>
             <div class="form-text mb-2"><%= t('set_growth_hint') %></div>
             <div class="row g-3">
-              <% [['gUsers', gu, t('stat_players')], ['gPayouts', gp, t('lp_stat_payouts')]].forEach(([k, d, label]) => { %>
+              <% [['gUsers', gu, t('stat_players')], ['gPayouts', gp, t('lp_stat_payouts')], ['gCoins', gco, t('stat_total')]].forEach(([k, d, label]) => { %>
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold mb-1"><%= label %></label>
                   <div class="row g-2">

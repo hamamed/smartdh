@@ -912,7 +912,7 @@ function landingStats(db) {
   const grow = hs.enabled !== false;
   return {
     players: players.length + (grow ? dailyGrowth(hs.users, hs.start, 1) : 0),
-    coins: players.reduce((s, u) => s + totalBalance(u), 0),
+    coins: players.reduce((s, u) => s + totalBalance(u), 0) + (grow ? dailyGrowth(hs.coins, hs.start, 3) : 0),
     apps: db.settings.plans.length,
     payouts: db.withdrawals.filter(w => w.status === 'paid').length + (grow ? dailyGrowth(hs.payouts, hs.start, 2) : 0)
   };
@@ -3103,6 +3103,7 @@ adminRouter.post('/settings/economy', requireAdmin, (req, res) => {
   hs.enabled = req.body.growthEnabled === '1';
   hs.users = dim('gUsers');
   hs.payouts = dim('gPayouts');
+  hs.coins = dim('gCoins');
   if (!hs.start) hs.start = Date.now();
   logAudit(db, req.currentUser, 'settings.economy',
     'Limits, tiers (' + s.referralTiers.map(x => (x * 100).toFixed(2) + '%').join('/') + ') and daily bonus updated');

@@ -44,8 +44,9 @@ const DEFAULTS = {
     homeStats: {
       enabled: true,
       start: 0,                                  // set to "now" on first migrate
-      users:   { base: 0, min: 70, spread: 80 },
-      payouts: { base: 0, min: 70, spread: 80 }
+      users:   { base: 0, min: 70,  spread: 80 },
+      payouts: { base: 0, min: 70,  spread: 80 },
+      coins:   { base: 0, min: 200, spread: 800 }   // money — bigger daily steps
     },
     // Deposited funds are locked (can't be withdrawn) for this many days after the
     // deposit. 0 disables the lock. Earnings are never locked.
@@ -152,7 +153,8 @@ function migrate(db) {
       enabled: hs.enabled !== false,
       start: hs.start || Date.now(),
       users: dim(hs.users, { base: 0, min: 70, spread: 80 }),
-      payouts: dim(hs.payouts, { base: 0, min: 70, spread: 80 })
+      payouts: dim(hs.payouts, { base: 0, min: 70, spread: 80 }),
+      coins: dim(hs.coins, { base: 0, min: 200, spread: 800 })
     };
   }
   db.settings.plans.forEach(p => {
