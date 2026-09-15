@@ -39,6 +39,14 @@ const DEFAULTS = {
     // Admin toggles: hide the leaderboard, and turn the daily bonus on/off.
     leaderboardEnabled: true,
     dailyBonusEnabled: true,
+    // Landing-page "social proof": the shown Users and Payouts numbers climb every
+    // day by a random amount (min..min+spread). Deterministic per day (no cron).
+    homeStats: {
+      enabled: true,
+      start: 0,                                  // set to "now" on first migrate
+      users:   { base: 0, min: 70, spread: 80 },
+      payouts: { base: 0, min: 70, spread: 80 }
+    },
     // Deposited funds are locked (can't be withdrawn) for this many days after the
     // deposit. 0 disables the lock. Earnings are never locked.
     depositLockDays: 30,
@@ -132,6 +140,21 @@ function migrate(db) {
   db.nextScheduleId = db.nextScheduleId || 1;
   if (db.settings.leaderboardEnabled === undefined) db.settings.leaderboardEnabled = true;
   if (db.settings.dailyBonusEnabled === undefined) db.settings.dailyBonusEnabled = true;
+  // Landing "social proof" growth config — rebuilt defensively, `start` pinned once.
+  {
+    const hs = (db.settings.homeStats && typeof db.settings.homeStats === 'object') ? db.settings.homeStats : {};
+    const dim = (d, def) => ({
+      base: Math.max(0, Math.floor(Number((d && d.base)) || def.base)),
+      min: Math.max(0, Math.floor(Number((d && d.min)) || def.min)),
+      spread: Math.max(0, Math.floor(Number((d && d.spread)) || def.spread))
+    });
+    db.settings.homeStats = {
+      enabled: hs.enabled !== false,
+      start: hs.start || Date.now(),
+      users: dim(hs.users, { base: 0, min: 70, spread: 80 }),
+      payouts: dim(hs.payouts, { base: 0, min: 70, spread: 80 })
+    };
+  }
   db.settings.plans.forEach(p => {
     if (p.minLevel === undefined) p.minLevel = 1;
     if (p.imageUrl === undefined) p.imageUrl = '';

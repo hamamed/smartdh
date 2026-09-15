@@ -887,35 +887,49 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// Deterministic daily growth for the landing "social proof" numbers. Each day since
+// `start` adds a seeded pseudo-random increment in [min, min+spread]: stable within a
+// day, climbs every day, needs no cron or storage. `salt` keeps the two metrics apart.
+function dailyGrowth(cfg, start, salt) {
+  if (!cfg) return 0;
+  const DAY = 86400000;
+  const days = Math.min(3650, Math.max(0, Math.floor((Date.now() - (start || 0)) / DAY)));
+  const min = cfg.min || 0, spread = cfg.spread || 0;
+  let total = cfg.base || 0;
+  for (let d = 1; d <= days; d++) {
+    const x = Math.sin((d + salt * 7919) * 2.399963) * 43758.5453;
+    total += min + Math.floor((x - Math.floor(x)) * (spread + 1));  // (x-floor(x)) is 0..1
+  }
+  return total;
+}
+
+// Landing/ad-page stats. Users and Payouts include the daily "social proof" growth;
+// coins and plan count stay real. Hidden until there are ≥3 real players.
+function landingStats(db) {
+  const players = db.users.filter(u => u.status === 'active' && !u.isAdmin);
+  if (players.length < 3) return null;
+  const hs = db.settings.homeStats || {};
+  const grow = hs.enabled !== false;
+  return {
+    players: players.length + (grow ? dailyGrowth(hs.users, hs.start, 1) : 0),
+    coins: players.reduce((s, u) => s + totalBalance(u), 0),
+    apps: db.settings.plans.length,
+    payouts: db.withdrawals.filter(w => w.status === 'paid').length + (grow ? dailyGrowth(hs.payouts, hs.start, 2) : 0)
+  };
+}
+
 // ---------- Public ----------
 // Logged-in players don't need the landing page — send them to their dashboard.
 app.get('/', (req, res) => {
   if (req.currentUser) return res.redirect('/dashboard');
-  const db = req.db;
-  const players = db.users.filter(u => u.status === 'active' && !u.isAdmin);
-  // Real numbers only — and hidden entirely until there's something worth showing,
-  // because "1 player" reads worse than no stats at all.
-  const stats = players.length >= 3 ? {
-    players: players.length,
-    coins: players.reduce((s, u) => s + totalBalance(u), 0),
-    apps: db.settings.plans.length,
-    payouts: db.withdrawals.filter(w => w.status === 'paid').length
-  } : null;
-  res.render('landing', { title: req.t('hero_title'), stats });
+  res.render('landing', { title: req.t('hero_title'), stats: landingStats(req.db) });
 });
 
 // Dedicated high-conversion landing page for ad campaigns (single goal: sign up).
 // Keeps the ?ref referral code so paid-traffic signups still credit a referrer.
 ['/start', '/join', '/go'].forEach(p => app.get(p, (req, res) => {
   if (req.currentUser) return res.redirect('/dashboard');
-  const db = req.db;
-  const players = db.users.filter(u => u.status === 'active' && !u.isAdmin);
-  const stats = players.length >= 3 ? {
-    players: players.length,
-    coins: players.reduce((s, u) => s + totalBalance(u), 0),
-    apps: db.settings.plans.length,
-    payouts: db.withdrawals.filter(w => w.status === 'paid').length
-  } : null;
+  const stats = landingStats(req.db);
   const ref = (req.query.ref || '').trim().toUpperCase().slice(0, 16);
   const signup = '/signup' + (ref ? '?ref=' + encodeURIComponent(ref) : '');
   res.render('start', { title: req.t('start_h1'), stats, ref, signup, layout: false });
@@ -3079,6 +3093,17 @@ adminRouter.post('/settings/economy', requireAdmin, (req, res) => {
   s.dailyBonusBase = Math.max(0, Number(req.body.dailyBonusBase) || 0);
   s.dailyBonusEnabled = req.body.dailyBonusEnabled === '1';
   s.leaderboardEnabled = req.body.leaderboardEnabled === '1';
+  // Landing "social proof" growth (Users + Payouts climb daily).
+  const hs = s.homeStats || (s.homeStats = {});
+  const dim = (k) => ({
+    base: Math.max(0, Math.floor(Number(req.body[k + 'Base']) || 0)),
+    min: Math.max(0, Math.floor(Number(req.body[k + 'Min']) || 0)),
+    spread: Math.max(0, Math.floor(Number(req.body[k + 'Spread']) || 0))
+  });
+  hs.enabled = req.body.growthEnabled === '1';
+  hs.users = dim('gUsers');
+  hs.payouts = dim('gPayouts');
+  if (!hs.start) hs.start = Date.now();
   logAudit(db, req.currentUser, 'settings.economy',
     'Limits, tiers (' + s.referralTiers.map(x => (x * 100).toFixed(2) + '%').join('/') + ') and daily bonus updated');
   save(db);

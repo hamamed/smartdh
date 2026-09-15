@@ -76,7 +76,29 @@
             </div>
           </div>
 
-          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
+          <!-- Landing "social proof" growth: Users + Payouts climb daily -->
+          <% const hs = settings.homeStats || {}; const gu = hs.users || {}; const gp = hs.payouts || {}; %>
+          <div class="pt-3 border-top">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" role="switch" name="growthEnabled" value="1" id="grSwitch" <%= hs.enabled !== false ? 'checked' : '' %>>
+              <label class="form-check-label fw-semibold d-flex align-items-center gap-1" for="grSwitch"><i data-lucide="trending-up"></i><%= t('set_growth') %></label>
+            </div>
+            <div class="form-text mb-2"><%= t('set_growth_hint') %></div>
+            <div class="row g-3">
+              <% [['gUsers', gu, t('stat_players')], ['gPayouts', gp, t('lp_stat_payouts')]].forEach(([k, d, label]) => { %>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold mb-1"><%= label %></label>
+                  <div class="row g-2">
+                    <div class="col-4"><input name="<%= k %>Base" type="number" min="0" class="form-control form-control-sm" value="<%= d.base || 0 %>" placeholder="0"><div class="form-text mb-0"><%= t('set_growth_base') %></div></div>
+                    <div class="col-4"><input name="<%= k %>Min" type="number" min="0" class="form-control form-control-sm" value="<%= d.min || 0 %>" placeholder="70"><div class="form-text mb-0"><%= t('set_growth_min') %></div></div>
+                    <div class="col-4"><input name="<%= k %>Spread" type="number" min="0" class="form-control form-control-sm" value="<%= d.spread || 0 %>" placeholder="80"><div class="form-text mb-0"><%= t('set_growth_spread') %></div></div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1 mt-3"><i data-lucide="save"></i><%= t('btn_save') %></button>
         </form>
       </div>
     </div>
