@@ -218,7 +218,8 @@ const TX = {
   campaign_reward:    { icon: 'party-popper',  label: 'Challenge reward',      cls: 'success',   sign: '+' },
   campaign_invite:    { icon: 'user-check',    label: 'Invite bonus',          cls: 'success',   sign: '+' },
   admin_adjust:       { icon: 'shield',       label: 'Admin adjustment',      cls: 'secondary', sign: '' },
-  earnings_credit:    { icon: 'gift',          label: 'Earnings added',        cls: 'success',   sign: '+' }
+  earnings_credit:    { icon: 'gift',          label: 'Earnings added',        cls: 'success',   sign: '+' },
+  move_funds:         { icon: 'arrow-left-right', label: 'Moved investment',   cls: 'info',      sign: '' }
 };
 
 // ---------- View engine ----------
@@ -1216,10 +1217,15 @@ app.get('/invest', requireActive, async (req, res) => {
   try {
     qr = await QRCode.toDataURL(`${info.bankName} | ${info.accountName} | RIB ${info.rib}`, { margin: 1, width: 200 });
   } catch (e) { qr = ''; }
+  // Per-app funds (held / locked / available) so the "move investment" picker
+  // knows how much can be switched out of each plan.
+  const funds = {};
+  req.db.settings.plans.forEach(p => { funds[p.id] = appFunds(req.db, u, p.id); });
   res.render('invest', Object.assign({
     title: req.t('plans_title'),
     depositInfo: info,
     depositQR: qr,
+    funds,
     myDeposits: req.db.deposits.filter(d => d.userId === u.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 8)
   }, levelData(u)));
 });
@@ -1618,6 +1624,33 @@ app.post('/add-funds', requireActive, (req, res) => {
   save(db);
   gaTrack(req, 'deposit_request', { value: amount, currency: 'MAD', plan: plan.id });
   res.redirect('/invest?ok=deprequested');
+});
+
+// Move already-invested funds from one plan to another. Only AVAILABLE (unlocked)
+// funds can move — moving locked deposits would sidestep the withdrawal lock. The
+// money stays invested, so it just starts earning the destination plan's rate.
+app.post('/move-funds', requireActive, (req, res) => {
+  const db = req.db;
+  const u = req.currentUser;
+  const s = db.settings;
+  const from = s.plans.find(p => p.id === req.body.from);
+  const to = s.plans.find(p => p.id === req.body.to);
+  if (!from || !to || from.id === to.id) return res.redirect('/invest?err=move');
+  const amount = Math.floor(Number(req.body.amount));
+  if (!amount || amount <= 0) return res.redirect('/invest?err=amount');
+  // The destination plan must be unlocked for this player's level.
+  if (levelForXp(u.xp) < (to.minLevel || 1)) return res.redirect('/invest?err=locked');
+
+  accrue(u, db); // settle earnings at the old plan split before changing it
+  const available = withdrawableInApp(db, u, from.id);
+  if (amount > available)
+    return res.redirect('/invest?err=' + (lockedInApp(db, u, from.id) > 0 ? 'wlocked' : 'insufficient'));
+
+  u.invested[from.id] = (u.invested[from.id] || 0) - amount;
+  u.invested[to.id] = (u.invested[to.id] || 0) + amount;
+  addTx(u, 'move_funds', amount, from.name + ' → ' + to.name);
+  save(db);
+  res.redirect('/invest?ok=moved');
 });
 
 app.post('/withdraw', requireActive, (req, res) => {

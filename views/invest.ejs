@@ -104,6 +104,43 @@
       <% }) %>
     </div>
 
+    <!-- Move / switch investment between plans -->
+    <% const movable = plans.filter(p => funds[p.id] && funds[p.id].available > 0);
+       const dests = plans.filter(p => level >= (p.minLevel || 1)); %>
+    <% if (movable.length && dests.length > 1) { %>
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-1 d-flex align-items-center gap-2"><i data-lucide="arrow-left-right" class="text-primary"></i><%= t('move_title') %></h6>
+          <p class="text-muted small mb-3"><%= t('move_desc') %></p>
+          <form action="/move-funds" method="post" class="row g-2 align-items-end" id="moveForm"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="col-6 col-md-4">
+              <label class="form-label small mb-1"><%= t('move_from') %></label>
+              <select name="from" id="moveFrom" class="form-select form-select-sm" required>
+                <% movable.forEach(p => { %>
+                  <option value="<%= p.id %>" data-avail="<%= Math.floor(funds[p.id].available) %>"><%= planName(p) %> — <%= money(funds[p.id].available) %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small mb-1"><%= t('move_to') %></label>
+              <select name="to" id="moveTo" class="form-select form-select-sm" required>
+                <% dests.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= planName(p) %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-8 col-md-3">
+              <label class="form-label small mb-1 text-muted" id="moveAvail"></label>
+              <input name="amount" id="moveAmount" type="number" min="1" step="1" class="form-control form-control-sm" placeholder="<%= t('amount_ph') %>" required>
+            </div>
+            <div class="col-4 col-md-1 d-grid">
+              <button class="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center gap-1" title="<%= t('move_btn') %>"><i data-lucide="arrow-left-right"></i></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
     <!-- Your deposits -->
     <% if (myDeposits && myDeposits.length) { %>
       <div class="card border-0 shadow-sm rounded-4">
@@ -155,3 +192,37 @@
     </div>
   </div>
 </div>
+
+<!-- Move-investment picker: cap the amount at the source plan's available, and
+     stop the same plan being both source and destination. -->
+<script>
+(function () {
+  const form = document.getElementById('moveForm');
+  if (!form) return;
+  const M = window.MSG || {};
+  const fromSel = document.getElementById('moveFrom');
+  const toSel = document.getElementById('moveTo');
+  const amount = document.getElementById('moveAmount');
+  const availLbl = document.getElementById('moveAvail');
+  function sync() {
+    const opt = fromSel.options[fromSel.selectedIndex];
+    const avail = opt ? Number(opt.dataset.avail) || 0 : 0;
+    amount.max = avail;
+    if (availLbl) availLbl.textContent = (M.move_avail || 'Available: __A__')
+      .replace('__A__', avail.toLocaleString() + ' ' + (M.cur || ''));
+    // A plan can't move into itself.
+    [].forEach.call(toSel.options, o => { o.disabled = (o.value === fromSel.value); });
+    if (toSel.value === fromSel.value) {
+      const alt = [].filter.call(toSel.options, o => !o.disabled)[0];
+      if (alt) toSel.value = alt.value;
+    }
+  }
+  fromSel.addEventListener('change', sync);
+  toSel.addEventListener('change', sync);
+  form.addEventListener('submit', function (e) {
+    const max = Number(amount.max) || 0;
+    if (!(Number(amount.value) > 0) || Number(amount.value) > max) { e.preventDefault(); amount.focus(); }
+  });
+  sync();
+})();
+</script>
