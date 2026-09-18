@@ -222,6 +222,19 @@ const TX = {
   move_funds:         { icon: 'arrow-left-right', label: 'Moved investment',   cls: 'info',      sign: '' }
 };
 
+// Preset reasons an admin can pick when rejecting a withdrawal. The player sees the
+// reason on the platform and by email. 'other' uses the admin's free-text note.
+const WITHDRAW_REJECT_REASONS = ['clearing', 'payout_details', 'name_mismatch', 'min_amount', 'cadence', 'review', 'other'];
+
+// Resolve a rejected withdrawal's reason into human text using translator `tr`
+// (req.t for pages in the viewer's language, userT(user) for that user's email).
+function rejectReasonText(tr, w) {
+  if (!w) return '';
+  const note = (w.rejectNote || '').trim();
+  const base = (w.rejectReason && w.rejectReason !== 'other') ? tr('wdr_' + w.rejectReason) : '';
+  return [base, note].filter(Boolean).join(' — ');
+}
+
 // ---------- View engine ----------
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -338,6 +351,7 @@ app.use((req, res, next) => {
   res.locals.achDesc = (id) => { const k = 'ach_' + id + '_d'; const v = tr(k); return v === k ? ACHIEVEMENTS[id].desc : v; };
   res.locals.txLabel = (type) => tr('tx_' + type);
   res.locals.statusLabel = (s) => tr('st_' + s);
+  res.locals.rejectReason = (w) => rejectReasonText(tr, w);
   // Language-aware currency label: Arabic shows درهم for the default DH; other
   // languages (or a custom currency) show the setting as-is.
   const curLabel = (lang === 'ar' && ['DH', 'MAD'].includes(db.settings.currency)) ? 'درهم' : db.settings.currency;
@@ -810,10 +824,15 @@ function notifyDeposit(user, amount, planLabel, approved) {
 }
 function notifyWithdrawal(user, w, status) {
   const tr = userT(user), lg = langFor(user);
+  const lines = [tr(status === 'paid' ? 'mail_wd_ok_b' : 'mail_wd_no_b', { amount: emFmt(w.amount, lg) })];
+  if (status === 'rejected') {
+    const reason = rejectReasonText(tr, w);
+    if (reason) lines.push(tr('mail_wd_no_reason', { reason }));
+  }
   mailUser(user, {
     subject: status === 'paid' ? tr('mail_wd_ok_subj') : tr('mail_wd_no_subj'),
     heading: status === 'paid' ? tr('mail_wd_ok_h') : tr('mail_wd_no_h'),
-    lines: [tr(status === 'paid' ? 'mail_wd_ok_b' : 'mail_wd_no_b', { amount: emFmt(w.amount, lg) })],
+    lines,
     cta: { text: tr('email_visit'), url: `${APP_URL}/dashboard` }
   });
 }
@@ -2454,7 +2473,7 @@ adminRouter.get('/withdrawals', requireAdmin, (req, res) => {
     title: req.t('tab_withdrawals'),
     counts: adminCounts(db),
     withdrawals: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
-    status, q, statusCounts: countBy(db.withdrawals)
+    status, q, statusCounts: countBy(db.withdrawals), wdReasons: WITHDRAW_REJECT_REASONS
   });
 });
 
@@ -3203,14 +3222,17 @@ adminRouter.post('/withdraw/:id/:action', requireAdmin, (req, res) => {
       if (u) { addTx(u, 'withdraw_paid', w.amount, 'From ' + (w.fromLabel || w.from)); notifyWithdrawal(u, w, 'paid'); }
       logAudit(db, req.currentUser, 'withdraw.paid', '#' + w.id + ' ' + w.userName + ' ' + w.amount + ' via ' + (w.method || '-'));
     } else if (req.params.action === 'reject') {
+      w.rejectReason = WITHDRAW_REJECT_REASONS.includes(req.body.reason) ? req.body.reason : '';
+      w.rejectNote = (req.body.reasonNote || '').trim().slice(0, 300);
       if (u) {
         if (w.from === 'earnings') u.earnings += w.amount;
         else u.invested[w.from] = (u.invested[w.from] || 0) + w.amount;
-        addTx(u, 'withdraw_rejected', w.amount, 'Refunded to ' + (w.fromLabel || w.from));
+        const rtxt = rejectReasonText(userT(u), w);
+        addTx(u, 'withdraw_rejected', w.amount, 'Refunded to ' + (w.fromLabel || w.from) + (rtxt ? ' · ' + rtxt : ''));
         notifyWithdrawal(u, w, 'rejected');
       }
       w.status = 'rejected';
-      logAudit(db, req.currentUser, 'withdraw.reject', '#' + w.id + ' ' + w.userName + ' ' + w.amount);
+      logAudit(db, req.currentUser, 'withdraw.reject', '#' + w.id + ' ' + w.userName + ' ' + w.amount + (w.rejectReason ? ' (' + w.rejectReason + ')' : ''));
     }
     save(db);
   }

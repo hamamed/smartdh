@@ -41,6 +41,9 @@
                     <span class="badge bg-<%= wc %>-subtle text-<%= wc %> text-capitalize"><%= w.status %></span>
                     <span class="text-muted text-truncate"><%= w.fromLabel || w.from %> · <span data-ago="<%= w.createdAt %>" title="<%= new Date(w.createdAt).toLocaleString() %>"><%= timeAgo(w.createdAt) %></span></span>
                   </div>
+                  <% if (w.status === 'rejected' && rejectReason(w)) { %>
+                    <div class="mt-1 p-2 rounded-3 bg-danger-subtle text-danger" style="font-size:.72rem"><i data-lucide="info" style="width:.9em;height:.9em"></i> <%= rejectReason(w) %></div>
+                  <% } %>
                   <% if (w.payoutName || w.payoutAccount) { %>
                     <div class="d-flex align-items-center gap-1 mt-1 p-2 rounded-3 bg-body-secondary" style="font-size:.72rem">
                       <i data-lucide="<%= w.method === 'bank' ? 'landmark' : 'wallet' %>" style="width:.9em;height:.9em"></i>
@@ -53,8 +56,9 @@
                   <div class="d-flex gap-1 flex-shrink-0">
                     <form action="/admin/withdraw/<%= w.id %>/approve" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <button class="btn btn-sm btn-success btn-icon" style="width:32px;height:32px" title="<%= t('btn_markpaid') %>"><i data-lucide="check"></i></button></form>
-                    <form action="/admin/withdraw/<%= w.id %>/reject" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <button class="btn btn-sm btn-outline-danger btn-icon" style="width:32px;height:32px" title="<%= t('st_rejected') %>"><i data-lucide="x"></i></button></form>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-icon" style="width:32px;height:32px" title="<%= t('st_rejected') %>"
+                            data-bs-toggle="modal" data-bs-target="#rejectModal"
+                            data-id="<%= w.id %>" data-name="<%= w.userName %>" data-amount="<%= money(w.amount) %>"><i data-lucide="x"></i></button>
                   </div>
                 <% } %>
               </div>
@@ -71,3 +75,50 @@
     </div>
   </div>
 </section>
+
+<!-- Reject-with-reason: one shared modal, populated per row via data-* attributes -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <form method="post" id="rejectForm" action="">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2"><i data-lucide="x-circle" class="text-danger"></i><%= t('reject_modal_t') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('btn_cancel') %>"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3 d-flex align-items-center gap-2"><i data-lucide="user"></i><span id="rjWho"></span></p>
+          <label class="form-label small fw-semibold mb-1"><%= t('wd_reason_label') %></label>
+          <select name="reason" id="rjReason" class="form-select mb-2">
+            <% wdReasons.forEach(r => { %><option value="<%= r %>"><%= t('wdr_' + r) %></option><% }) %>
+          </select>
+          <textarea name="reasonNote" id="rjNote" class="form-control" rows="2" maxlength="300" placeholder="<%= t('reject_note_ph') %>"></textarea>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('btn_cancel') %></button>
+          <button class="btn btn-danger d-inline-flex align-items-center gap-1"><i data-lucide="x"></i><%= t('btn_reject_refund') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const modal = document.getElementById('rejectModal');
+  if (!modal) return;
+  const form = document.getElementById('rejectForm');
+  const who = document.getElementById('rjWho');
+  const note = document.getElementById('rjNote');
+  const reason = document.getElementById('rjReason');
+  modal.addEventListener('show.bs.modal', function (ev) {
+    const b = ev.relatedTarget; if (!b) return;
+    form.action = '/admin/withdraw/' + b.dataset.id + '/reject';
+    who.textContent = (b.dataset.name || '') + ' · ' + (b.dataset.amount || '');
+    reason.selectedIndex = 0; note.value = '';
+  });
+  // The free-text note is required only when "Other" is picked.
+  function syncNote() { note.required = (reason.value === 'other'); }
+  reason.addEventListener('change', syncNote); syncNote();
+})();
+</script>
