@@ -4,7 +4,7 @@
 
     <% if (ok) { %>
       <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i>
-        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : ok === 'earnings' ? t('earn_ok') : t('profile_saved') %>
+        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : ok === 'earnings' ? t('earn_ok') : ok === 'kyc_req' ? t('kyc_req_ok') : ok === 'kyc' ? t('kyc_reviewed_ok') : t('profile_saved') %>
       </div>
     <% } %>
     <% if (err) { %>
@@ -152,6 +152,74 @@
         </div>
       </div>
     </div>
+
+    <!-- Identity verification (KYC) -->
+    <% const k = u.kyc || { status: 'none' };
+       const kc = k.status === 'approved' ? 'success' : (k.status === 'rejected' ? 'danger' : (k.status === 'submitted' ? 'info' : (k.status === 'requested' ? 'warning' : 'secondary'))); %>
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="shield-check" class="text-primary"></i><%= t('kyc_title') %></h6>
+          <span class="badge bg-<%= kc %>-subtle text-<%= kc %>"><%= t('kyc_st_' + k.status) %></span>
+        </div>
+
+        <% if (k.status === 'submitted' || k.status === 'approved' || k.status === 'rejected') { %>
+          <div class="row g-2 mb-3" style="font-size:.85rem">
+            <div class="col-md-4"><div class="text-muted small"><%= t('kyc_fullname') %></div><div class="fw-semibold"><%= k.fullName || '—' %></div></div>
+            <div class="col-md-4"><div class="text-muted small"><%= t('kyc_dob') %></div><div class="fw-semibold"><%= k.dob || '—' %></div></div>
+            <div class="col-md-4"><div class="text-muted small"><%= t('kyc_address') %></div><div class="fw-semibold"><%= k.address || '—' %></div></div>
+          </div>
+          <div class="row g-2 mb-3">
+            <% [['kyc_cin_front', k.cinFront], ['kyc_cin_back', k.cinBack]].forEach(([label, src]) => { %>
+              <div class="col-6">
+                <div class="text-muted small mb-1"><%= t(label) %></div>
+                <% if (src) { %>
+                  <a href="<%= src %>" target="_blank" rel="noopener"><img src="<%= src %>" alt="" class="img-fluid rounded border" style="max-height:160px"></a>
+                <% } else { %><span class="text-muted small">—</span><% } %>
+              </div>
+            <% }) %>
+          </div>
+          <% if (k.reviewNote && k.status === 'rejected') { %>
+            <div class="alert alert-danger py-1 px-2 small"><%= t('wd_reason_label') %>: <%= k.reviewNote %></div>
+          <% } %>
+        <% } else { %>
+          <p class="text-muted small mb-3"><%= t('kyc_admin_none') %></p>
+        <% } %>
+
+        <div class="d-flex flex-wrap gap-2">
+          <% if (k.status !== 'approved') { %>
+            <form action="/admin/users/<%= u.id %>/request-verify" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i data-lucide="send"></i><%= k.status === 'requested' ? t('kyc_resend') : t('kyc_request') %></button>
+            </form>
+          <% } %>
+          <% if (k.status === 'submitted') { %>
+            <form action="/admin/users/<%= u.id %>/kyc/approve" method="post" class="d-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-success d-inline-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('kyc_approve') %></button>
+            </form>
+            <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#kycReject"><i data-lucide="x"></i><%= t('kyc_reject') %></button>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <% if (k.status === 'submitted') { %>
+    <div class="modal fade" id="kycReject" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4">
+        <form action="/admin/users/<%= u.id %>/kyc/reject" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="modal-header border-0"><h5 class="modal-title fw-bold"><%= t('kyc_reject') %></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <label class="form-label small fw-semibold mb-1"><%= t('wd_reason_label') %></label>
+            <textarea name="note" class="form-control" rows="2" maxlength="300" placeholder="<%= t('reject_note_ph') %>"></textarea>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('btn_cancel') %></button>
+            <button class="btn btn-danger d-inline-flex align-items-center gap-1"><i data-lucide="x"></i><%= t('kyc_reject') %></button>
+          </div>
+        </form>
+      </div></div>
+    </div>
+    <% } %>
 
     <!-- Login history -->
     <div class="card border-0 shadow-sm rounded-4 mt-3">

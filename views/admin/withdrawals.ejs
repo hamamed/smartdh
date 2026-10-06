@@ -52,13 +52,22 @@
                     </div>
                   <% } %>
                 </div>
+                <% const kst = kycByUser[w.userId] || 'none';
+                   const kcc = kst === 'approved' ? 'success' : (kst === 'rejected' ? 'danger' : (kst === 'submitted' ? 'info' : (kst === 'requested' ? 'warning' : 'secondary'))); %>
                 <% if (w.status === 'pending') { %>
-                  <div class="d-flex gap-1 flex-shrink-0">
+                  <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                    <span class="badge bg-<%= kcc %>-subtle text-<%= kcc %>" title="<%= t('kyc_title') %>"><i data-lucide="shield-check" style="width:.85em;height:.85em"></i> <%= t('kyc_st_' + kst) %></span>
+                    <div class="d-flex gap-1">
+                    <% if (kst !== 'approved') { %>
+                      <form action="/admin/users/<%= w.userId %>/request-verify" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="/admin/withdrawals">
+                        <button class="btn btn-sm btn-outline-primary btn-icon" style="width:32px;height:32px" title="<%= t('kyc_request') %>"><i data-lucide="shield-check"></i></button></form>
+                    <% } %>
                     <form action="/admin/withdraw/<%= w.id %>/approve" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <button class="btn btn-sm btn-success btn-icon" style="width:32px;height:32px" title="<%= t('btn_markpaid') %>"><i data-lucide="check"></i></button></form>
                     <button type="button" class="btn btn-sm btn-outline-danger btn-icon" style="width:32px;height:32px" title="<%= t('st_rejected') %>"
                             data-bs-toggle="modal" data-bs-target="#rejectModal"
                             data-id="<%= w.id %>" data-name="<%= w.userName %>" data-amount="<%= money(w.amount) %>"><i data-lucide="x"></i></button>
+                    </div>
                   </div>
                 <% } %>
               </div>

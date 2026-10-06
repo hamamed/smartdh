@@ -243,6 +243,14 @@ function migrate(db) {
     if (u.gsDismissed === undefined) u.gsDismissed = false;
     // Admin role (RBAC). Existing admins become 'owner' (full access); others null.
     if (u.role === undefined) u.role = u.isAdmin ? 'owner' : null;
+    // Identity verification (KYC). An admin requests it (usually before paying a
+    // withdrawal); the player submits name / date of birth / address + CIN (ID card)
+    // front & back images; the admin then approves or rejects.
+    // status: none | requested | submitted | approved | rejected
+    if (!u.kyc || typeof u.kyc !== 'object') u.kyc = {};
+    if (!u.kyc.status) u.kyc.status = 'none';
+    ['fullName', 'dob', 'address', 'cinFront', 'cinBack', 'reviewNote'].forEach(k => { if (u.kyc[k] === undefined) u.kyc[k] = ''; });
+    ['requestedAt', 'submittedAt', 'reviewedAt'].forEach(k => { if (u.kyc[k] === undefined) u.kyc[k] = 0; });
   });
   return db;
 }

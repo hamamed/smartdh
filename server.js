@@ -79,6 +79,16 @@ const uploadTicket = multer({
   limits: { fileSize: 6 * 1024 * 1024, files: 1 }, // 6 MB
   fileFilter: (req, file, cb) => cb(null, !!ALLOWED_ATTACH[file.mimetype])
 });
+// Identity (KYC) CIN images — front (recto) and back (verso), images only.
+const uploadCin = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, 'cin-' + crypto.randomBytes(10).toString('hex') + (ALLOWED_IMAGES[file.mimetype] || '.jpg'))
+  }),
+  limits: { fileSize: 5 * 1024 * 1024, files: 2 }, // 5 MB each
+  fileFilter: (req, file, cb) => cb(null, !!ALLOWED_IMAGES[file.mimetype])
+});
+
 // Pull the uploaded attachment (if any) off a multipart request into a message field.
 function attachOf(req) {
   return req.file ? { file: '/uploads/' + req.file.filename, fileName: req.file.originalname, fileType: req.file.mimetype } : {};
@@ -834,6 +844,18 @@ function notifyWithdrawal(user, w, status) {
     heading: status === 'paid' ? tr('mail_wd_ok_h') : tr('mail_wd_no_h'),
     lines,
     cta: { text: tr('email_visit'), url: `${APP_URL}/dashboard` }
+  });
+}
+// Identity-verification (KYC) emails: requested / approved / rejected.
+function notifyKyc(user, status, note) {
+  const tr = userT(user);
+  const lines = [tr('mail_kyc_' + status + '_b')];
+  if (status === 'rejected' && note) lines.push(tr('mail_wd_no_reason', { reason: note }));
+  mailUser(user, {
+    subject: tr('mail_kyc_' + status + '_subj'),
+    heading: tr('mail_kyc_' + status + '_h'),
+    lines,
+    cta: { text: status === 'approved' ? tr('email_visit') : tr('mail_kyc_cta'), url: `${APP_URL}/verify-identity` }
   });
 }
 
@@ -1718,6 +1740,50 @@ app.post('/withdraw', requireActive, (req, res) => {
   res.redirect('/withdraw?ok=withdraw');
 });
 
+// ---------- Identity verification (KYC) ----------
+// The player's page to submit (or re-submit) their identity. An admin triggers this
+// by requesting verification; it's usually required before a withdrawal is paid.
+app.get('/verify-identity', requireActive, (req, res) => {
+  res.render('verify-identity', {
+    title: req.t('kyc_title'), kyc: req.currentUser.kyc || { status: 'none' },
+    ok: req.query.ok || '', err: req.query.err || ''
+  });
+});
+
+// Submit identity details + CIN (ID card) front & back. csrfGuard runs BEFORE multer
+// (token from the query) so an unverified request can never write files to disk.
+app.post('/verify-identity', requireActive, csrfGuard,
+  (req, res, next) => uploadCin.fields([{ name: 'cinFront', maxCount: 1 }, { name: 'cinBack', maxCount: 1 }])(req, res, (err) => {
+    if (err) return res.redirect('/verify-identity?err=' + (err.code === 'LIMIT_FILE_SIZE' ? 'big' : 'file'));
+    next();
+  }),
+  csrfGuard,
+  (req, res) => {
+    const u = req.currentUser;
+    const k = u.kyc || (u.kyc = { status: 'none' });
+    if (k.status === 'approved') return res.redirect('/verify-identity?ok=already');
+
+    const fullName = (req.body.fullName || '').trim().slice(0, 120);
+    const dob = (req.body.dob || '').trim().slice(0, 20);
+    const address = (req.body.address || '').trim().slice(0, 300);
+    const files = req.files || {};
+    const newFront = files.cinFront && files.cinFront[0] ? '/uploads/' + files.cinFront[0].filename : '';
+    const newBack = files.cinBack && files.cinBack[0] ? '/uploads/' + files.cinBack[0].filename : '';
+    const cinFront = newFront || k.cinFront;
+    const cinBack = newBack || k.cinBack;
+
+    if (!fullName || !dob || !address || !cinFront || !cinBack)
+      return res.redirect('/verify-identity?err=fill');
+
+    // Replace any previously uploaded images that were just superseded.
+    if (newFront && k.cinFront && k.cinFront !== newFront) deleteUpload(k.cinFront);
+    if (newBack && k.cinBack && k.cinBack !== newBack) deleteUpload(k.cinBack);
+
+    Object.assign(k, { fullName, dob, address, cinFront, cinBack, status: 'submitted', submittedAt: Date.now(), reviewNote: '' });
+    save(req.db);
+    res.redirect('/verify-identity?ok=submitted');
+  });
+
 app.post('/daily-bonus', requireActive, (req, res) => {
   const db = req.db;
   if (!db.settings.dailyBonusEnabled) return res.redirect('/dashboard');
@@ -1813,6 +1879,7 @@ function adminCounts(db) {
     users: db.users.filter(isRealUser).length,
     testUsers: testIds.size,
     openTickets: (db.tickets || []).filter(t => t.status !== 'closed' && t.status !== 'answered').length,
+    pendingKyc: db.users.filter(u => u.kyc && u.kyc.status === 'submitted' && !testIds.has(u.id)).length,
     apps: db.settings.plans.length
   };
 }
@@ -2473,7 +2540,9 @@ adminRouter.get('/withdrawals', requireAdmin, (req, res) => {
     title: req.t('tab_withdrawals'),
     counts: adminCounts(db),
     withdrawals: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
-    status, q, statusCounts: countBy(db.withdrawals), wdReasons: WITHDRAW_REJECT_REASONS
+    status, q, statusCounts: countBy(db.withdrawals), wdReasons: WITHDRAW_REJECT_REASONS,
+    // identity-verification status per user, for the row badge + request button
+    kycByUser: Object.fromEntries(db.users.map(u => [u.id, (u.kyc && u.kyc.status) || 'none']))
   });
 });
 
@@ -2999,6 +3068,47 @@ adminRouter.post('/users/:id/earnings', requireAdmin, (req, res) => {
   logAudit(db, req.currentUser, 'user.earnings', u.name + ' ' + (amount > 0 ? '+' : '') + amount + (note ? ' (' + note + ')' : ''));
   save(db);
   res.redirect('/admin/users/' + u.id + '?ok=earnings');
+});
+
+// ----- Identity verification (KYC) -----
+// Ask a player to verify their identity (name, DOB, address, CIN front/back).
+// Used before paying a withdrawal. `back` lets the withdrawals page link here too.
+adminRouter.post('/users/:id/request-verify', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  const back = (req.body.back || '').startsWith('/') ? req.body.back : ('/admin/users/' + req.params.id);
+  if (!u) return res.redirect('/admin/users');
+  const k = u.kyc || (u.kyc = { status: 'none' });
+  k.status = 'requested';
+  k.requestedAt = Date.now();
+  k.reviewNote = '';
+  notifyKyc(u, 'requested');
+  logAudit(db, req.currentUser, 'kyc.request', u.name);
+  save(db);
+  res.redirect(back + (back.includes('?') ? '&' : '?') + 'ok=kyc_req');
+});
+
+// Approve or reject a submitted identity.
+adminRouter.post('/users/:id/kyc/:action', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  if (!u) return res.redirect('/admin/users');
+  const k = u.kyc || (u.kyc = { status: 'none' });
+  if (req.params.action === 'approve') {
+    k.status = 'approved';
+    k.reviewedAt = Date.now();
+    k.reviewNote = '';
+    notifyKyc(u, 'approved');
+    logAudit(db, req.currentUser, 'kyc.approve', u.name);
+  } else if (req.params.action === 'reject') {
+    k.status = 'rejected';
+    k.reviewedAt = Date.now();
+    k.reviewNote = (req.body.note || '').trim().slice(0, 300);
+    notifyKyc(u, 'rejected', k.reviewNote);
+    logAudit(db, req.currentUser, 'kyc.reject', u.name + (k.reviewNote ? ' — ' + k.reviewNote : ''));
+  }
+  save(db);
+  res.redirect('/admin/users/' + u.id + '?ok=kyc');
 });
 
 adminRouter.post('/toggle-admin/:id', requireAdmin, (req, res) => {

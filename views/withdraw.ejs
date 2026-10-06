@@ -7,6 +7,22 @@
 
     <div id="flash"></div>
 
+    <!-- Identity verification prompt (admin-requested) -->
+    <% const kyc = currentUser.kyc || { status: 'none' }; %>
+    <% if (kyc.status === 'requested' || kyc.status === 'rejected') { %>
+      <div class="alert alert-warning d-flex align-items-start gap-2">
+        <i data-lucide="shield-alert" class="flex-shrink-0 mt-1"></i>
+        <div class="flex-grow-1">
+          <div class="fw-semibold"><%= t('kyc_prompt_h') %></div>
+          <div class="small"><%= t('kyc_prompt_b') %></div>
+          <% if (kyc.status === 'rejected' && kyc.reviewNote) { %><div class="small mt-1"><%= t('wd_reason_label') %>: <%= kyc.reviewNote %></div><% } %>
+          <a href="/verify-identity" class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="shield-check"></i><%= t('kyc_prompt_cta') %></a>
+        </div>
+      </div>
+    <% } else if (kyc.status === 'submitted') { %>
+      <div class="alert alert-info d-flex align-items-center gap-2"><i data-lucide="clock"></i><span><%= t('kyc_pending_b') %></span></div>
+    <% } %>
+
     <div class="card border-0 shadow-sm rounded-4 mb-4">
       <div class="card-body">
         <% if (!depositOk) { %>

@@ -1,0 +1,94 @@
+<section class="py-4 py-lg-5">
+  <div class="container" style="max-width: 680px;">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <a href="/withdraw" class="btn btn-outline-secondary btn-icon rounded-circle"><i data-lucide="arrow-left"></i></a>
+      <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="shield-check" class="text-primary"></i><%= t('kyc_title') %></h3>
+    </div>
+
+    <% if (ok === 'submitted' || ok === 'already') { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i><%= t('kyc_ok_submitted') %></div>
+    <% } %>
+    <% if (err) { %>
+      <div class="alert alert-danger py-2 d-flex align-items-center gap-2"><i data-lucide="alert-triangle"></i>
+        <%= err === 'big' ? t('kyc_err_big') : err === 'file' ? t('kyc_err_file') : t('kyc_err_fill') %>
+      </div>
+    <% } %>
+
+    <% if (kyc.status === 'approved') { %>
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+          <span class="tile-icon ti-mint mx-auto mb-3" style="width:64px;height:64px;font-size:1.8rem"><i data-lucide="badge-check"></i></span>
+          <h5 class="fw-bold mb-1"><%= t('kyc_approved_h') %></h5>
+          <p class="text-muted mb-0"><%= t('kyc_approved_b') %></p>
+        </div>
+      </div>
+    <% } else { %>
+      <!-- Status banners -->
+      <% if (kyc.status === 'submitted') { %>
+        <div class="alert alert-info d-flex align-items-center gap-2"><i data-lucide="clock"></i><%= t('kyc_pending_b') %></div>
+      <% } else if (kyc.status === 'rejected') { %>
+        <div class="alert alert-danger d-flex align-items-start gap-2">
+          <i data-lucide="x-circle" class="flex-shrink-0 mt-1"></i>
+          <div><div class="fw-semibold"><%= t('kyc_rejected_h') %></div>
+            <% if (kyc.reviewNote) { %><div class="small mt-1"><%= t('wd_reason_label') %>: <%= kyc.reviewNote %></div><% } %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="alert alert-warning d-flex align-items-center gap-2"><i data-lucide="info"></i><%= t('kyc_intro') %></div>
+      <% } %>
+
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+          <form action="/verify-identity?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold"><%= t('kyc_fullname') %></label>
+              <input name="fullName" class="form-control" required maxlength="120" value="<%= kyc.fullName || currentUser.name || '' %>">
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold"><%= t('kyc_dob') %></label>
+                <input name="dob" type="date" class="form-control" required value="<%= kyc.dob || '' %>">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold"><%= t('kyc_address') %></label>
+                <input name="address" class="form-control" required maxlength="300" value="<%= kyc.address || '' %>">
+              </div>
+            </div>
+            <label class="form-label small fw-semibold"><%= t('kyc_cin') %></label>
+            <p class="text-muted small mb-2"><%= t('kyc_cin_hint') %></p>
+            <div class="row g-3 mb-3">
+              <% [['cinFront', 'kyc_cin_front', kyc.cinFront], ['cinBack', 'kyc_cin_back', kyc.cinBack]].forEach(([name, label, existing]) => { %>
+                <div class="col-6">
+                  <div class="border rounded-3 p-2 h-100">
+                    <div class="small text-muted mb-1 d-flex align-items-center gap-1"><i data-lucide="credit-card" style="width:.9em;height:.9em"></i><%= t(label) %></div>
+                    <% if (existing) { %><img src="<%= existing %>" alt="" class="img-fluid rounded mb-2 d-block" style="max-height:120px"><% } %>
+                    <input name="<%= name %>" type="file" accept="image/*" class="form-control form-control-sm" data-preview <%= existing ? '' : 'required' %>>
+                    <img data-preview-for="<%= name %>" class="img-fluid rounded mt-2 d-none" style="max-height:120px" alt="">
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <button class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2">
+              <i data-lucide="send"></i><%= kyc.status === 'rejected' ? t('kyc_resubmit') : t('kyc_submit') %>
+            </button>
+          </form>
+        </div>
+      </div>
+      <p class="text-muted small mt-3 d-flex align-items-start gap-2"><i data-lucide="lock" style="width:1em;height:1em" class="flex-shrink-0 mt-1"></i><%= t('kyc_privacy') %></p>
+    <% } %>
+  </div>
+</section>
+
+<script>
+// Instant preview for the two CIN file inputs.
+document.querySelectorAll('input[type=file][data-preview]').forEach(function (inp) {
+  inp.addEventListener('change', function () {
+    const img = document.querySelector('[data-preview-for="' + inp.name + '"]');
+    if (!img) return;
+    const f = inp.files && inp.files[0];
+    if (f) { img.src = URL.createObjectURL(f); img.classList.remove('d-none'); }
+    else { img.classList.add('d-none'); }
+  });
+});
+</script>
