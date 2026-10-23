@@ -147,7 +147,7 @@
         <div class="card-body">
           <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="receipt" class="text-primary"></i><%= t('deposit_pending_title') %></h6>
           <div class="list-group list-group-flush">
-            <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
+            <% myDeposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':(d.status==='cancelled'?'secondary':'warning')); %>
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <div class="flex-grow-1 min-w-0">
                   <div class="fw-semibold small text-truncate"><%= d.planLabel %></div>

@@ -31,7 +31,7 @@
           <p class="text-muted mb-0"><%= t('no_results') %></p>
         <% } else { %>
           <div class="list-group list-group-flush">
-            <% deposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':'warning'); %>
+            <% deposits.forEach(d => { const dc = d.status==='approved'?'success':(d.status==='rejected'?'danger':(d.status==='cancelled'?'secondary':'warning')); %>
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <a href="/admin/invoice/deposit/<%= d.id %>" target="_blank" rel="noopener" class="tile-icon ti-mint flex-shrink-0" style="width:38px;height:38px;font-size:.95rem" title="<%= t('inv_title') %>"><i data-lucide="arrow-down-circle"></i></a>
                 <div class="flex-grow-1 min-w-0">

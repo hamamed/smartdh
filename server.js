@@ -229,8 +229,11 @@ const TX = {
   campaign_invite:    { icon: 'user-check',    label: 'Invite bonus',          cls: 'success',   sign: '+' },
   admin_adjust:       { icon: 'shield',       label: 'Admin adjustment',      cls: 'secondary', sign: '' },
   earnings_credit:    { icon: 'gift',          label: 'Earnings added',        cls: 'success',   sign: '+' },
-  move_funds:         { icon: 'arrow-left-right', label: 'Moved investment',   cls: 'info',      sign: '' }
+  move_funds:         { icon: 'arrow-left-right', label: 'Moved investment',   cls: 'info',      sign: '' },
+  deposit_cancelled:  { icon: 'x-circle',      label: 'Deposit cancelled',     cls: 'secondary', sign: '' }
 };
+// A self-service deposit request auto-cancels if the money isn't received in time.
+const DEPOSIT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Preset reasons an admin can pick when rejecting a withdrawal. The player sees the
 // reason on the platform and by email. 'other' uses the admin's free-text note.
@@ -858,6 +861,15 @@ function notifyKyc(user, status, note) {
     cta: { text: status === 'approved' ? tr('email_visit') : tr('mail_kyc_cta'), url: `${APP_URL}/verify-identity` }
   });
 }
+// Add a dismissible dashboard notice to a player (capped to the last 20).
+function pushNotice(user, text) {
+  user.notices = user.notices || [];
+  const id = user.notices.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
+  user.notices.push({ id, text, at: Date.now(), read: false });
+  if (user.notices.length > 20) user.notices = user.notices.slice(-20);
+  return id;
+}
+
 // A personal message an admin sends to one player (emailed; also shown on the dashboard).
 function notifyMessage(user, text) {
   const tr = userT(user);
@@ -1691,12 +1703,24 @@ app.post('/add-funds', requireActive, (req, res) => {
   if (!amount || (plan.fixedAmount <= 0 && amount < s.minAddFunds)) return res.redirect('/invest?err=amount');
   if (levelForXp(u.xp) < (plan.minLevel || 1)) return res.redirect('/invest?err=locked');
 
+  const now = Date.now();
   db.deposits.push({
     id: db.nextDepositId++, userId: u.id, userName: u.name,
     plan: plan.id, planLabel: plan.name,
-    amount, status: 'pending', createdAt: Date.now()
+    amount, status: 'pending', createdAt: now,
+    // Self-service requests auto-cancel if the money isn't received within 24h.
+    expiresAt: now + DEPOSIT_EXPIRY_MS
   });
   addTx(u, 'deposit_request', amount, plan.name);
+  // Tell the player (dashboard + email) to send the money within 24h to activate it.
+  const tr = userT(u), lg = langFor(u);
+  pushNotice(u, tr('notice_dep_pending', { amount: emFmt(amount, lg) }));
+  mailUser(u, {
+    subject: tr('mail_deppend_subj'),
+    heading: tr('mail_deppend_h'),
+    lines: [tr('mail_deppend_b', { amount: emFmt(amount, lg) })],
+    cta: { text: tr('notice_cta'), url: `${APP_URL}/invest` }
+  });
   save(db);
   gaTrack(req, 'deposit_request', { value: amount, currency: 'MAD', plan: plan.id });
   res.redirect('/invest?ok=deprequested');
@@ -2276,6 +2300,32 @@ function runSchedules(db) {
     }
   }
   return ran;
+}
+
+// Cancel self-service deposit requests whose 24h payment window has passed.
+// Only touches 'pending' records that carry an expiresAt (admin-made deposits don't).
+function expirePendingDeposits(db) {
+  const now = Date.now();
+  let changed = 0;
+  for (const d of db.deposits) {
+    if (d.status !== 'pending' || !d.expiresAt || d.expiresAt > now) continue;
+    d.status = 'cancelled';
+    d.cancelledAt = now;
+    const u = db.users.find(x => x.id === d.userId);
+    if (u) {
+      const tr = userT(u), lg = langFor(u);
+      addTx(u, 'deposit_cancelled', d.amount, d.planLabel || '');
+      pushNotice(u, tr('notice_dep_cancelled', { amount: emFmt(d.amount, lg) }));
+      mailUser(u, {
+        subject: tr('mail_depcancel_subj'),
+        heading: tr('mail_depcancel_h'),
+        lines: [tr('mail_depcancel_b', { amount: emFmt(d.amount, lg) })],
+        cta: { text: tr('notice_cta'), url: `${APP_URL}/invest` }
+      });
+    }
+    changed++;
+  }
+  return changed;
 }
 
 adminRouter.post('/users/:id/schedule', requireAdmin, (req, res) => {
@@ -3123,10 +3173,7 @@ adminRouter.post('/users/:id/notify', requireAdmin, (req, res) => {
   if (!u) return res.redirect('/admin/users');
   const text = (req.body.message || '').trim().slice(0, 1000);
   if (!text) return res.redirect(back + (back.includes('?') ? '&' : '?') + 'err=empty');
-  u.notices = u.notices || [];
-  const id = u.notices.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
-  u.notices.push({ id, text, at: Date.now(), read: false });
-  if (u.notices.length > 20) u.notices = u.notices.slice(-20);
+  pushNotice(u, text);
   notifyMessage(u, text);
   logAudit(db, req.currentUser, 'user.notify', u.name + ': ' + text.slice(0, 60));
   save(db);
@@ -3452,7 +3499,9 @@ app.use((err, req, res, next) => {
 // Run due recurring deposits on a timer (and once shortly after boot).
 setInterval(() => {
   const db = load();
-  if (runSchedules(db)) save(db);
+  let dirty = !!runSchedules(db);
+  if (expirePendingDeposits(db)) dirty = true;
+  if (dirty) save(db);
 }, 60 * 1000);
 
 app.listen(PORT, () => {
