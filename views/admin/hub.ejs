@@ -5,6 +5,41 @@
       <h3 class="fw-bold mb-0 d-flex align-items-center gap-2"><i data-lucide="shield" class="text-primary"></i><%= t('admin_title') %></h3>
     </div>
 
+    <!-- Needs attention (shown first so it's seen right away) -->
+    <% const todo = counts.pendingUsers + counts.pendingDeposits + counts.pendingWithdrawals + (counts.openTickets || 0) + (counts.pendingKyc || 0); %>
+    <div class="card border-0 shadow-sm rounded-4 mb-4 <%= todo ? 'border-start border-4 border-warning' : '' %>">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="bell" class="<%= todo ? 'text-warning' : 'text-primary' %>"></i><%= t('needs_attention') %>
+          <% if (todo) { %><span class="badge bg-warning text-dark ms-1"><%= todo %></span><% } %></h6>
+        <% if (todo === 0) { %>
+          <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i data-lucide="check" class="text-success"></i><%= t('all_clear') %></p>
+        <% } else { %>
+          <div class="d-flex flex-wrap gap-2">
+            <% if (counts.pendingUsers) { %>
+              <a href="/admin/users?status=pending" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="user-plus"></i><%= t('tab_pending') %> <span class="badge bg-dark ms-1"><%= counts.pendingUsers %></span></a>
+            <% } %>
+            <% if (counts.pendingDeposits) { %>
+              <a href="/admin/deposits" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="receipt"></i><%= t('tab_deposits') %> <span class="badge bg-dark ms-1"><%= counts.pendingDeposits %></span></a>
+            <% } %>
+            <% if (counts.pendingWithdrawals) { %>
+              <a href="/admin/withdrawals" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="banknote"></i><%= t('tab_withdrawals') %> <span class="badge bg-dark ms-1"><%= counts.pendingWithdrawals %></span></a>
+            <% } %>
+            <% if (counts.pendingKyc) { %>
+              <a href="/admin/users" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="shield-check"></i><%= t('kyc_title') %> <span class="badge bg-dark ms-1"><%= counts.pendingKyc %></span></a>
+            <% } %>
+            <% if (counts.openTickets && can('tickets')) { %>
+              <a href="/admin/tickets?status=open" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
+                <i data-lucide="life-buoy"></i><%= t('tab_tickets') %> <span class="badge bg-dark ms-1"><%= counts.openTickets %></span></a>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
     <!-- Site stats -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
@@ -79,36 +114,6 @@
       </div>
     </div>
 
-    <!-- Needs attention -->
-    <% const todo = counts.pendingUsers + counts.pendingDeposits + counts.pendingWithdrawals + (counts.openTickets || 0); %>
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-      <div class="card-body">
-        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="bell" class="text-primary"></i><%= t('needs_attention') %></h6>
-        <% if (todo === 0) { %>
-          <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i data-lucide="check" class="text-success"></i><%= t('all_clear') %></p>
-        <% } else { %>
-          <div class="d-flex flex-wrap gap-2">
-            <% if (counts.pendingUsers) { %>
-              <a href="/admin/users?status=pending" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
-                <i data-lucide="user-plus"></i><%= t('tab_pending') %> <span class="badge bg-dark ms-1"><%= counts.pendingUsers %></span></a>
-            <% } %>
-            <% if (counts.pendingDeposits) { %>
-              <a href="/admin/deposits" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
-                <i data-lucide="receipt"></i><%= t('tab_deposits') %> <span class="badge bg-dark ms-1"><%= counts.pendingDeposits %></span></a>
-            <% } %>
-            <% if (counts.pendingWithdrawals) { %>
-              <a href="/admin/withdrawals" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
-                <i data-lucide="banknote"></i><%= t('tab_withdrawals') %> <span class="badge bg-dark ms-1"><%= counts.pendingWithdrawals %></span></a>
-            <% } %>
-            <% if (counts.openTickets && can('tickets')) { %>
-              <a href="/admin/tickets?status=open" class="btn btn-sm btn-warning d-inline-flex align-items-center gap-1">
-                <i data-lucide="life-buoy"></i><%= t('tab_tickets') %> <span class="badge bg-dark ms-1"><%= counts.openTickets %></span></a>
-            <% } %>
-          </div>
-        <% } %>
-      </div>
-    </div>
-
     <!-- Grid menu -->
     <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="layout-grid" class="text-primary"></i><%= t('menu_title') %></h6>
     <div class="menu-grid">
@@ -157,6 +162,10 @@
       <a class="menu-tile" href="/admin/settings/campaign">
         <span class="tile-icon ti-lilac"><i data-lucide="party-popper"></i></span>
         <span class="tile-label"><%= t('set_campaign_t') %></span>
+      </a>
+      <a class="menu-tile" href="/admin/settings/telegram">
+        <span class="tile-icon ti-sky"><i data-lucide="send"></i></span>
+        <span class="tile-label"><%= t('set_telegram_t') %></span>
       </a>
       <% } %>
       <% if (can('admins')) { %>

@@ -27,6 +27,9 @@ const DEFAULTS = {
     emailLogoUrl: '',
     currency: 'DH',
     announcement: { text: '', enabled: false },
+    // Telegram notifications: push key events (signups, deposits, withdrawals, …)
+    // to a Telegram chat via a bot. Token/chat can also come from env vars.
+    telegram: { enabled: false, botToken: '', chatId: '' },
     plans: [
       { id: 'safe',     name: 'SafeSave',    icon: 'shield', imageUrl: '', ratePer15Days: 0.05, color: 'success', desc: 'Low but steady growth.',       minLevel: 1 },
       { id: 'balanced', name: 'BalanceApp',  icon: 'scale',  imageUrl: '', ratePer15Days: 0.10, color: 'primary', desc: 'The classic — solid returns.', minLevel: 1 },
@@ -122,6 +125,7 @@ function migrate(db) {
   if (db.settings.depositLockDays === undefined) db.settings.depositLockDays = 30;
   db.settings.depositInfo = Object.assign({}, DEFAULTS.settings.depositInfo, db.settings.depositInfo || {});
   db.settings.announcement = Object.assign({}, DEFAULTS.settings.announcement, db.settings.announcement || {});
+  db.settings.telegram = Object.assign({}, DEFAULTS.settings.telegram, db.settings.telegram || {});
   // migrate the old single deposit-based percent to the new earnings-based tiers
   if (!Array.isArray(db.settings.referralTiers) || db.settings.referralTiers.length !== 3) {
     db.settings.referralTiers = DEFAULTS.settings.referralTiers.slice();

@@ -861,6 +861,39 @@ function notifyKyc(user, status, note) {
     cta: { text: status === 'approved' ? tr('email_visit') : tr('mail_kyc_cta'), url: `${APP_URL}/verify-identity` }
   });
 }
+// ---------- Telegram notifications ----------
+// Token/chat come from admin settings, falling back to env vars.
+function tgConfig(db) {
+  const t = (db.settings && db.settings.telegram) || {};
+  return {
+    enabled: !!t.enabled,
+    token: (t.botToken || process.env.TELEGRAM_BOT_TOKEN || '').trim(),
+    chatId: (t.chatId || process.env.TELEGRAM_CHAT_ID || '').trim()
+  };
+}
+async function tgSend(cfg, text) {
+  if (!cfg.token || !cfg.chatId) return { ok: false, error: 'Bot token or chat ID missing' };
+  if (typeof fetch !== 'function') return { ok: false, error: 'fetch unavailable (Node < 18)' };
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${cfg.token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: cfg.chatId, text, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+    const j = await res.json().catch(() => ({}));
+    return { ok: !!j.ok, error: j.description || (res.ok ? '' : 'HTTP ' + res.status) };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+// Fire-and-forget event notification to the admin's Telegram (no-op if disabled).
+function tgNotify(db, text) {
+  const cfg = tgConfig(db);
+  if (!cfg.enabled) return;
+  tgSend(cfg, `<b>${escapeHtml(db.settings.siteName || 'KanzUp')}</b>\n${text}`).catch(() => {});
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // Add a dismissible dashboard notice to a player (capped to the last 20).
 function pushNotice(user, text) {
   user.notices = user.notices || [];
@@ -1069,6 +1102,7 @@ app.post('/contact', authLimiter, async (req, res) => {
   });
   // Send to the support inbox, with reply-to set to the sender so admins reply directly.
   await sendMail(CONTACT_EMAIL, `[Contact] ${subjectIn || name}`, html, { replyTo: `${name} <${email}>` });
+  tgNotify(db, `✉️ Contact: ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;${subjectIn ? ' — ' + escapeHtml(subjectIn) : ''}`);
   view({ sent: true, form: {} });
 });
 
@@ -1118,6 +1152,7 @@ app.post('/signup', authLimiter, async (req, res) => {
 
   // Player sign-up event (both render paths below carry it to GA).
   res.locals.gaEvent = { name: 'sign_up', params: { referred: !!referrer } };
+  tgNotify(db, `🆕 New signup: ${escapeHtml(user.name)} &lt;${escapeHtml(user.email)}&gt;${referrer ? ' (ref: ' + escapeHtml(referrer.name) + ')' : ''}`);
 
   // Email confirmation: the account starts unverified and can't log in until the
   // emailed link is clicked. If SMTP is off we can't deliver it, so auto-verify
@@ -1439,6 +1474,7 @@ app.post('/support/new', requireActive, authLimiter, csrfGuard,
     renderEmail({ siteName: db.settings.siteName, appUrl: APP_URL, heading: 'New support ticket',
       lines: [`#${ticket.id} · ${u.name} <${u.email}>`, req.t('sup_t_' + topic), '', message] }),
     { replyTo: `${u.name} <${u.email}>` });
+  tgNotify(db, `🎫 New ticket #${ticket.id}: ${escapeHtml(subject)} — ${escapeHtml(u.name)}`);
   res.redirect('/support/' + ticket.id);
 });
 
@@ -1722,6 +1758,7 @@ app.post('/add-funds', requireActive, (req, res) => {
     cta: { text: tr('notice_cta'), url: `${APP_URL}/invest` }
   });
   save(db);
+  tgNotify(db, `💰 Deposit request: ${escapeHtml(u.name)} — ${emFmt(amount, 'en')} → ${escapeHtml(plan.name)}`);
   gaTrack(req, 'deposit_request', { value: amount, currency: 'MAD', plan: plan.id });
   res.redirect('/invest?ok=deprequested');
 });
@@ -1795,6 +1832,7 @@ app.post('/withdraw', requireActive, (req, res) => {
   addTx(u, 'withdraw_request', amount, `From ${label}`);
   award(u, 'first_withdraw');
   save(db);
+  tgNotify(db, `🏧 Withdrawal request: ${escapeHtml(u.name)} — ${emFmt(amount, 'en')} (from ${escapeHtml(label)})`);
   gaTrack(req, 'withdraw_request', { value: amount, currency: 'MAD' });
   res.redirect('/withdraw?ok=withdraw');
 });
@@ -1840,6 +1878,7 @@ app.post('/verify-identity', requireActive, csrfGuard,
 
     Object.assign(k, { fullName, dob, address, cinFront, cinBack, status: 'submitted', submittedAt: Date.now(), reviewNote: '' });
     save(req.db);
+    tgNotify(req.db, `🪪 ID verification submitted: ${escapeHtml(u.name)}`);
     res.redirect('/verify-identity?ok=submitted');
   });
 
@@ -3448,6 +3487,39 @@ adminRouter.post('/settings/announcement', requireAdmin, (req, res) => {
   logAudit(db, req.currentUser, 'settings.announcement', s.announcement.enabled ? 'ON: ' + s.announcement.text : 'OFF');
   save(db);
   res.redirect('/admin/settings/announcement?ok=1');
+});
+
+// ----- Telegram notifications -----
+adminRouter.get('/settings/telegram', requireAdmin, (req, res) => {
+  res.render('admin/settings-telegram', {
+    title: req.t('set_telegram_t'), counts: adminCounts(req.db),
+    ok: req.query.ok || null, test: req.query.test || null,
+    envToken: !!process.env.TELEGRAM_BOT_TOKEN, envChat: !!process.env.TELEGRAM_CHAT_ID
+  });
+});
+adminRouter.post('/settings/telegram', requireAdmin, (req, res) => {
+  const db = req.db, s = db.settings;
+  s.telegram = {
+    enabled: req.body.enabled === '1',
+    botToken: (req.body.botToken || '').trim(),
+    chatId: (req.body.chatId || '').trim()
+  };
+  logAudit(db, req.currentUser, 'settings.telegram', s.telegram.enabled ? 'ON' : 'OFF');
+  save(db);
+  res.redirect('/admin/settings/telegram?ok=1');
+});
+// Send a test message to confirm the bot token + chat ID work.
+adminRouter.post('/settings/telegram/test', requireAdmin, async (req, res) => {
+  const db = req.db;
+  // Save first so the test uses what's in the form, not a stale value.
+  db.settings.telegram = {
+    enabled: req.body.enabled === '1',
+    botToken: (req.body.botToken || '').trim(),
+    chatId: (req.body.chatId || '').trim()
+  };
+  save(db);
+  const r = await tgSend(tgConfig(db), `✅ <b>${escapeHtml(db.settings.siteName || 'KanzUp')}</b>\n${req.t('tg_test_msg')}`);
+  res.redirect('/admin/settings/telegram?test=' + (r.ok ? 'ok' : 'fail'));
 });
 
 adminRouter.post('/withdraw/:id/:action', requireAdmin, (req, res) => {
