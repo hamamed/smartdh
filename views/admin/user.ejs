@@ -4,7 +4,7 @@
 
     <% if (ok) { %>
       <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i>
-        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : ok === 'earnings' ? t('earn_ok') : ok === 'kyc_req' ? t('kyc_req_ok') : ok === 'kyc' ? t('kyc_reviewed_ok') : t('profile_saved') %>
+        <%= ok === 'created' ? t('create_ok') : ok === 'deposit' ? t('manual_dep_ok') : ok === 'withdraw' ? t('manual_wd_ok') : ok === 'earnings' ? t('earn_ok') : ok === 'kyc_req' ? t('kyc_req_ok') : ok === 'kyc' ? t('kyc_reviewed_ok') : ok === 'notified' ? t('notify_ok') : t('profile_saved') %>
       </div>
     <% } %>
     <% if (err) { %>
@@ -150,6 +150,21 @@
             </form>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Send a personal message (dashboard notice + email) -->
+    <div class="card border-0 shadow-sm rounded-4 mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('notify_title') %></h6>
+        <form action="/admin/users/<%= u.id %>/notify" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="back" value="/admin/users/<%= u.id %>">
+          <textarea name="message" class="form-control mb-2" rows="3" maxlength="1000" placeholder="<%= t('notify_ph') %>" required><%= t('notify_preset') %></textarea>
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div class="form-text mb-0"><%= t('notify_hint') %></div>
+            <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="send"></i><%= t('notify_btn') %></button>
+          </div>
+        </form>
       </div>
     </div>
 

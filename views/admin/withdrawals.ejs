@@ -2,6 +2,12 @@
   <div class="container">
     <%- include('_head', { heading: t('tab_withdrawals') }) %>
 
+    <% if (typeof ok !== 'undefined' && ok) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i>
+        <%= ok === 'notified' ? t('notify_ok') : ok === 'kyc_req' ? t('kyc_req_ok') : t('profile_saved') %>
+      </div>
+    <% } %>
+
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">
         <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
@@ -58,6 +64,9 @@
                   <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
                     <span class="badge bg-<%= kcc %>-subtle text-<%= kcc %>" title="<%= t('kyc_title') %>"><i data-lucide="shield-check" style="width:.85em;height:.85em"></i> <%= t('kyc_st_' + kst) %></span>
                     <div class="d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-icon" style="width:32px;height:32px" title="<%= t('notify_title') %>"
+                            data-bs-toggle="modal" data-bs-target="#notifyModal"
+                            data-id="<%= w.userId %>" data-name="<%= w.userName %>"><i data-lucide="mail"></i></button>
                     <% if (kst !== 'approved') { %>
                       <form action="/admin/users/<%= w.userId %>/request-verify" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="/admin/withdrawals">
                         <button class="btn btn-sm btn-outline-primary btn-icon" style="width:32px;height:32px" title="<%= t('kyc_request') %>"><i data-lucide="shield-check"></i></button></form>
@@ -129,5 +138,43 @@
   // The free-text note is required only when "Other" is picked.
   function syncNote() { note.required = (reason.value === 'other'); }
   reason.addEventListener('change', syncNote); syncNote();
+})();
+</script>
+
+<!-- Send a personal message to a player (dashboard notice + email) -->
+<div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <form method="post" id="notifyForm" action="">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="back" value="/admin/withdrawals">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2"><i data-lucide="mail" class="text-primary"></i><%= t('notify_title') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('btn_cancel') %>"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-2 d-flex align-items-center gap-2"><i data-lucide="user"></i><span id="nfWho"></span></p>
+          <textarea name="message" id="nfMsg" class="form-control" rows="4" maxlength="1000" required><%= t('notify_preset') %></textarea>
+          <div class="form-text"><%= t('notify_hint') %></div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('btn_cancel') %></button>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="send"></i><%= t('notify_btn') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const modal = document.getElementById('notifyModal');
+  if (!modal) return;
+  const form = document.getElementById('notifyForm');
+  const who = document.getElementById('nfWho');
+  modal.addEventListener('show.bs.modal', function (ev) {
+    const b = ev.relatedTarget; if (!b) return;
+    form.action = '/admin/users/' + b.dataset.id + '/notify';
+    who.textContent = b.dataset.name || '';
+  });
 })();
 </script>

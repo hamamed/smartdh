@@ -12,6 +12,21 @@
 
     <div id="flash"></div>
 
+    <!-- Personal messages from the team (dismissible) -->
+    <% (currentUser.notices || []).filter(n => !n.read).reverse().forEach(n => { %>
+      <div class="alert alert-info d-flex align-items-start gap-2 shadow-sm rounded-4 mb-3">
+        <i data-lucide="megaphone" class="flex-shrink-0 mt-1"></i>
+        <div class="flex-grow-1 min-w-0">
+          <div class="fw-semibold mb-1"><%= t('notice_from', { site: settings.siteName }) %></div>
+          <div class="small" style="white-space:pre-wrap"><%= n.text %></div>
+          <a href="/invest" class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-1"><i data-lucide="plus"></i><%= t('notice_cta') %></a>
+        </div>
+        <form action="/notices/<%= n.id %>/read" method="post" class="flex-shrink-0"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-sm btn-icon btn-outline-secondary" style="width:30px;height:30px" title="<%= t('notice_dismiss') %>" aria-label="<%= t('notice_dismiss') %>"><i data-lucide="x"></i></button>
+        </form>
+      </div>
+    <% }) %>
+
     <!-- Getting started checklist (hides once every step is done, or when dismissed) -->
     <% if (!checklistHidden && checklistDone < checklist.length) { %>
       <div class="card border-0 shadow-sm rounded-4 mb-4">

@@ -243,6 +243,8 @@ function migrate(db) {
     if (u.gsDismissed === undefined) u.gsDismissed = false;
     // Admin role (RBAC). Existing admins become 'owner' (full access); others null.
     if (u.role === undefined) u.role = u.isAdmin ? 'owner' : null;
+    // Personal messages from an admin, shown on the player's dashboard (and emailed).
+    if (!Array.isArray(u.notices)) u.notices = [];
     // Identity verification (KYC). An admin requests it (usually before paying a
     // withdrawal); the player submits name / date of birth / address + CIN (ID card)
     // front & back images; the admin then approves or rejects.

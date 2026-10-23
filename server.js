@@ -858,6 +858,16 @@ function notifyKyc(user, status, note) {
     cta: { text: status === 'approved' ? tr('email_visit') : tr('mail_kyc_cta'), url: `${APP_URL}/verify-identity` }
   });
 }
+// A personal message an admin sends to one player (emailed; also shown on the dashboard).
+function notifyMessage(user, text) {
+  const tr = userT(user);
+  mailUser(user, {
+    subject: tr('mail_msg_subj'),
+    heading: tr('mail_msg_h'),
+    lines: [text],
+    cta: { text: tr('mail_msg_cta'), url: `${APP_URL}/invest` }
+  });
+}
 
 // When the invite challenge is switched ON, email every confirmed active player
 // ("invite now and earn"). Broadcast → respects each player's email opt-out.
@@ -1809,6 +1819,14 @@ app.post('/verify-identity', requireActive, csrfGuard,
     res.redirect('/verify-identity?ok=submitted');
   });
 
+// Dismiss a personal admin message from the dashboard.
+app.post('/notices/:id/read', requireActive, (req, res) => {
+  const u = req.currentUser;
+  const n = (u.notices || []).find(x => x.id === Number(req.params.id));
+  if (n && !n.read) { n.read = true; save(req.db); }
+  res.redirect('/dashboard');
+});
+
 app.post('/daily-bonus', requireActive, (req, res) => {
   const db = req.db;
   if (!db.settings.dailyBonusEnabled) return res.redirect('/dashboard');
@@ -2566,6 +2584,7 @@ adminRouter.get('/withdrawals', requireAdmin, (req, res) => {
     counts: adminCounts(db),
     withdrawals: pg.items, page: pg.page, pages: pg.pages, per: pg.per, perOptions: PER_PAGE_OPTIONS, total: pg.total,
     status, q, statusCounts: countBy(db.withdrawals), wdReasons: WITHDRAW_REJECT_REASONS,
+    ok: req.query.ok || '',
     // identity-verification status per user, for the row badge + request button
     kycByUser: Object.fromEntries(db.users.map(u => [u.id, (u.kyc && u.kyc.status) || 'none']))
   });
@@ -3093,6 +3112,25 @@ adminRouter.post('/users/:id/earnings', requireAdmin, (req, res) => {
   logAudit(db, req.currentUser, 'user.earnings', u.name + ' ' + (amount > 0 ? '+' : '') + amount + (note ? ' (' + note + ')' : ''));
   save(db);
   res.redirect('/admin/users/' + u.id + '?ok=earnings');
+});
+
+// Send a personal message to a player — shown on their dashboard and emailed.
+// Used from the withdrawals page to ask them to deposit to unlock earnings.
+adminRouter.post('/users/:id/notify', requireAdmin, (req, res) => {
+  const db = req.db;
+  const u = db.users.find(x => x.id === Number(req.params.id));
+  const back = (req.body.back || '').startsWith('/') ? req.body.back : ('/admin/users/' + req.params.id);
+  if (!u) return res.redirect('/admin/users');
+  const text = (req.body.message || '').trim().slice(0, 1000);
+  if (!text) return res.redirect(back + (back.includes('?') ? '&' : '?') + 'err=empty');
+  u.notices = u.notices || [];
+  const id = u.notices.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
+  u.notices.push({ id, text, at: Date.now(), read: false });
+  if (u.notices.length > 20) u.notices = u.notices.slice(-20);
+  notifyMessage(u, text);
+  logAudit(db, req.currentUser, 'user.notify', u.name + ': ' + text.slice(0, 60));
+  save(db);
+  res.redirect(back + (back.includes('?') ? '&' : '?') + 'ok=notified');
 });
 
 // ----- Identity verification (KYC) -----
