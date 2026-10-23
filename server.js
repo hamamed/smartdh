@@ -859,6 +859,31 @@ function notifyKyc(user, status, note) {
   });
 }
 
+// When the invite challenge is switched ON, email every confirmed active player
+// ("invite now and earn"). Broadcast → respects each player's email opt-out.
+async function sendCampaignInvites(db) {
+  const c = db.settings.campaign || {};
+  const recipients = db.users.filter(u =>
+    !u.isAdmin && !u.isTest && u.status === 'active' &&
+    u.emailVerified && u.email && u.email.includes('@'));
+  let sent = 0, skipped = 0;
+  for (const u of recipients) {
+    const tr = userT(u), lg = langFor(u);
+    const lines = [tr('mail_invite_b')];
+    if (c.coinsPerInvite > 0) lines.push(tr('mail_invite_reward', { coins: emFmt(c.coinsPerInvite, lg) }));
+    const r = await mailUser(u, {
+      subject: tr('mail_invite_subj'),
+      heading: c.title ? c.title : tr('mail_invite_h'),
+      intro: tr('mail_hi', { name: u.name }),
+      lines,
+      cta: { text: tr('mail_invite_cta'), url: `${APP_URL}/referral` },
+      broadcast: true
+    });
+    if (r && r.skipped) skipped++; else sent++;
+  }
+  return { sent, skipped };
+}
+
 // ---------- CSV ----------
 function csvCell(v) {
   const s = String(v === undefined || v === null ? '' : v);
@@ -3311,6 +3336,17 @@ adminRouter.post('/settings/campaign', requireAdmin, (req, res) => {
     ' · min deposit ' + s.campaign.minDeposit + ' · reward ' + s.campaign.rewardCoins +
     ' + ' + s.campaign.rewardXp + ' XP' + (req.body.resetProgress ? ' · progress reset' : ''));
   save(db);
+
+  // Just turned ON (off → on)? Invite every confirmed active player by email.
+  // Fire-and-forget so the admin isn't blocked; opt-out checkbox can suppress it.
+  const justEnabled = !prev.enabled && s.campaign.enabled;
+  if (justEnabled && req.body.notifyAll === '1') {
+    const admin = req.currentUser;
+    sendCampaignInvites(db)
+      .then(r => { logAudit(db, admin, 'campaign.invites', r.sent + ' emailed' + (r.skipped ? ', ' + r.skipped + ' skipped' : '')); save(db); })
+      .catch(e => console.error('Campaign invite emails failed:', e));
+    return res.redirect('/admin/settings/campaign?ok=invited');
+  }
   res.redirect('/admin/settings/campaign?ok=1');
 });
 

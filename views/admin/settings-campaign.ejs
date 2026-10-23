@@ -2,7 +2,7 @@
 <section class="py-4 py-lg-5">
   <div class="container" style="max-width: 680px;">
     <%- include('_head', { heading: t('set_campaign_t'), back: '/admin' }) %>
-    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="check"></i><%= t('profile_saved') %></div><% } %>
+    <% if (ok) { %><div class="alert alert-success py-2 d-flex align-items-center gap-1"><i data-lucide="<%= ok === 'invited' ? 'mail-check' : 'check' %>"></i><%= ok === 'invited' ? t('camp_invited_ok') : t('profile_saved') %></div><% } %>
 
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body">
@@ -20,6 +20,15 @@
             <div class="form-check form-switch fs-4 mb-0">
               <input class="form-check-input" type="checkbox" name="enabled" id="enabled" value="1" <%= c.enabled ? 'checked' : '' %>>
             </div>
+          </div>
+
+          <!-- Email everyone when switching the challenge on (off → on only) -->
+          <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" name="notifyAll" id="notifyAll" value="1" checked>
+            <label class="form-check-label" for="notifyAll">
+              <span class="fw-semibold"><%= t('camp_notify') %></span>
+              <span class="d-block text-muted small"><%= t('camp_notify_hint') %></span>
+            </label>
           </div>
 
           <div class="mb-3">
