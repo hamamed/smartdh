@@ -2533,6 +2533,8 @@ function emailAudience(db, kind) {
   const real = db.users.filter(u => !u.isAdmin && u.email && u.email.includes('@'));
   if (kind === 'pending') return real.filter(u => u.status === 'pending');
   if (kind === 'active') return real.filter(u => u.status === 'active');
+  // Active players who have never had an approved deposit — nudge them to deposit.
+  if (kind === 'nodeposit') return real.filter(u => u.status === 'active' && !hasApprovedDeposit(db, u));
   return real; // 'all'
 }
 
@@ -2545,6 +2547,7 @@ adminRouter.get('/email', requireAdmin, (req, res) => {
     audienceCounts: {
       active: emailAudience(db, 'active').length,
       pending: emailAudience(db, 'pending').length,
+      nodeposit: emailAudience(db, 'nodeposit').length,
       all: emailAudience(db, 'all').length
     },
     optedOut,
@@ -2563,9 +2566,10 @@ adminRouter.post('/email/send', requireAdmin, csrfGuard, async (req, res) => {
   const message = (req.body.message || '').trim();
   const ctaText = (req.body.ctaText || '').trim();
   const ctaUrl = (req.body.ctaUrl || '').trim();
-  const audience = ['active', 'pending', 'all'].includes(req.body.audience) ? req.body.audience : 'active';
+  const audience = ['active', 'pending', 'nodeposit', 'all'].includes(req.body.audience) ? req.body.audience : 'active';
   const specific = (req.body.specific || '').trim();
   const testOnly = req.body.testOnly === '1';
+  const alsoNotice = req.body.alsoNotice === '1'; // also show it on each player's dashboard
   if (!subject || !message) return res.redirect('/admin/email?err=empty');
 
   // Build the recipient list.
@@ -2583,7 +2587,7 @@ adminRouter.post('/email/send', requireAdmin, csrfGuard, async (req, res) => {
   const bodyHtml = textToHtml(message);
   const cta = ctaUrl ? { text: ctaText || req.t('email_visit'), url: ctaUrl } : null;
   const broadcast = !testOnly && !specific; // audience blasts respect opt-out
-  let sent = 0, skipped = 0;
+  let sent = 0, skipped = 0, noticed = 0;
   for (const u of recipients) {
     // No `lang` override → each player's greeting/disclaimer/unsubscribe render in
     // THEIR own language. The subject and body stay as the admin typed them.
@@ -2592,9 +2596,12 @@ adminRouter.post('/email/send', requireAdmin, csrfGuard, async (req, res) => {
       bodyHtml, cta, broadcast
     });
     if (r && r.skipped) skipped++; else sent++;
+    // Optionally also drop it on their dashboard (in-app; ignores email opt-out).
+    if (alsoNotice && !testOnly) { pushNotice(u, message.slice(0, 1000)); noticed++; }
   }
   logAudit(db, req.currentUser, 'email.broadcast',
     `"${subject}" → ${sent} sent` + (skipped ? `, ${skipped} skipped` : '') +
+    (noticed ? `, ${noticed} notices` : '') +
     (testOnly ? ' (test)' : specific ? ' (specific)' : ` (${audience})`));
   save(db);
   res.redirect('/admin/email?sent=' + sent + '&skipped=' + skipped);
