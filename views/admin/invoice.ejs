@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= t('inv_title') %> #<%= (type === 'deposit' ? 'D' : 'W') + rec.id %></title>
+  <title><%= t('inv_title') %> #<%= (type === 'deposit' ? 'D' : type === 'withdraw' ? 'W' : 'T') + rec.id %></title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
@@ -43,7 +43,9 @@
   </style>
 </head>
 <body>
-  <% const inflow = type === 'deposit';
+  <% const isTransfer = (type === 'transfer');
+     const inflow = type === 'deposit' || (isTransfer && detail.incoming);
+     const idPrefix = type === 'deposit' ? 'D' : (type === 'withdraw' ? 'W' : 'T');
      const sc = (rec.status === 'approved' || rec.status === 'paid') ? 'b-ok' : (rec.status === 'rejected' ? 'b-rejected' : 'b-pending'); %>
   <div class="bar">
     <button class="btn btn-p" onclick="window.print()">🖨 <%= t('stmt_print') %></button>
@@ -58,10 +60,10 @@
         <% } else { %>
           <div class="brand"><%= settings.siteName %></div>
         <% } %>
-        <div class="muted"><%= inflow ? t('inv_deposit') : t('inv_withdraw') %></div>
+        <div class="muted"><%= isTransfer ? t('rcv_receipt') : (inflow ? t('inv_deposit') : t('inv_withdraw')) %></div>
       </div>
       <div style="text-align:end">
-        <div class="mono" style="font-weight:700"><%= inflow ? 'D' : 'W' %><%= rec.id %></div>
+        <div class="mono" style="font-weight:700"><%= idPrefix %><%= rec.id %></div>
         <div class="muted"><%= new Date(rec.createdAt).toLocaleString() %></div>
         <div style="margin-top:6px"><span class="badge <%= sc %>"><%= statusLabel(rec.status) || rec.status %></span></div>
       </div>
@@ -72,7 +74,7 @@
         <div style="width:72px;height:72px;margin:0 auto 12px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -8px rgba(14,159,110,.55);-webkit-print-color-adjust:exact;print-color-adjust:exact">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
-        <div style="margin:0 0 8px;font-weight:800;font-size:1.35rem;color:var(--brand);letter-spacing:-.01em"><%= inflow ? t('inv_deposited_ok') : t('inv_withdrawn_ok') %></div>
+        <div style="margin:0 0 8px;font-weight:800;font-size:1.35rem;color:var(--brand);letter-spacing:-.01em"><%= isTransfer ? (inflow ? t('rcv_received_ok') : t('rcv_sent_ok')) : (inflow ? t('inv_deposited_ok') : t('inv_withdrawn_ok')) %></div>
       <% } %>
       <div class="big" style="color:var(--brand)"><%= money(rec.amount) %></div>
     </div>
@@ -80,7 +82,7 @@
     <div class="rows">
       <div class="row"><span class="k"><%= t('lbl_name') %></span><span class="v"><%= u ? u.name : rec.userName %></span></div>
       <% if (u) { %><div class="row"><span class="k"><%= t('lbl_email') %></span><span class="v"><%= u.email %></span></div><% } %>
-      <div class="row"><span class="k"><%= inflow ? t('inv_into') : t('inv_from') %></span><span class="v"><%= detail.source %></span></div>
+      <div class="row"><span class="k"><%= isTransfer ? (inflow ? t('inv_from') : t('rcv_to')) : (inflow ? t('inv_into') : t('inv_from')) %></span><span class="v"><%= detail.source %></span></div>
       <% if (inflow && detail.note) { %><div class="row"><span class="k"><%= t('manual_bankref') %></span><span class="v"><%= detail.note %></span></div><% } %>
       <% if (!inflow && detail.method) { %>
         <div class="row"><span class="k"><%= t('payout_method') %></span><span class="v text-capitalize"><%= detail.method %></span></div>

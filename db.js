@@ -15,6 +15,7 @@ const DEFAULTS = {
   users: [],
   withdrawals: [],
   deposits: [],
+  transfers: [],
   audit: [],
   schedules: [],
   tickets: [],
@@ -86,6 +87,7 @@ const DEFAULTS = {
   nextUserId: 1,
   nextWithdrawId: 1,
   nextDepositId: 1,
+  nextTransferId: 1,
   nextAppId: 1,
   nextAuditId: 1,
   nextTicketId: 1
@@ -140,6 +142,8 @@ function migrate(db) {
   db.tickets = db.tickets || [];
   db.nextTicketId = db.nextTicketId || 1;
   db.nextDepositId = db.nextDepositId || 1;
+  db.transfers = db.transfers || [];
+  db.nextTransferId = db.nextTransferId || 1;
   db.nextAppId = db.nextAppId || 1;
   db.nextAuditId = db.nextAuditId || 1;
   db.nextScheduleId = db.nextScheduleId || 1;

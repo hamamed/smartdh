@@ -1395,12 +1395,34 @@ app.get('/rewards', requireActive, (req, res) => {
   });
 });
 
-// Printable invoice / receipt for a player's OWN deposit or withdrawal.
+// History of coins this player RECEIVED from other players, with a receipt each.
+app.get('/received', requireActive, (req, res) => {
+  const u = req.currentUser;
+  const received = (req.db.transfers || [])
+    .filter(t => t.toId === u.id)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  res.render('received', { title: req.t('rcv_title'), received });
+});
+
+// Printable invoice / receipt for a player's OWN deposit, withdrawal or transfer.
 app.get('/invoice/:type/:id', requireActive, (req, res) => {
   const db = req.db;
   const u = req.currentUser;
-  const type = req.params.type === 'withdraw' ? 'withdraw' : 'deposit';
+  const type = ['withdraw', 'transfer'].includes(req.params.type) ? req.params.type : 'deposit';
   const id = Number(req.params.id);
+
+  if (type === 'transfer') {
+    // Either party (sender or recipient) may view a transfer receipt.
+    const t = (db.transfers || []).find(x => x.id === id && (x.toId === u.id || x.fromId === u.id));
+    if (!t) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
+    const incoming = t.toId === u.id;
+    return res.render('admin/invoice', {
+      layout: false, type, rec: { id: t.id, amount: t.amount, createdAt: t.createdAt, status: 'paid' }, u,
+      detail: { source: incoming ? t.fromName : t.toName, incoming },
+      backUrl: '/received', backLabel: req.t('rcv_title'), generatedAt: Date.now()
+    });
+  }
+
   // userId match → players can only ever see their own invoices.
   const rec = (type === 'deposit' ? db.deposits : db.withdrawals).find(x => x.id === id && x.userId === u.id);
   if (!rec) return res.status(404).render('error', { title: req.t('err_404_t'), code: 404, heading: req.t('err_404_t'), mBody: req.t('err_404_d') });
@@ -1936,6 +1958,11 @@ app.post('/transfer', requireActive, (req, res) => {
   accrue(recipient, db);
   u.earnings -= amount;
   recipient.earnings += amount;
+  // A standalone record so both sides get a printable receipt (invoice).
+  db.transfers.push({
+    id: db.nextTransferId++, fromId: u.id, fromName: u.name,
+    toId: recipient.id, toName: recipient.name, amount, createdAt: Date.now()
+  });
   addTx(u, 'transfer_out', amount, `To ${recipient.name}`);
   addTx(recipient, 'transfer_in', amount, `From ${u.name}`);
   addXp(u, 5);
