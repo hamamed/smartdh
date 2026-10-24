@@ -370,6 +370,7 @@ app.use((req, res, next) => {
   res.locals.achDesc = (id) => { const k = 'ach_' + id + '_d'; const v = tr(k); return v === k ? ACHIEVEMENTS[id].desc : v; };
   res.locals.txLabel = (type) => tr('tx_' + type);
   res.locals.txNote = (tx) => translateNote(tr, tx);
+  res.locals.planColor = (p) => planColor(p);
   res.locals.statusLabel = (s) => tr('st_' + s);
   res.locals.rejectReason = (w) => rejectReasonText(tr, w);
   // Language-aware currency label: Arabic shows درهم for the default DH; other
@@ -486,6 +487,13 @@ app.get('/lang/:code', (req, res) => {
 // ---------- Game helpers ----------
 function totalInvested(user) {
   return Object.values(user.invested || {}).reduce((a, b) => a + (b || 0), 0);
+}
+// Just 3 display colors by rule: gold for fixed-amount apps, red for ≤30% / 15 days,
+// green for anything higher. Overrides whatever color was stored on the plan.
+function planColor(p) {
+  if (!p) return 'secondary';
+  if (p.fixedAmount > 0) return 'warning';                       // gold / yellow
+  return (p.ratePer15Days || 0) <= 0.30 ? 'danger' : 'success';  // red ≤30%, else green
 }
 function totalBalance(user) {
   return totalInvested(user) + (user.earnings || 0);
@@ -1782,7 +1790,7 @@ app.post('/add-funds', requireActive, (req, res) => {
   const u = req.currentUser;
   const s = db.settings;
   const plan = s.plans.find(p => p.id === req.body.plan);
-  if (!plan) return res.redirect('/invest?err=plan');
+  if (!plan || plan.published === false) return res.redirect('/invest?err=plan');
   // Fixed-amount plans always deposit the set amount, whatever the form sent.
   const amount = plan.fixedAmount > 0 ? plan.fixedAmount : Math.floor(Number(req.body.amount));
   if (!amount || (plan.fixedAmount <= 0 && amount < s.minAddFunds)) return res.redirect('/invest?err=amount');
@@ -1821,7 +1829,7 @@ app.post('/move-funds', requireActive, (req, res) => {
   const s = db.settings;
   const from = s.plans.find(p => p.id === req.body.from);
   const to = s.plans.find(p => p.id === req.body.to);
-  if (!from || !to || from.id === to.id) return res.redirect('/invest?err=move');
+  if (!from || !to || from.id === to.id || to.published === false) return res.redirect('/invest?err=move');
   const amount = Math.floor(Number(req.body.amount));
   if (!amount || amount <= 0) return res.redirect('/invest?err=amount');
   // The destination plan must be unlocked for this player's level.
@@ -2718,7 +2726,60 @@ adminRouter.post('/email/send', requireAdmin, csrfGuard, async (req, res) => {
 
 // ---------- Section pages ----------
 adminRouter.get('/apps', requireAdmin, (req, res) => {
-  res.render('admin/apps', { title: req.t('tab_apps'), counts: adminCounts(req.db) });
+  const all = req.db.settings.plans;
+  const show = ['published', 'unpublished', 'all'].includes(req.query.show) ? req.query.show : 'published';
+  const appList = all.filter(p =>
+    show === 'all' ? true : show === 'unpublished' ? p.published === false : p.published !== false);
+  res.render('admin/apps', {
+    title: req.t('tab_apps'), counts: adminCounts(req.db),
+    appList, show, gen: parseInt(req.query.gen) || 0,
+    appCounts: {
+      published: all.filter(p => p.published !== false).length,
+      unpublished: all.filter(p => p.published === false).length,
+      all: all.length
+    }
+  });
+});
+
+// Toggle an app between published (visible to players) and hidden.
+adminRouter.post('/apps/publish/:id', requireAdmin, (req, res) => {
+  const db = req.db;
+  const p = db.settings.plans.find(x => x.id === req.params.id);
+  if (p) {
+    p.published = !(req.body.current === '1'); // flip the current state the form reports
+    logAudit(db, req.currentUser, 'app.publish', p.name + ' → ' + (p.published ? 'published' : 'hidden'));
+    save(db);
+  }
+  const back = ['published', 'unpublished', 'all'].includes(req.body.back) ? req.body.back : 'all';
+  res.redirect('/admin/apps?show=' + back);
+});
+
+// Bulk-generate random apps (variable-rate and fixed-amount up to 100,000 MAD),
+// all UNPUBLISHED until the admin publishes them. Count defaults to 100.
+adminRouter.post('/apps/generate', requireAdmin, (req, res) => {
+  const db = req.db;
+  const count = Math.min(500, Math.max(1, Math.floor(Number(req.body.count) || 100)));
+  const A = ['Nova', 'Atlas', 'Zenith', 'Orbit', 'Pulse', 'Vertex', 'Lumen', 'Astra', 'Quant', 'Flux', 'Apex', 'Terra', 'Delta', 'Solace', 'Nimbus', 'Cobalt', 'Ember', 'Vega', 'Onyx', 'Halo'];
+  const B = ['Capital', 'Fund', 'Invest', 'Growth', 'Yield', 'Finance', 'Assets', 'Partners', 'Holdings', 'Markets'];
+  const ICONS = ['trending-up', 'rocket', 'gem', 'landmark', 'bar-chart-3', 'coins', 'briefcase', 'piggy-bank', 'line-chart', 'wallet'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  for (let i = 0; i < count; i++) {
+    const fixed = Math.random() < 0.5;
+    // Fixed amount: a "nice" value up to 100,000 MAD (steps of 100).
+    const fixedAmount = fixed ? Math.round(rnd(1, 1000)) * 100 : 0;
+    const rate = Math.round(rnd(5, 60)) / 100; // 5%–60% per 15 days
+    db.settings.plans.push({
+      id: 'app' + (db.nextAppId++),
+      name: pick(A) + ' ' + pick(B) + ' ' + (db.nextAppId),
+      icon: pick(ICONS), imageUrl: '',
+      ratePer15Days: rate, color: 'primary', desc: '', link: '',
+      fixedAmount, minLevel: 1, published: false
+    });
+  }
+  logAudit(db, req.currentUser, 'app.generate', count + ' apps (unpublished)');
+  save(db);
+  res.redirect('/admin/apps?show=unpublished&gen=' + count);
 });
 
 adminRouter.get('/deposits', requireAdmin, (req, res) => {
@@ -3117,7 +3178,8 @@ adminRouter.post('/apps/add', requireAdmin, csrfGuard,
         desc: (req.body.desc || '').trim(),
         link: (req.body.link || '').trim(),
         fixedAmount: Math.max(0, Math.floor(Number(req.body.fixedAmount) || 0)),
-        minLevel: Math.max(1, Number(req.body.minLevel) || 1)
+        minLevel: Math.max(1, Number(req.body.minLevel) || 1),
+        published: req.body.published !== '0'   // published unless explicitly unchecked
       });
       logAudit(db, req.currentUser, 'app.add', name);
       save(db);

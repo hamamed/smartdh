@@ -128,6 +128,9 @@ function migrate(db) {
   db.settings.depositInfo = Object.assign({}, DEFAULTS.settings.depositInfo, db.settings.depositInfo || {});
   db.settings.announcement = Object.assign({}, DEFAULTS.settings.announcement, db.settings.announcement || {});
   db.settings.telegram = Object.assign({}, DEFAULTS.settings.telegram, db.settings.telegram || {});
+  // Apps can be hidden from players until the admin publishes them. Existing apps
+  // are grandfathered as published so nothing disappears on upgrade.
+  (db.settings.plans || []).forEach(p => { if (p.published === undefined) p.published = true; });
   // migrate the old single deposit-based percent to the new earnings-based tiers
   if (!Array.isArray(db.settings.referralTiers) || db.settings.referralTiers.length !== 3) {
     db.settings.referralTiers = DEFAULTS.settings.referralTiers.slice();

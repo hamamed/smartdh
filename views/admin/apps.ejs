@@ -2,18 +2,34 @@
   <div class="container">
     <%- include('_head', { heading: t('tab_apps') }) %>
 
+    <% if (typeof gen !== 'undefined' && gen) { %>
+      <div class="alert alert-success py-2 d-flex align-items-center gap-2"><i data-lucide="check"></i><%= t('app_gen_ok', { n: gen }) %></div>
+    <% } %>
+
+    <!-- Filter: published / unpublished / all -->
+    <div class="btn-group btn-group-sm mb-3" role="group">
+      <% [['published','app_f_published'],['unpublished','app_f_unpublished'],['all','app_f_all']].forEach(([v,k]) => { %>
+        <a href="/admin/apps?show=<%= v %>" class="btn btn-outline-primary <%= show===v?'active':'' %>"><%= t(k) %> <span class="badge bg-dark ms-1"><%= appCounts[v] %></span></a>
+      <% }) %>
+    </div>
+
     <!-- existing apps as editable product cards -->
-    <% if (plans.length === 0) { %>
+    <% if (appList.length === 0) { %>
       <div class="card border-0 shadow-sm rounded-4 mb-3"><div class="card-body"><p class="text-muted mb-0"><%= t('apps_none') %></p></div></div>
     <% } else { %>
       <div class="row g-3 mb-4">
-        <% plans.forEach(p => {
-             const tint = p.color==='primary'?'navy':(p.color==='success'?'mint':(p.color==='danger'?'coral':(p.color==='warning'?'yellow':(p.color==='info'?'sky':'lilac')))); %>
+        <% appList.forEach(p => {
+             const pc = planColor(p);
+             const tint = pc==='success'?'mint':(pc==='danger'?'coral':(pc==='warning'?'yellow':'lilac'));
+             const pub = p.published !== false; %>
           <div class="col-md-6 col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
               <div class="product-media">
                 <% if (p.imageUrl) { %><img src="<%= p.imageUrl %>" alt="<%= p.name %>">
                 <% } else { %><div class="product-media-fallback ti-<%= tint %>"><i data-lucide="<%= p.icon %>"></i></div><% } %>
+                <span class="badge bg-<%= pub ? 'success' : 'secondary' %> position-absolute top-0 start-0 m-2 d-inline-flex align-items-center gap-1">
+                  <i data-lucide="<%= pub ? 'eye' : 'eye-off' %>" style="width:.85em;height:.85em"></i><%= pub ? t('app_published') : t('app_unpublished') %></span>
+                <span class="badge bg-<%= pc %> position-absolute top-0 end-0 m-2"><%= p.fixedAmount > 0 ? money(p.fixedAmount) : (p.ratePer15Days*100).toFixed(0) + '%' %></span>
               </div>
               <div class="card-body">
                 <form action="/admin/apps/edit/<%= p.id %>?_csrf=<%= csrfToken %>" method="post" enctype="multipart/form-data">
@@ -51,6 +67,9 @@
                   <div class="d-flex gap-1">
                     <button class="btn btn-sm btn-primary flex-grow-1 d-inline-flex align-items-center justify-content-center gap-1"><i data-lucide="save"></i><%= t('btn_save') %></button>
                 </form>
+                    <form action="/admin/apps/publish/<%= p.id %>" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="current" value="<%= pub ? '1' : '0' %>"><input type="hidden" name="back" value="<%= show %>">
+                      <button class="btn btn-sm btn-<%= pub ? 'outline-secondary' : 'success' %> d-inline-flex align-items-center gap-1" title="<%= pub ? t('app_unpublish') : t('app_publish_btn') %>"><i data-lucide="<%= pub ? 'eye-off' : 'eye' %>"></i></button></form>
                     <form action="/admin/apps/delete/<%= p.id %>" method="post" onsubmit="return confirm('<%= t('confirm_delete_app') %>')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <button class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2"></i></button></form>
                   </div>
@@ -61,6 +80,19 @@
       </div>
       <p class="form-text mb-4"><%= t('app_delete_hint') %></p>
     <% } %>
+
+    <!-- Bulk-generate random apps (unpublished until you publish them) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-2 d-flex align-items-center gap-2"><i data-lucide="sparkles" class="text-primary"></i><%= t('app_gen_title') %></h6>
+        <p class="text-muted small mb-3"><%= t('app_gen_desc') %></p>
+        <form action="/admin/apps/generate" method="post" class="row g-2 align-items-end" style="max-width:420px"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="col-auto"><label class="form-label small mb-1"><%= t('app_gen_count') %></label>
+            <input name="count" type="number" min="1" max="500" class="form-control" value="100" style="max-width:120px"></div>
+          <div class="col-auto"><button class="btn btn-primary d-inline-flex align-items-center gap-1"><i data-lucide="sparkles"></i><%= t('app_gen_btn') %></button></div>
+        </form>
+      </div>
+    </div>
 
     <!-- add a new app / product -->
     <div class="card border-0 shadow-sm rounded-4">
