@@ -1380,7 +1380,12 @@ app.get('/withdraw', requireActive, (req, res) => {
 
 // ---------- Send coins ----------
 app.get('/send', requireActive, (req, res) => {
-  res.render('send', { title: req.t('send_title') });
+  const u = req.currentUser;
+  // Combined sent + received history, from transactions so OLD transfers show too.
+  const transfers = (u.transactions || [])
+    .filter(t => t.type === 'transfer_in' || t.type === 'transfer_out')
+    .slice().reverse();
+  res.render('send', { title: req.t('send_title'), transfers });
 });
 
 // ---------- Rewards (daily bonus + streak) ----------
@@ -1395,14 +1400,8 @@ app.get('/rewards', requireActive, (req, res) => {
   });
 });
 
-// History of coins this player RECEIVED from other players, with a receipt each.
-app.get('/received', requireActive, (req, res) => {
-  const u = req.currentUser;
-  const received = (req.db.transfers || [])
-    .filter(t => t.toId === u.id)
-    .sort((a, b) => b.createdAt - a.createdAt);
-  res.render('received', { title: req.t('rcv_title'), received });
-});
+// The transfer history now lives inline on the Send page.
+app.get('/received', requireActive, (req, res) => res.redirect('/send'));
 
 // Printable invoice / receipt for a player's OWN deposit, withdrawal or transfer.
 app.get('/invoice/:type/:id', requireActive, (req, res) => {
@@ -1419,7 +1418,7 @@ app.get('/invoice/:type/:id', requireActive, (req, res) => {
     return res.render('admin/invoice', {
       layout: false, type, rec: { id: t.id, amount: t.amount, createdAt: t.createdAt, status: 'paid' }, u,
       detail: { source: incoming ? t.fromName : t.toName, incoming },
-      backUrl: '/received', backLabel: req.t('rcv_title'), generatedAt: Date.now()
+      backUrl: '/send', backLabel: req.t('send_title'), generatedAt: Date.now()
     });
   }
 
@@ -1959,12 +1958,16 @@ app.post('/transfer', requireActive, (req, res) => {
   u.earnings -= amount;
   recipient.earnings += amount;
   // A standalone record so both sides get a printable receipt (invoice).
+  const tid = db.nextTransferId++;
   db.transfers.push({
-    id: db.nextTransferId++, fromId: u.id, fromName: u.name,
+    id: tid, fromId: u.id, fromName: u.name,
     toId: recipient.id, toName: recipient.name, amount, createdAt: Date.now()
   });
   addTx(u, 'transfer_out', amount, `To ${recipient.name}`);
   addTx(recipient, 'transfer_in', amount, `From ${u.name}`);
+  // Tag the entry we just added (newest `at`, so it sorts last) with the receipt id.
+  u.transactions[u.transactions.length - 1].ref = tid;
+  recipient.transactions[recipient.transactions.length - 1].ref = tid;
   addXp(u, 5);
   award(u, 'generous');
   checkState(recipient);
