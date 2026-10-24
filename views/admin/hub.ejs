@@ -40,6 +40,23 @@
       </div>
     </div>
 
+    <!-- Online now (admin presence; polls every 45s) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" id="onlineCard"
+         data-i18n-none="<%= t('online_none') %>" data-i18n-ago="<%= t('online_ago') %>">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+          <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+            <span class="online-dot"></span><%= t('online_title') %>
+            <span class="badge bg-success-subtle text-success ms-1" id="onlineCount"><%= onlineCount %></span>
+          </h6>
+          <span class="small text-muted" id="onlineUpdated"></span>
+        </div>
+        <div id="onlineList" class="d-flex flex-wrap gap-2">
+          <% if (!onlineCount) { %><span class="text-muted small"><%= t('online_none') %></span><% } %>
+        </div>
+      </div>
+    </div>
+
     <!-- Site stats -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
@@ -211,3 +228,36 @@
     </div>
   </div>
 </section>
+
+<script>
+// Admin presence: poll who's online and refresh the "Online now" card.
+(function () {
+  const card = document.getElementById('onlineCard');
+  if (!card) return;
+  const countEl = document.getElementById('onlineCount');
+  const listEl = document.getElementById('onlineList');
+  const noneTxt = card.dataset.i18nNone || 'No one online';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function initials(n) { return (n || '?').trim().charAt(0).toUpperCase(); }
+  async function tick() {
+    try {
+      const r = await fetch('/admin/online.json', { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) return;
+      const d = await r.json();
+      countEl.textContent = d.count;
+      if (!d.count) { listEl.innerHTML = '<span class="text-muted small">' + esc(noneTxt) + '</span>'; }
+      else {
+        listEl.innerHTML = d.users.slice(0, 40).map(u =>
+          '<a href="/admin/users/' + u.id + '" class="d-inline-flex align-items-center gap-1 badge bg-body-secondary text-reset text-decoration-none py-2 px-2">' +
+          '<span class="online-dot"></span>' +
+          (u.avatar ? '<img src="' + esc(u.avatar) + '" style="width:18px;height:18px;border-radius:50%;object-fit:cover">'
+                    : '<span class="online-ini">' + esc(initials(u.name)) + '</span>') +
+          '<span class="small fw-semibold">' + esc(u.name) + '</span></a>'
+        ).join('');
+      }
+    } catch (e) { /* keep the last view on a transient error */ }
+  }
+  tick();
+  setInterval(tick, 45000);
+})();
+</script>

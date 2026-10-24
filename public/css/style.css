@@ -677,3 +677,8 @@ html, body { overflow-x: clip; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, .btn, .card, .menu-tile, .feature-icon, .tile-icon { animation: none !important; transition: none !important; }
 }
+
+/* Admin presence: online indicator */
+.online-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;flex:0 0 auto;box-shadow:0 0 0 0 rgba(22,163,74,.6);animation:onlinePulse 2s infinite}
+@keyframes onlinePulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}70%{box-shadow:0 0 0 6px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+.online-ini{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--brand-soft,#d1fae5);color:var(--brand-strong,#0b7d57);font-size:.6rem;font-weight:700;flex:0 0 auto}

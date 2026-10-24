@@ -237,6 +237,7 @@ function migrate(db) {
     if (u.verifyToken === undefined) u.verifyToken = null;
     // Login tracking: last login time + a capped history of recent logins.
     if (u.lastLogin === undefined) u.lastLogin = null;
+    if (u.lastSeen === undefined) u.lastSeen = null;   // presence (admin online view)
     if (!Array.isArray(u.logins)) u.logins = [];
     // Preferred language (for the UI on their next visit and for their emails).
     if (u.lang === undefined) u.lang = null;

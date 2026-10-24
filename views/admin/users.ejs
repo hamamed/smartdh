@@ -120,6 +120,12 @@
                   </div>
                   <div class="small text-muted text-truncate"><%= u.email %></div>
                   <div class="d-flex align-items-center gap-2 flex-wrap mt-1" style="font-size:.72rem">
+                    <% const uOnline = u.lastSeen && (Date.now() - u.lastSeen) < 300000; %>
+                    <% if (uOnline) { %>
+                      <span class="d-inline-flex align-items-center gap-1 text-success fw-semibold"><span class="online-dot"></span><%= t('online_now') %></span>
+                    <% } else if (u.lastSeen) { %>
+                      <span class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="clock" style="width:.85em;height:.85em"></i><span data-ago="<%= u.lastSeen %>" title="<%= new Date(u.lastSeen).toLocaleString() %>"><%= timeAgo(u.lastSeen) %></span></span>
+                    <% } %>
                     <span class="badge bg-<%= sc %>-subtle text-<%= sc %>"><%= statusLabel(u.status) %></span>
                     <span class="badge bg-body-secondary text-muted">L<%= levelForXp(u.xp) %></span>
                     <span class="text-muted"><%= t('th_invested') %>: <span class="fw-semibold text-body"><%= money(totalInvested(u)) %></span></span>

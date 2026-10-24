@@ -234,6 +234,9 @@ const TX = {
 };
 // A self-service deposit request auto-cancels if the money isn't received in time.
 const DEPOSIT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+// A player counts as "online" if seen within this window (admin presence view).
+const ONLINE_MS = 5 * 60 * 1000; // 5 minutes
+const isOnline = (u) => !!u.lastSeen && (Date.now() - u.lastSeen) < ONLINE_MS;
 
 // Preset reasons an admin can pick when rejecting a withdrawal. The player sees the
 // reason on the platform and by email. 'other' uses the admin's free-text note.
@@ -324,6 +327,9 @@ const authLimiter = rateLimit({
 app.use((req, res, next) => {
   const db = load();
   let user = req.session.userId ? (db.users.find(u => u.id === req.session.userId) || null) : null;
+  // Presence: stamp the REAL logged-in account (before any impersonation swap), so
+  // viewing as a player never marks that player "online". Piggybacks the save below.
+  if (user) user.lastSeen = Date.now();
   // Impersonation: an admin can view the game AS a player. currentUser becomes the
   // target; realAdmin remembers who it really is. Writes are blocked below.
   if (user && user.isAdmin && req.session.impersonate) {
@@ -2007,8 +2013,20 @@ adminRouter.get('/', requireAdmin, (req, res) => {
       total: active.reduce((s, u) => s + totalBalance(u), 0),
       deposits: db.deposits.filter(d => d.status === 'approved' && !testIds.has(d.userId)).length,
       paid: db.withdrawals.filter(w => w.status === 'paid' && !testIds.has(w.userId)).length
-    }
+    },
+    onlineCount: active.filter(u => !u.isAdmin && isOnline(u)).length   // players only; the page polls to refresh
   });
+});
+
+// Who's online right now (admin presence view). Players seen within ONLINE_MS.
+adminRouter.get('/online.json', requireAdmin, (req, res) => {
+  const db = req.db;
+  const now = Date.now();
+  const users = db.users
+    .filter(u => isRealUser(u) && !u.isAdmin && isOnline(u))
+    .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+    .map(u => ({ id: u.id, name: u.name, avatar: u.avatar || '', lastSeen: u.lastSeen }));
+  res.json({ now, count: users.length, users });
 });
 
 // Live totals + recent deposit/withdraw events for the admin activity chart.

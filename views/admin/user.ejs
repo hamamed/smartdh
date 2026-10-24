@@ -34,6 +34,9 @@
 
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('th_joined') %></span><span><span data-ago="<%= u.createdAt %>" title="<%= new Date(u.createdAt).toLocaleString() %>"><%= timeAgo(u.createdAt) %></span> · <%= new Date(u.createdAt).toLocaleDateString() %></span></div>
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('adm_last_login') %></span><span><% if (u.lastLogin) { %><span data-ago="<%= u.lastLogin %>" title="<%= new Date(u.lastLogin).toLocaleString() %>"><%= timeAgo(u.lastLogin) %></span><% } else { %><%= t('adm_never') %><% } %></span></div>
+            <% const uOnline = u.lastSeen && (Date.now() - u.lastSeen) < 300000; %>
+            <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('online_label') %></span>
+              <span><% if (uOnline) { %><span class="d-inline-flex align-items-center gap-1 text-success fw-semibold"><span class="online-dot"></span><%= t('online_now') %></span><% } else if (u.lastSeen) { %><span data-ago="<%= u.lastSeen %>" title="<%= new Date(u.lastSeen).toLocaleString() %>"><%= timeAgo(u.lastSeen) %></span><% } else { %><%= t('adm_never') %><% } %></span></div>
             <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('your_code') %></span><span class="fw-semibold text-uppercase"><%= u.referralCode %></span></div>
             <% if (referrer) { %>
               <div class="small text-muted d-flex justify-content-between border-top pt-2"><span><%= t('invited_by') %></span>
