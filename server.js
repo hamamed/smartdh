@@ -369,6 +369,7 @@ app.use((req, res, next) => {
   res.locals.achName = (id) => { const k = 'ach_' + id; const v = tr(k); return v === k ? ACHIEVEMENTS[id].name : v; };
   res.locals.achDesc = (id) => { const k = 'ach_' + id + '_d'; const v = tr(k); return v === k ? ACHIEVEMENTS[id].desc : v; };
   res.locals.txLabel = (type) => tr('tx_' + type);
+  res.locals.txNote = (tx) => translateNote(tr, tx);
   res.locals.statusLabel = (s) => tr('st_' + s);
   res.locals.rejectReason = (w) => rejectReasonText(tr, w);
   // Language-aware currency label: Arabic shows درهم for the default DH; other
@@ -985,6 +986,27 @@ function award(user, id) {
     return true;
   }
   return false;
+}
+
+// Transaction notes are stored in English (e.g. "From Ali", "Earnings", an
+// achievement name). Translate the known patterns at render time so the history
+// reads in the viewer's language; anything unrecognised falls back to the stored text.
+function translateNote(tr, tx) {
+  const n = ((tx && tx.note) || '').trim();
+  if (!n) return '';
+  if (tx.type === 'achievement') {
+    const id = Object.keys(ACHIEVEMENTS).find(k => ACHIEVEMENTS[k].name === n);
+    if (id) return tr('ach_' + id);
+  }
+  const fixed = { 'Team earnings': 'tx_note_team', 'Added by admin': 'tx_note_added', 'Earnings removed by admin': 'tx_note_removed' };
+  if (fixed[n]) return tr(fixed[n]);
+  const who = (w) => (w.trim() === 'Earnings' ? tr('opt_earnings') : w.trim());
+  let m;
+  if ((m = n.match(/^From\s+(.+)$/))) return tr('tx_from', { who: who(m[1]) });
+  if ((m = n.match(/^To\s+(.+)$/))) return tr('tx_to', { who: who(m[1]) });
+  if ((m = n.match(/^Refunded to\s+(.+?)(\s*·\s*(.+))?$/))) return tr('tx_refunded_to', { who: who(m[1]) }) + (m[3] ? ' · ' + m[3] : '');
+  if (n === 'Earnings') return tr('opt_earnings');
+  return n;
 }
 function checkState(user) {
   const bal = totalBalance(user);

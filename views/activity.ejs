@@ -18,7 +18,7 @@
                 <div class="flex-grow-1 min-w-0">
                   <div class="fw-semibold small text-truncate"><%= txLabel(tx.type) %></div>
                   <% if (tx.amount) { %><div class="fw-bold small text-<%= m.sign === '-' ? 'danger' : 'success' %>"><%= m.sign %><%= money(tx.amount) %></div><% } %>
-                  <div class="text-muted text-truncate" style="font-size:.78rem"><%= tx.note ? tx.note + ' · ' : '' %><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></div>
+                  <div class="text-muted text-truncate" style="font-size:.78rem"><%= txNote(tx) ? txNote(tx) + ' · ' : '' %><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></div>
                 </div>
               </div>
             <% }) %>

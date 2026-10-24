@@ -35,7 +35,7 @@
               <div class="list-group-item px-0 d-flex align-items-center gap-2 bg-transparent">
                 <span class="tile-icon <%= incoming ? 'ti-mint' : 'ti-coral' %> flex-shrink-0" style="width:36px;height:36px;font-size:.9rem"><i data-lucide="<%= incoming ? 'inbox' : 'send' %>"></i></span>
                 <div class="flex-grow-1 min-w-0">
-                  <div class="fw-semibold small text-truncate"><%= incoming ? t('tr_in') : t('tr_out') %><% if (tx.note) { %> · <%= tx.note %><% } %></div>
+                  <div class="fw-semibold small text-truncate"><%= incoming ? t('tr_in') : t('tr_out') %><% if (txNote(tx)) { %> · <%= txNote(tx) %><% } %></div>
                   <div class="fw-bold small text-<%= incoming ? 'success' : 'danger' %>"><%= incoming ? '+' : '−' %><%= money(tx.amount) %></div>
                   <div class="text-muted" style="font-size:.72rem"><span data-ago="<%= tx.at %>" title="<%= new Date(tx.at).toLocaleString() %>"><%= timeAgo(tx.at) %></span></div>
                 </div>
