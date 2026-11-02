@@ -50,6 +50,14 @@
                   <% if (w.status === 'rejected' && rejectReason(w)) { %>
                     <div class="mt-1 p-2 rounded-3 bg-danger-subtle text-danger" style="font-size:.72rem"><i data-lucide="info" style="width:.9em;height:.9em"></i> <%= rejectReason(w) %></div>
                   <% } %>
+                  <% if (w.status === 'pending' && w.scheduled) { %>
+                    <div class="mt-1 p-2 rounded-3 bg-info-subtle text-info d-flex align-items-center gap-2" style="font-size:.72rem">
+                      <i data-lucide="clock" style="width:.9em;height:.9em"></i>
+                      <span><%= t('sched_badge', { action: t(w.scheduled.action === 'approve' ? 'sched_act_approve' : 'sched_act_reject'), when: new Date(w.scheduled.at).toLocaleString() }) %></span>
+                      <form action="/admin/withdraw/<%= w.id %>/unschedule" method="post" class="ms-auto"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button class="btn btn-sm btn-link p-0 text-danger" title="<%= t('sched_cancel') %>"><i data-lucide="x" style="width:.9em;height:.9em"></i></button></form>
+                    </div>
+                  <% } %>
                   <% if (w.payoutName || w.payoutAccount) { %>
                     <div class="d-flex align-items-center gap-1 mt-1 p-2 rounded-3 bg-body-secondary" style="font-size:.72rem">
                       <i data-lucide="<%= w.method === 'bank' ? 'landmark' : 'wallet' %>" style="width:.9em;height:.9em"></i>
@@ -76,6 +84,9 @@
                     <button type="button" class="btn btn-sm btn-outline-danger btn-icon" style="width:32px;height:32px" title="<%= t('st_rejected') %>"
                             data-bs-toggle="modal" data-bs-target="#rejectModal"
                             data-id="<%= w.id %>" data-name="<%= w.userName %>" data-amount="<%= money(w.amount) %>"><i data-lucide="x"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-info btn-icon" style="width:32px;height:32px" title="<%= t('sched_title') %>"
+                            data-bs-toggle="modal" data-bs-target="#schedModal"
+                            data-id="<%= w.id %>" data-name="<%= w.userName %>" data-amount="<%= money(w.amount) %>"><i data-lucide="clock"></i></button>
                     </div>
                   </div>
                 <% } %>
@@ -176,5 +187,59 @@
     form.action = '/admin/users/' + b.dataset.id + '/notify';
     who.textContent = b.dataset.name || '';
   });
+})();
+</script>
+
+<!-- Schedule an automatic approve/reject at a chosen time -->
+<div class="modal fade" id="schedModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <form method="post" id="schedForm" action="">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2"><i data-lucide="clock" class="text-info"></i><%= t('sched_title') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('btn_cancel') %>"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3 d-flex align-items-center gap-2"><i data-lucide="user"></i><span id="scWho"></span></p>
+          <label class="form-label small fw-semibold mb-1"><%= t('sched_action') %></label>
+          <select name="action" id="scAction" class="form-select mb-3">
+            <option value="approve"><%= t('sched_approve') %></option>
+            <option value="reject"><%= t('sched_reject') %></option>
+          </select>
+          <label class="form-label small fw-semibold mb-1"><%= t('sched_at') %></label>
+          <input name="at" id="scAt" type="datetime-local" class="form-control mb-3" required>
+          <div id="scReject" hidden>
+            <label class="form-label small fw-semibold mb-1"><%= t('wd_reason_label') %></label>
+            <select name="reason" id="scReason" class="form-select mb-2">
+              <% wdReasons.forEach(r => { %><option value="<%= r %>"><%= t('wdr_' + r) %></option><% }) %>
+            </select>
+            <textarea name="reasonNote" class="form-control" rows="2" maxlength="300" placeholder="<%= t('reject_note_ph') %>"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('btn_cancel') %></button>
+          <button class="btn btn-info text-white d-inline-flex align-items-center gap-1"><i data-lucide="clock"></i><%= t('sched_btn') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const modal = document.getElementById('schedModal');
+  if (!modal) return;
+  const form = document.getElementById('schedForm');
+  const who = document.getElementById('scWho');
+  const action = document.getElementById('scAction');
+  const rejectBox = document.getElementById('scReject');
+  function syncAction() { rejectBox.hidden = (action.value !== 'reject'); }
+  modal.addEventListener('show.bs.modal', function (ev) {
+    const b = ev.relatedTarget; if (!b) return;
+    form.action = '/admin/withdraw/' + b.dataset.id + '/schedule';
+    who.textContent = (b.dataset.name || '') + ' · ' + (b.dataset.amount || '');
+    action.value = 'approve'; syncAction();
+  });
+  action.addEventListener('change', syncAction);
 })();
 </script>

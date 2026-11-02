@@ -240,7 +240,7 @@ const isOnline = (u) => !!u.lastSeen && (Date.now() - u.lastSeen) < ONLINE_MS;
 
 // Preset reasons an admin can pick when rejecting a withdrawal. The player sees the
 // reason on the platform and by email. 'other' uses the admin's free-text note.
-const WITHDRAW_REJECT_REASONS = ['clearing', 'payout_details', 'name_mismatch', 'min_amount', 'cadence', 'review', 'other'];
+const WITHDRAW_REJECT_REASONS = ['clearing', 'first3_limit', 'payout_details', 'name_mismatch', 'min_amount', 'cadence', 'review', 'other'];
 
 // Resolve a rejected withdrawal's reason into human text using translator `tr`
 // (req.t for pages in the viewer's language, userT(user) for that user's email).
@@ -722,6 +722,14 @@ function parseWhen(v) {
   const t = new Date(v + 'T12:00:00').getTime();
   if (!Number.isFinite(t)) return Date.now();
   return Math.min(t, Date.now());
+}
+// A datetime-local value (YYYY-MM-DDTHH:MM) → timestamp. Allows the future (used for
+// scheduling). Returns 0 on an empty/invalid value or a time already in the past.
+function parseWhenTime(v) {
+  if (!v) return 0;
+  const t = new Date(v).getTime();
+  if (!Number.isFinite(t) || t <= Date.now()) return 0;
+  return t;
 }
 // ---------- Levels & XP ----------
 function levelForXp(xp) { return Math.floor(Math.sqrt((xp || 0) / 50)) + 1; }
@@ -3654,32 +3662,83 @@ adminRouter.post('/settings/telegram/test', requireAdmin, async (req, res) => {
   res.redirect('/admin/settings/telegram?test=' + (r.ok ? 'ok' : 'fail'));
 });
 
-adminRouter.post('/withdraw/:id/:action', requireAdmin, (req, res) => {
+// Apply approve (pay) or reject to a pending withdrawal. Shared by the manual admin
+// buttons and the scheduled auto-action sweep, so the logic can't drift.
+function applyWithdrawAction(db, w, action, opts, actor) {
+  if (!w || w.status !== 'pending') return false;
+  opts = opts || {};
+  actor = actor || { name: 'system' };
+  const u = db.users.find(x => x.id === w.userId);
+  if (action === 'approve') {
+    w.status = 'paid';
+    if (u) { addTx(u, 'withdraw_paid', w.amount, 'From ' + (w.fromLabel || w.from)); notifyWithdrawal(u, w, 'paid'); }
+    logAudit(db, actor, 'withdraw.paid', '#' + w.id + ' ' + w.userName + ' ' + w.amount + ' via ' + (w.method || '-'));
+    tgNotify(db, `✅ Withdrawal paid: ${escapeHtml(w.userName)} — ${emFmt(w.amount, 'en')}`);
+  } else if (action === 'reject') {
+    w.rejectReason = WITHDRAW_REJECT_REASONS.includes(opts.reason) ? opts.reason : '';
+    w.rejectNote = (opts.reasonNote || '').trim().slice(0, 300);
+    if (u) {
+      if (w.from === 'earnings') u.earnings += w.amount;
+      else u.invested[w.from] = (u.invested[w.from] || 0) + w.amount;
+      const rtxt = rejectReasonText(userT(u), w);
+      addTx(u, 'withdraw_rejected', w.amount, 'Refunded to ' + (w.fromLabel || w.from) + (rtxt ? ' · ' + rtxt : ''));
+      notifyWithdrawal(u, w, 'rejected');
+    }
+    w.status = 'rejected';
+    logAudit(db, actor, 'withdraw.reject', '#' + w.id + ' ' + w.userName + ' ' + w.amount + (w.rejectReason ? ' (' + w.rejectReason + ')' : ''));
+  } else return false;
+  w.scheduled = null; // a completed action clears any pending schedule
+  return true;
+}
+
+// Schedule an automatic approve/reject for a pending withdrawal at a chosen time.
+// NOTE: registered BEFORE the generic /:action route so "schedule"/"unschedule"
+// aren't swallowed by it.
+adminRouter.post('/withdraw/:id/schedule', requireAdmin, (req, res) => {
   const db = req.db;
   const w = db.withdrawals.find(x => x.id === Number(req.params.id));
-  if (w && w.status === 'pending') {
-    const u = db.users.find(x => x.id === w.userId);
-    if (req.params.action === 'approve') {
-      w.status = 'paid';
-      if (u) { addTx(u, 'withdraw_paid', w.amount, 'From ' + (w.fromLabel || w.from)); notifyWithdrawal(u, w, 'paid'); }
-      logAudit(db, req.currentUser, 'withdraw.paid', '#' + w.id + ' ' + w.userName + ' ' + w.amount + ' via ' + (w.method || '-'));
-    } else if (req.params.action === 'reject') {
-      w.rejectReason = WITHDRAW_REJECT_REASONS.includes(req.body.reason) ? req.body.reason : '';
-      w.rejectNote = (req.body.reasonNote || '').trim().slice(0, 300);
-      if (u) {
-        if (w.from === 'earnings') u.earnings += w.amount;
-        else u.invested[w.from] = (u.invested[w.from] || 0) + w.amount;
-        const rtxt = rejectReasonText(userT(u), w);
-        addTx(u, 'withdraw_rejected', w.amount, 'Refunded to ' + (w.fromLabel || w.from) + (rtxt ? ' · ' + rtxt : ''));
-        notifyWithdrawal(u, w, 'rejected');
-      }
-      w.status = 'rejected';
-      logAudit(db, req.currentUser, 'withdraw.reject', '#' + w.id + ' ' + w.userName + ' ' + w.amount + (w.rejectReason ? ' (' + w.rejectReason + ')' : ''));
-    }
+  const action = ['approve', 'reject'].includes(req.body.action) ? req.body.action : null;
+  const at = parseWhenTime(req.body.at);
+  if (w && w.status === 'pending' && action && at) {
+    w.scheduled = {
+      action, at,
+      reason: action === 'reject' ? (WITHDRAW_REJECT_REASONS.includes(req.body.reason) ? req.body.reason : '') : '',
+      reasonNote: action === 'reject' ? (req.body.reasonNote || '').trim().slice(0, 300) : '',
+      byName: req.currentUser.name
+    };
+    logAudit(db, req.currentUser, 'withdraw.schedule', '#' + w.id + ' ' + action + ' @ ' + new Date(at).toLocaleString());
     save(db);
   }
   res.redirect('/admin/withdrawals');
 });
+
+adminRouter.post('/withdraw/:id/unschedule', requireAdmin, (req, res) => {
+  const db = req.db;
+  const w = db.withdrawals.find(x => x.id === Number(req.params.id));
+  if (w && w.scheduled) { w.scheduled = null; logAudit(db, req.currentUser, 'withdraw.unschedule', '#' + w.id); save(db); }
+  res.redirect('/admin/withdrawals');
+});
+
+// Generic approve/reject (must come AFTER the schedule routes above).
+adminRouter.post('/withdraw/:id/:action', requireAdmin, (req, res) => {
+  const db = req.db;
+  const w = db.withdrawals.find(x => x.id === Number(req.params.id));
+  if (applyWithdrawAction(db, w, req.params.action, { reason: req.body.reason, reasonNote: req.body.reasonNote }, req.currentUser))
+    save(db);
+  res.redirect('/admin/withdrawals');
+});
+
+// Run due scheduled withdrawal actions. Called from the 60s timer.
+function runWithdrawSchedules(db) {
+  const now = Date.now();
+  let done = 0;
+  for (const w of db.withdrawals) {
+    if (w.status !== 'pending' || !w.scheduled || !w.scheduled.at || w.scheduled.at > now) continue;
+    const s = w.scheduled;
+    if (applyWithdrawAction(db, w, s.action, { reason: s.reason, reasonNote: s.reasonNote }, { name: (s.byName || 'scheduler') + ' (scheduled)' })) done++;
+  }
+  return done;
+}
 
 // ---------- Mount the admin router ----------
 // Everywhere: reachable under /admin (backward compatible, form posts, XHR).
@@ -3712,6 +3771,7 @@ setInterval(() => {
   const db = load();
   let dirty = !!runSchedules(db);
   if (expirePendingDeposits(db)) dirty = true;
+  if (runWithdrawSchedules(db)) dirty = true;
   if (dirty) save(db);
 }, 60 * 1000);
 
