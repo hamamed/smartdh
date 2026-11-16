@@ -719,7 +719,9 @@ function creditDeposit(db, u, plan, amount, opts) {
 // Falls back to now, and never allows a future date.
 function parseWhen(v) {
   if (!v) return Date.now();
-  const t = new Date(v + 'T12:00:00').getTime();
+  // Accept a plain date (YYYY-MM-DD → noon) or a datetime-local value
+  // (YYYY-MM-DDTHH:MM[:SS]), so an admin can set a precise time of day.
+  const t = new Date(v.includes('T') ? v : v + 'T12:00:00').getTime();
   if (!Number.isFinite(t)) return Date.now();
   return Math.min(t, Date.now());
 }
