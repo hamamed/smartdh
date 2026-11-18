@@ -94,6 +94,62 @@ fields with safe defaults), so an older backup still works.
 
 ---
 
+## 3b. Moving to Claude Code on a Mac ⭐
+
+To continue developing this project with **Claude Code on macOS** exactly as on this
+Windows machine:
+
+**1. Install the tools (Terminal):**
+
+```bash
+# Xcode command-line tools (git) + Homebrew if you don't have them
+xcode-select --install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+brew install node        # Node.js (18+)
+npm install -g @anthropic-ai/claude-code   # Claude Code CLI
+```
+
+**2. Get the code + bring over the live state:**
+
+```bash
+mkdir -p ~/Projects && cd ~/Projects
+git clone https://github.com/hamamed/smartdh.git
+cd smartdh
+npm install
+```
+
+Then copy these from the old machine/VPS into the project root (see §3 — they are **not** in git):
+`.env`, `data/` (at least `data/db.json`), and `public/uploads/`. From the Mac you can pull them
+straight off the VPS with `scp`/`rsync` (see the SSH sheet, below):
+
+```bash
+# examples — fill host/user from ACCESS.local.md
+scp  USER@HOST:/var/www/smartdh/.env            ./.env
+rsync -avz USER@HOST:/var/www/smartdh/data/      ./data/
+rsync -avz USER@HOST:/var/www/smartdh/public/uploads/  ./public/uploads/
+```
+
+**3. Run it:**
+
+```bash
+npm start            # → http://localhost:3000
+# or start Claude Code in the project folder:
+claude
+```
+
+**4. First run of Claude Code:** `cd` into the project and run `claude`; sign in when prompted.
+Everything else (editing, running, deploying) is identical to Windows — only the shell differs
+(macOS uses `bash`/`zsh`, so the PowerShell test-kill command in §19 isn't needed; use
+`lsof -ti tcp:4599 | xargs kill` instead).
+
+> **Credentials (SSH keys, logins, tokens)** needed for the steps above are kept in a **separate,
+> git-ignored** file — see **`ACCESS.local.md`** at the project root. That file is intentionally
+> **not** committed (it holds secrets); copy it to the Mac by hand (AirDrop, USB, or a password
+> manager), the same way you move `.env`.
+
+---
+
 ## 4. Daily deploy to the VPS
 
 The VPS checks out the repo and runs it under systemd. Normal deploy is:

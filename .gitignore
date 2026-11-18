@@ -7,3 +7,6 @@ public/uploads/*
 # Android signing key — NEVER commit this. It lives only on your machine + GitHub secrets.
 *.keystore
 android.keystore
+# Private credentials sheet (SSH, logins, tokens) — NEVER commit. Local only.
+ACCESS.local.md
+*.local.md
