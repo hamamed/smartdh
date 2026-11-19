@@ -1,0 +1,4 @@
+# This is a private play-money game for friends and family — not a public service.
+# Keep it out of search engines.
+User-agent: *
+Disallow: /
