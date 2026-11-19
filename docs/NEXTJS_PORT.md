@@ -71,15 +71,20 @@ apostrophes inside the JS strings, which showed up as `&#39;`).
 
 - [x] 0. Scaffold `web/`, plan doc
 - [x] 1. Core libs: db, locales, email, game rules, session, pipeline, router, CSRF, layout
-- [ ] 2. Layout + public pages: landing, start, guide, terms, privacy, download, contact,
+- [x] 2. Layout + public pages: landing, start, guide, terms, privacy, download, contact,
        signup, login, verify, forgot, reset, unsubscribe, pending, error/message/404
+       (37 pages and form posts identical in `tests/fidelity/compare.mjs`)
 - [ ] 3. Player pages: dashboard, invest, withdraw, send, rewards, achievements, activity,
        referral, profile, support, verify-identity, leaderboard, invoice + all player POSTs
 - [ ] 4. Admin pages (hub, users, user, deposits, withdrawals, apps, email, tickets, audit,
        invoices, data, test lab, admins, account, settings-*) + all admin POSTs, CSV/JSON
 - [ ] 5. Background jobs, uploads, QR, Telegram, emails end-to-end
 - [ ] 6. Fidelity check: run Express and Next on the same copy of the data and diff each
-       page's HTML; fix every difference
+       page's HTML; fix every difference. The tool exists since phase 2
+       (`web/tests/fidelity/compare.mjs`, pages listed in `pages.mjs`, made-up data in
+       `fixture.mjs`): add every page you port to `pages.mjs` and keep it at "same".
+       It ignores only what can't matter: head tag order (React 19 hoists metas/links),
+       React's image preload hints and comment separators, attribute order, CSRF/time values.
 - [ ] 7. Cutover: move `web/` to root, deploy with a build step, keep port 3830
 
 ## Running locally

@@ -30,6 +30,8 @@ export interface Ctx {
   t: Translator;
   adminHost: boolean;
   ip: string;
+  /** Set by logout: the pipeline deletes the session file and clears the cookie. */
+  destroySession: boolean;
   /** Extra layout values a route sets for the next render (like res.locals.gaEvent). */
   locals: { gaEvent?: { name: string; params: Record<string, unknown> } | null };
 }

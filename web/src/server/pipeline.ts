@@ -18,11 +18,6 @@ import { adminRouter, playerRouter } from "./routes";
 
 export type Outcome = { kind: "page"; status: number; props: PageProps } | { kind: "sent" };
 
-/** Per-request flags the pipeline reads after the handler ran. */
-export interface SessionControl { destroyed: boolean }
-const control = new WeakMap<Ctx, SessionControl>();
-export function destroyCurrentSession(ctx: Ctx): void { control.set(ctx, { destroyed: true }); }
-
 function parseCookies(header: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   for (const part of (header || "").split(";")) {
@@ -149,7 +144,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse): Promise
     query, body: {}, files: {}, params: {},
     sid, session, db, user, realAdmin, impersonating: !!realAdmin,
     lang, t: (key, vars) => t(lang, key, vars),
-    adminHost, ip: clientIp(req),
+    adminHost, ip: clientIp(req), destroySession: false,
     locals: { gaEvent: session.gaEvent || null },
   };
   if (session.gaEvent) delete session.gaEvent;
@@ -181,8 +176,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse): Promise
   }
 
   // ---- persist the session, set or clear the cookie ----
-  const destroyed = control.get(ctx)?.destroyed;
-  if (destroyed) {
+  if (ctx.destroySession) {
     destroySession(ctx.sid);
     res.setHeader("Set-Cookie", serializeCookie(COOKIE_NAME, "", { path: "/", domain: COOKIE_DOMAIN, expires: new Date(1) }));
   } else {

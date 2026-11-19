@@ -1,4 +1,5 @@
 // views/message.ejs
+import { Fragment } from "react";
 import type { ViewProps } from "../registry";
 
 type Data = {
@@ -25,7 +26,7 @@ export default function MessageView({ h, data }: ViewProps<Data>) {
             {pending && (
               <div className="msg-steps mt-4">
                 {STEPS.map((s, i) => (
-                  <span key={s[1]} style={{ display: "contents" }}>
+                  <Fragment key={s[1]}>
                     <div className="msg-step">
                       <span className={`tile-icon ti-${s[2]}`}><i data-lucide={s[0]}></i></span>
                       <span className="small fw-semibold mt-2">{h.t(s[1])}</span>
@@ -33,7 +34,7 @@ export default function MessageView({ h, data }: ViewProps<Data>) {
                       {i === 1 && <span className="badge bg-warning-subtle text-warning mt-1">{h.t("st_pending")}</span>}
                     </div>
                     {i < 2 && <span className="msg-arrow"><i data-lucide="chevron-right"></i></span>}
-                  </span>
+                  </Fragment>
                 ))}
               </div>
             )}

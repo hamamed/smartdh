@@ -24,7 +24,7 @@ export interface User {
   referralEarnings: number; refAccrued: number; refLastTx: number;
   campaignClaims: number; campaignRewarded: boolean;
   avatar: string; onboarded: boolean; gsDismissed: boolean;
-  reset: { token: string; expires: number } | null;
+  reset: { token: string; code?: string; expires: number } | null;
   referralCode: string; referredBy: number | null;
   emailToken: string; emailOptOut: boolean;
   emailVerified: boolean; verifyToken: string | null;

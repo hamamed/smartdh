@@ -4,7 +4,7 @@
 import Document, { Head, Html, Main, NextScript } from "next/document";
 import type { PageProps } from "@/server/page-props";
 import { DefaultHead } from "@/views/Layout";
-import { BARE_HEADS } from "@/views/bare";
+import { BARE_BODY_CLASS, BARE_HEADS } from "@/views/bare";
 
 export default class KanzupDocument extends Document {
   render() {
@@ -18,7 +18,7 @@ export default class KanzupDocument extends Document {
           <style dangerouslySetInnerHTML={{ __html: "#__next{display:contents}" }} />
           {L && (BareHead ? <BareHead L={L} data={props!.data} /> : <DefaultHead L={L} />)}
         </Head>
-        <body className={props?.bare ? undefined : "d-flex flex-column min-vh-100"}>
+        <body className={props?.bare ? BARE_BODY_CLASS[props.view] : "d-flex flex-column min-vh-100"}>
           <Main />
           <NextScript />
         </body>

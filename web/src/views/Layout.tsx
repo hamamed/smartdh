@@ -1,7 +1,7 @@
 // views/layout.ejs as React: the <head> tags (rendered by _document) and the page
 // chrome around every view (nav, announcement, impersonation bar, bottom nav, footer,
 // the window.MSG strings and the CDN + app scripts).
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { LayoutData } from "@/server/page-props";
 import { cx, helpers } from "./helpers";
 
@@ -36,7 +36,6 @@ export function DefaultHead({ L }: { L: LayoutData }) {
   const s = L.settings;
   return (
     <>
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>{(L.title ? L.title + " · " : "") + s.siteName}</title>
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
       <InlineScript code={gaScript(L)} />
@@ -198,10 +197,10 @@ export function Layout({ L, children }: { L: LayoutData; children: ReactNode }) 
               <span className="d-inline-flex align-items-center gap-2">
                 <i data-lucide="globe"></i>
                 {L.langs.map((l, i) => (
-                  <span key={l.code} style={{ display: "contents" }}>
+                  <Fragment key={l.code}>
                     <a href={`/lang/${l.code}`} className={l.code === L.lang ? "fw-bold text-primary" : "text-muted"}>{l.name}</a>
                     {i < L.langs.length - 1 && <span className="opacity-50">·</span>}
-                  </span>
+                  </Fragment>
                 ))}
               </span>
             </div>
