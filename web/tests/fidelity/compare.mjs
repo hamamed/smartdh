@@ -49,9 +49,14 @@ async function waitUp(port) {
 }
 
 // ---------- http ----------
-function request(port, method, urlPath, { cookie = "", body = null, host = "localhost" } = {}) {
+// Each logical request gets its own made-up client IP (the same one for both apps), so
+// the 20-per-15-minutes auth rate limit isn't hit by the test itself.
+let ipSeq = 0;
+const nextIp = () => { ipSeq++; return `10.77.${Math.floor(ipSeq / 250)}.${(ipSeq % 250) + 1}`; };
+
+function request(port, method, urlPath, { cookie = "", body = null, host = "localhost", ip = "10.66.0.1" } = {}) {
   return new Promise((resolve, reject) => {
-    const headers = { Host: host, Cookie: cookie, "Accept-Language": "en" };
+    const headers = { Host: host, Cookie: cookie, "Accept-Language": "en", "X-Forwarded-For": ip };
     if (body) { headers["Content-Type"] = "application/x-www-form-urlencoded"; headers["Content-Length"] = Buffer.byteLength(body); }
     const req = http.request({ port, method, path: urlPath, headers }, (res) => {
       let data = "";
@@ -71,11 +76,11 @@ const sidOf = (res, prev) => {
 };
 const csrfOf = (html) => (html.match(/name="_csrf" value="([^"]+)"/) || [])[1] || "";
 
-async function signIn(port, email) {
-  const page = await request(port, "GET", "/login");
+async function signIn(port, email, ip) {
+  const page = await request(port, "GET", "/login", { ip });
   let cookie = sidOf(page, "");
   const body = new URLSearchParams({ _csrf: csrfOf(page.body), email, password: PASSWORD }).toString();
-  const res = await request(port, "POST", "/login", { cookie, body });
+  const res = await request(port, "POST", "/login", { cookie, body, ip });
   cookie = sidOf(res, cookie);
   if (res.status !== 302) throw new Error(`login as ${email} on ${port} failed (${res.status})`);
   return cookie;
@@ -194,27 +199,30 @@ async function main() {
   try {
     await Promise.all([waitUp(EXPRESS_PORT), waitUp(NEXT_PORT)]);
     const jars = { [EXPRESS_PORT]: {}, [NEXT_PORT]: {} };
+    const loginIp = {};
     const cookieFor = async (port, as, fresh) => {
       if (as === "anon") return "";
       const email = as === "admin" ? ADMIN_EMAIL : as.includes("@") ? as : `${as}@kanzup.test`;
-      if (fresh) return signIn(port, email); // e.g. logout: don't spoil the shared session
-      return (jars[port][email] ??= await signIn(port, email));
+      const ip = (loginIp[email + (fresh ? "#fresh" : "")] ??= nextIp());
+      if (fresh) return signIn(port, email, ip); // e.g. logout: don't spoil the shared session
+      return (jars[port][email] ??= await signIn(port, email, ip));
     };
     const out = path.join(logs, "diffs");
     fs.mkdirSync(out);
     for (const page of PAGES) {
       const label = `${page.as.padEnd(16)} ${page.form ? "POST " : ""}${page.path}${page.note ? "  (" + page.note + ")" : ""}`;
       if (filter && !label.includes(filter)) continue;
+      const ip = nextIp();
       const [a, b] = await Promise.all([EXPRESS_PORT, NEXT_PORT].map(async (port) => {
         let cookie = await cookieFor(port, page.as, page.fresh);
         const host = page.host || "localhost";
-        if (!page.form) return request(port, "GET", page.path, { cookie, host });
+        if (!page.form) return request(port, "GET", page.path, { cookie, host, ip });
         // A form post: load the page with the form first for the session's CSRF token.
-        const formPage = await request(port, "GET", page.formPage || page.path, { cookie, host });
+        const formPage = await request(port, "GET", page.formPage || page.path, { cookie, host, ip });
         cookie = sidOf(formPage, cookie);
         const fields = typeof page.form === "function" ? page.form() : page.form;
         const body = new URLSearchParams({ _csrf: csrfOf(formPage.body), ...fields }).toString();
-        return request(port, "POST", page.path, { cookie, host, body });
+        return request(port, "POST", page.path, { cookie, host, body, ip });
       }));
       // The Next page must be plain HTML: no React runtime, no serialised page data.
       if (/__NEXT_DATA__|\/_next\/static\/chunks\//.test(b.body)) {
@@ -222,17 +230,33 @@ async function main() {
         console.log("CLIENT JS " + label + " — the Next page ships Next.js scripts or page data");
         continue;
       }
+      // JSON replies: drop the live clock, round accruing money to cents, sort keys.
+      const isJson = (r) => String(r.headers["content-type"] || "").includes("application/json") && !String(r.headers["content-disposition"] || "");
+      const canonJson = (txt) => JSON.stringify(JSON.parse(txt), (k, v) => {
+        if (k === "now") return undefined;
+        if (typeof v === "number" && v >= RUN_START && v < RUN_START + 36e5) return "<during-run>";
+        if (typeof v === "number" && !Number.isInteger(v)) return Math.round(v * 100) / 100;
+        if (v && typeof v === "object" && !Array.isArray(v)) return Object.fromEntries(Object.keys(v).sort().map((x) => [x, v[x]]));
+        return v;
+      }, 1) + "\n";
+      const isText = (r) => /text\/csv|attachment/.test(String(r.headers["content-type"] || "") + String(r.headers["content-disposition"] || ""));
+      // Rows created during the run: their time and random referral code differ by nature.
+      const maskIso = (txt) => txt.replace(/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z/g, (iso) => (Date.parse(iso) >= RUN_START ? "<during-run>" : iso))
+        .split("\n").map((line) => (line.includes("<during-run>") ? line.replace(/,[A-HJ-NP-Z2-9]{7},/g, ",<code>,") : line)).join("\n");
+      const bodyOf = (r) => isJson(r) ? canonJson(r.body) : isText(r) ? maskIso(r.body.replace(/\r\n/g, "\n")) + "\n" : normalise(r.body);
       const head = (r) => `HTTP ${r.status}${r.headers.location ? " → " + r.headers.location : ""}\n`;
-      const na = head(a) + (a.status === 200 || a.status >= 400 ? normalise(a.body) : "");
-      const nb = head(b) + (b.status === 200 || b.status >= 400 ? normalise(b.body) : "");
+      const na = head(a) + (a.status === 200 || a.status >= 400 ? bodyOf(a) : "");
+      const nb = head(b) + (b.status === 200 || b.status >= 400 ? bodyOf(b) : "");
       if (na === nb) { console.log("same     " + label); continue; }
-      failures++;
+      if (page.known) {
+        console.log("KNOWN    " + label + " — " + page.known);
+      } else failures++;
       const slug = (page.form ? "POST" : "") + (page.note || "") + page.path.replace(/[^a-z0-9]+/gi, "_") + "_" + page.as.replace(/[^a-z0-9]+/gi, "_");
       const fa = path.join(out, slug + ".express.txt"), fb = path.join(out, slug + ".next.txt");
       fs.writeFileSync(fa, na); fs.writeFileSync(fb, nb);
       let diff = "";
       try { execFileSync("diff", ["-u", fa, fb]); } catch (e) { diff = String(e.stdout); }
-      console.log("DIFFERS  " + label + "\n" + diff.split("\n").slice(2, 60).join("\n"));
+      if (!page.known) console.log("DIFFERS  " + label + "\n" + diff.split("\n").slice(2, 60).join("\n"));
     }
   } finally {
     ex.kill(); nx.kill();

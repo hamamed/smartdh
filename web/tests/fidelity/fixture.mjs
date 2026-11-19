@@ -47,6 +47,7 @@ export function buildFixture(now = Date.now()) {
     user(5, "Youssef Test", { referredBy: 2, invested: { balanced: 2000 }, earnings: 40, xp: 10 }),
     user(6, "Nadia Pending", { status: "pending", emailVerified: true }),
     user(7, "Test Bot", { isTest: true, invested: { safe: 500 } }),
+    user(8, "Mod Support", { isAdmin: true, role: "support" }),
   ];
   const deposits = [
     { id: 1, userId: 2, userName: "Sara Test", plan: "safe", planLabel: "SafeSave", amount: 1000, status: "approved", note: "", receipt: "", byAdmin: false, createdAt: now - 40 * DAY, approvedAt: now - 40 * DAY },
@@ -81,6 +82,6 @@ export function buildFixture(now = Date.now()) {
       dailyBonusBase: 50,
       depositInfo: { bankName: "Demo Bank (play money)", accountName: "Game Master", rib: "000 780 0000000000000000 42", note: "Demo only." },
     },
-    nextUserId: 8, nextWithdrawId: 4, nextDepositId: 8, nextTransferId: 2, nextAppId: 3, nextAuditId: 2, nextTicketId: 2, nextScheduleId: 2,
+    nextUserId: 9, nextWithdrawId: 4, nextDepositId: 8, nextTransferId: 2, nextAppId: 3, nextAuditId: 2, nextTicketId: 2, nextScheduleId: 2,
   };
 }

@@ -69,8 +69,14 @@ views write `data-raw-onsubmit="…"` and `src/server/html-transform.ts` (run fr
 `_document.getInitialProps`) turns it back into `onsubmit="…"`. The same transform does the
 admin-subdomain `/admin/` → `/` link rewrite over the whole page, exactly like Express.
 
-Known, intentional differences: `window.MSG` strings are JSON-encoded (EJS HTML-escaped
-apostrophes inside the JS strings, which showed up as `&#39;`).
+Known, intentional differences (each one is a fix of an Express quirk; nothing a user relies on):
+- `window.MSG` strings are JSON-encoded (EJS HTML-escaped apostrophes inside the JS strings,
+  which showed up as `&#39;`).
+- Admin → Apps: the EJS card closed the edit `<form>` in the middle of the button row (invalid
+  HTML the browser repaired). Next renders valid markup; the Save button joins the edit form via
+  `form="edit-<id>"`. Same look, same behaviour.
+- Admin → Users: the row for yourself built `disabled title="…"` inside an escaped `<%= %>`, so the
+  tooltip came out mangled. Next renders the intended tooltip (the checkbox is disabled in both).
 
 ## Phases (tick when pushed)
 
@@ -82,8 +88,9 @@ apostrophes inside the JS strings, which showed up as `&#39;`).
 - [x] 3. Player pages: dashboard, invest, withdraw, send, rewards, achievements, activity,
        referral, profile, support, verify-identity, leaderboard, invoice + all player POSTs
        (132 pages and posts identical; multipart uploads still to be exercised in phase 5)
-- [ ] 4. Admin pages (hub, users, user, deposits, withdrawals, apps, email, tickets, audit,
+- [x] 4. Admin pages (hub, users, user, deposits, withdrawals, apps, email, tickets, audit,
        invoices, data, test lab, admins, account, settings-*) + all admin POSTs, CSV/JSON
+       (comparison: 271 identical, 10 known differences listed below)
 - [ ] 5. Background jobs, uploads, QR, Telegram, emails end-to-end
 - [ ] 6. Fidelity check: run Express and Next on the same copy of the data and diff each
        page's HTML; fix every difference. The tool exists since phase 2

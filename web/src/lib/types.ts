@@ -50,7 +50,7 @@ export interface Transfer { id: number; fromId: number; fromName: string; toId: 
 
 export interface TicketMessage { from: "user" | "admin"; authorName?: string; text: string; at: number; file?: string; fileName?: string; fileType?: string }
 export interface Ticket {
-  id: number; userId: number; topic: string; subject: string; status: "open" | "answered" | "closed";
+  id: number; userId: number; userName?: string; email?: string; topic: string; subject: string; status: "open" | "answered" | "closed";
   messages: TicketMessage[]; createdAt: number; updatedAt: number; unreadUser?: boolean; unreadAdmin?: boolean;
 }
 
