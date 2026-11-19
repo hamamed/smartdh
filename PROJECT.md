@@ -1,5 +1,11 @@
 # KanzUp — Project Guide
 
+> **Since 2026-11-19 the live site runs the Next.js + React version in `web/`** (same pages, same
+> data file, same sessions). The Express app at the repo root is kept as the reference that the
+> page-by-page comparison (`web/tests/fidelity/`) checks against. Read `docs/NEXTJS_PORT.md` for
+> how the new app is built; sections below that describe Express internals (server.js, views/)
+> describe that reference.
+
 Everything needed to **understand, run, and move** this project to another device.
 
 KanzUp is an investing‑style web app (Moroccan Dirham / درهم) for a private friends‑and‑family
@@ -9,7 +15,13 @@ admin approval, send coins to each other, verify their identity, and more. Defau
 
 - **Live:** https://kanzup.com (players) · https://admin.kanzup.com (admin)
 - **Repo:** github.com/hamamed/smartdh (private)
-- **Server path (VPS):** `/var/www/smartdh` · **systemd service:** `smartdh`
+- **Server (since 2026-11-19):** the koydam server `46.224.86.198`, path `/opt/kanzup`,
+  systemd service `kanzup` (runs `next start -p 3830`), user `kanzup`, nginx site
+  `/etc/nginx/sites-available/kanzup`. The last Express build is kept at `/opt/kanzup-express`.
+  Backed up nightly to the Hetzner Storage Box with everything else under `/opt`.
+- **Old server** `46.224.32.64` (`/var/www/smartdh`, service `smartdh`): app stopped and disabled;
+  its nginx only forwards kanzup.com to the new server until DNS has moved. Its data was the
+  source of the move and is left untouched there.
 
 ---
 
@@ -125,9 +137,9 @@ straight off the VPS with `scp`/`rsync` (see the SSH sheet, below):
 
 ```bash
 # examples — fill host/user from ACCESS.local.md
-scp  USER@HOST:/var/www/smartdh/.env            ./.env
-rsync -avz USER@HOST:/var/www/smartdh/data/      ./data/
-rsync -avz USER@HOST:/var/www/smartdh/public/uploads/  ./public/uploads/
+scp  root@46.224.86.198:/opt/kanzup/.env            ./.env
+rsync -avz root@46.224.86.198:/opt/kanzup/data/      ./data/
+rsync -avz root@46.224.86.198:/opt/kanzup/public/uploads/  ./public/uploads/
 ```
 
 **3. Run it:**
@@ -152,14 +164,17 @@ Everything else (editing, running, deploying) is identical to Windows — only t
 
 ## 4. Daily deploy to the VPS
 
-The VPS checks out the repo and runs it under systemd. Normal deploy is:
+The server keeps **no git checkout** (and no GitHub token). Deploy from a local checkout:
 
 ```bash
-cd /var/www/smartdh && git pull && systemctl restart smartdh
+deploy/push.sh --dry-run   # see what would change (check for unexpected deletions)
+deploy/push.sh             # backs up data/ + the current build, rsyncs web/, npm ci, next build,
+                           # restarts `kanzup`, checks it — and puts the previous build back if
+                           # the build or the check fails
 ```
 
-(If `git pull` complains about local changes to tracked files, commit/stash or `git checkout --`
-those files first.) `data/` is untouched by pulls because it's git‑ignored.
+`data/`, `public/uploads/`, `public/downloads/` and `.env` on the server are never touched by a
+deploy. (`deploy/update.sh` is the old git‑pull deploy for the previous server, kept for reference.)
 
 ---
 
@@ -190,34 +205,24 @@ Copy `.env.example` → `.env`. Full list:
 
 ## 6. Running in production (systemd + nginx)
 
-**systemd unit** (`/etc/systemd/system/smartdh.service`), roughly:
-
-```ini
-[Unit]
-Description=KanzUp (smartdh)
-After=network.target
-
-[Service]
-WorkingDirectory=/var/www/smartdh
-ExecStart=/usr/bin/node server.js
-Restart=always
-EnvironmentFile=/var/www/smartdh/.env
-User=www-data
-
-[Install]
-WantedBy=multi-user.target
-```
+**systemd unit** `/etc/systemd/system/kanzup.service` on the koydam server: runs
+`/opt/kanzup/node_modules/.bin/next start -p 3830 -H 127.0.0.1` in `/opt/kanzup` as user `kanzup`
+(Node 22); Next.js reads `.env` itself. Hardened with `ProtectSystem=strict` so the app can only
+write `data/`, `public/uploads/` and `.next/cache`.
 
 ```bash
-systemctl daemon-reload
-systemctl enable --now smartdh
-systemctl restart smartdh      # after each deploy
-journalctl -u smartdh -f       # view logs
+systemctl restart kanzup       # deploy/push.sh does this
+journalctl -u kanzup -f        # view logs
 ```
 
-**nginx** reverse‑proxies `kanzup.com` and `admin.kanzup.com` to `http://127.0.0.1:3000`.
-The admin subdomain sends its root to `/admin` (the app serves admin pages at the root on the
-admin host, and under `/admin` everywhere). `app.set('trust proxy', 1)` is on for correct IPs.
+**nginx** (`/etc/nginx/sites-available/kanzup`) reverse‑proxies `kanzup.com`, `www` and
+`admin.kanzup.com` to `http://127.0.0.1:3830`, serving `/css /js /icons /uploads` straight from disk.
+The admin subdomain serves the admin hub at its root. `app.set('trust proxy', 1)` is on for correct
+IPs; while the old server still forwards traffic, nginx trusts its `X-Forwarded-For`
+(`set_real_ip_from 46.224.32.64` — remove once DNS has moved and the old server is gone).
+
+**HTTPS**: Let's Encrypt cert `kanzup.com` (covers all three names), copied from the old server with
+its renewal config and account; certbot's timer renews it here once DNS points to this server.
 
 ---
 
@@ -297,7 +302,7 @@ next*Id: …   // nextUserId, nextWithdrawId, nextDepositId, nextTransferId, nex
 
 `db.js` API: `load()` (cached), `save(db)` (atomic write + hourly backup), `migrate(db)`,
 `replaceAll()`, `wipe()`. **Note:** a Node script that writes `db.json` directly is not seen by the
-running server until `systemctl restart smartdh` (the server holds one in‑memory cache).
+running server until `systemctl restart kanzup` (the server holds one in‑memory cache).
 
 ---
 

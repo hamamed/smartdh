@@ -101,7 +101,10 @@ Known, intentional differences (each one is a fix of an Express quirk; nothing a
        `fixture.mjs`): add every page you port to `pages.mjs` and keep it at "same".
        It ignores only what can't matter: head tag order (React 19 hoists metas/links),
        React's image preload hints and comment separators, attribute order, CSRF/time values.
-- [ ] 7. Cutover (waiting for the owner's go-ahead). Already checked on 2026-11-19: the app
+- [x] 7. Cutover done 2026-11-19 05:25 UTC (owner: "switch it"), 29 s downtime; sessions kept
+       (an existing signed-in session opened /dashboard after the switch). Rollback copies:
+       `/opt/kanzup-express` (Express build) and `/root/kanzup-data-before-nextjs-*` (data).
+       Deploy from now on: `deploy/push.sh` at the repo root (deploys `web/`). Original plan: Already checked on 2026-11-19: the app
        builds and runs on the koydam server (Node 22) against a copy of the live data, and the
        landing, ad landing, guide and terms pages are identical to the live Express output on
        that real data (copy deleted afterwards). Steps when approved:
