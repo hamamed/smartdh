@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "parse5";
 import vm from "node:vm";
 import { ADMIN_EMAIL, PASSWORD, buildFixture } from "./fixture.mjs";
-import { PAGES } from "./pages.mjs";
+import { KNOWN, PAGES } from "./pages.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.resolve(HERE, "../..");
@@ -54,10 +54,10 @@ async function waitUp(port) {
 let ipSeq = 0;
 const nextIp = () => { ipSeq++; return `10.77.${Math.floor(ipSeq / 250)}.${(ipSeq % 250) + 1}`; };
 
-function request(port, method, urlPath, { cookie = "", body = null, host = "localhost", ip = "10.66.0.1" } = {}) {
+function request(port, method, urlPath, { cookie = "", body = null, host = "localhost", ip = "10.66.0.1", contentType = "application/x-www-form-urlencoded" } = {}) {
   return new Promise((resolve, reject) => {
     const headers = { Host: host, Cookie: cookie, "Accept-Language": "en", "X-Forwarded-For": ip };
-    if (body) { headers["Content-Type"] = "application/x-www-form-urlencoded"; headers["Content-Length"] = Buffer.byteLength(body); }
+    if (body) { headers["Content-Type"] = contentType; headers["Content-Length"] = Buffer.byteLength(body); }
     const req = http.request({ port, method, path: urlPath, headers }, (res) => {
       let data = "";
       res.setEncoding("utf8");
@@ -74,6 +74,18 @@ const sidOf = (res, prev) => {
   const set = [].concat(res.headers["set-cookie"] || []).find((c) => c.startsWith("kz.sid="));
   return set ? set.split(";")[0] : prev;
 };
+// A multipart/form-data body: text fields plus files { field: { name, type, data: Buffer } }.
+function multipart(fields, files) {
+  const boundary = "----kzfidelity" + Math.random().toString(16).slice(2);
+  const parts = [];
+  for (const [k, v] of Object.entries(fields)) parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
+  for (const [k, f] of Object.entries(files)) {
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"; filename="${f.name}"\r\nContent-Type: ${f.type}\r\n\r\n`), f.data, Buffer.from("\r\n"));
+  }
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  return { body: Buffer.concat(parts), contentType: "multipart/form-data; boundary=" + boundary };
+}
+
 const csrfOf = (html) => (html.match(/name="_csrf" value="([^"]+)"/) || [])[1] || "";
 
 async function signIn(port, email, ip) {
@@ -114,7 +126,9 @@ function canonicalMsg(code) {
 // Things created while the comparison runs get timestamps a millisecond apart on the
 // two servers; times from before the run (the fixture) are still compared exactly.
 const RUN_START = Date.now();
-const maskCsrf = (v) => v.replace(/\b[0-9a-f]{48}\b/g, "<csrf>");
+const maskCsrf = (v) => v.replace(/\b[0-9a-f]{48}\b/g, "<csrf>")
+  // uploaded files get random names (u12-…, app-…, cin-…, tk-…, rcpt-…, logo-…)
+  .replace(/\/uploads\/(u\d+|app|logo|rcpt|tk|cin)-[0-9a-f]+\.(\w+)/g, "/uploads/$1-<random>.$2");
 function maskVolatile(name, v) {
   v = maskCsrf(v);
   if (name === "data-value" || name === "data-persec") v = v.replace(/^(-?\d+\.\d{2})\d*$/, "$1");
@@ -187,6 +201,7 @@ function normalise(html) {
 // ---------- run ----------
 async function main() {
   const filter = process.argv[2] || "";
+  for (const p of PAGES) { const base = p.path.split("?")[0]; if (KNOWN[base] && !p.form) p.known = KNOWN[base]; }
   const fixture = buildFixture();
   const expressDir = prepareExpress(fixture);
   const nextData = fs.mkdtempSync(path.join(os.tmpdir(), "kz-next-"));
@@ -214,14 +229,22 @@ async function main() {
       if (filter && !label.includes(filter)) continue;
       const ip = nextIp();
       const [a, b] = await Promise.all([EXPRESS_PORT, NEXT_PORT].map(async (port) => {
-        let cookie = await cookieFor(port, page.as, page.fresh);
+        let cookie = await cookieFor(port, page.as, page.fresh || !!page.lang);
         const host = page.host || "localhost";
+        if (page.lang) cookie = sidOf(await request(port, "GET", "/lang/" + page.lang, { cookie, host, ip }), cookie);
         if (!page.form) return request(port, "GET", page.path, { cookie, host, ip });
         // A form post: load the page with the form first for the session's CSRF token.
         const formPage = await request(port, "GET", page.formPage || page.path, { cookie, host, ip });
         cookie = sidOf(formPage, cookie);
         const fields = typeof page.form === "function" ? page.form() : page.form;
-        const body = new URLSearchParams({ _csrf: csrfOf(formPage.body), ...fields }).toString();
+        const token = csrfOf(formPage.body);
+        if (page.files) {
+          // Express checks upload forms' CSRF token from the query string, before parsing the body.
+          const mp = multipart({ _csrf: token, ...fields }, page.files);
+          const sep = page.path.includes("?") ? "&" : "?";
+          return request(port, "POST", page.path + sep + "_csrf=" + token, { cookie, host, body: mp.body, contentType: mp.contentType, ip });
+        }
+        const body = new URLSearchParams({ _csrf: token, ...fields }).toString();
         return request(port, "POST", page.path, { cookie, host, body, ip });
       }));
       // The Next page must be plain HTML: no React runtime, no serialised page data.

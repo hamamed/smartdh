@@ -91,8 +91,11 @@ Known, intentional differences (each one is a fix of an Express quirk; nothing a
 - [x] 4. Admin pages (hub, users, user, deposits, withdrawals, apps, email, tickets, audit,
        invoices, data, test lab, admins, account, settings-*) + all admin POSTs, CSV/JSON
        (comparison: 271 identical, 10 known differences listed below)
-- [ ] 5. Background jobs, uploads, QR, Telegram, emails end-to-end
-- [ ] 6. Fidelity check: run Express and Next on the same copy of the data and diff each
+- [x] 5. Background jobs (`src/instrumentation.ts` → `src/server/job-timer.ts`), uploads (all 9
+       upload forms in the comparison; files saved with the same names and served), QR, emails
+       (logged when SMTP is off, as before). Telegram uses the same calls; not sent in tests.
+- [x] 6. Fidelity check (346 pages and form posts, Arabic/English/French: 334 identical,
+       12 known differences = the two Express bugs below on 12 page variants): run Express and Next on the same copy of the data and diff each
        page's HTML; fix every difference. The tool exists since phase 2
        (`web/tests/fidelity/compare.mjs`, pages listed in `pages.mjs`, made-up data in
        `fixture.mjs`): add every page you port to `pages.mjs` and keep it at "same".
@@ -105,5 +108,6 @@ Known, intentional differences (each one is a fix of an Express quirk; nothing a
 ```bash
 cd web && npm install
 npm test                      # unit + differential tests against ../server.js
+npm run build && node tests/fidelity/compare.mjs [filter]   # Express vs Next, page by page
 npm run build && DATA_DIR=/tmp/kz SESSION_SECRET=dev npx next start -p 3031   # production mode (no hydration)
 ```

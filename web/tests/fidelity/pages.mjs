@@ -187,14 +187,36 @@ for (const p of ["/admin", "/admin/users", "/admin/users/3", "/admin/users/4", "
 for (const p of ["/dashboard", "/invest", "/withdraw", "/activity"]) PAGES.push({ path: p, as: "youssef.test", note: "after admin" });
 PAGES.push({ path: "/", as: "anon", note: "after admin" }, { path: "/dashboard", as: "nadia.pending", note: "approved now" });
 
+
 // Intentional differences (checked by hand; the diffs are still written to the log folder).
-const KNOWN = {
+export const KNOWN = {
   "/admin/apps": "Express emitted invalid nested markup (edit form closed mid-row); Next renders valid HTML, same look and behaviour",
   "/admin/users": "Express bug: the self row's tooltip was built as an escaped string, giving a mangled title; Next renders the intended title",
   "/users": "Express bug: the self row's tooltip was built as an escaped string, giving a mangled title; Next renders the intended title",
 };
-for (const p of PAGES) {
-  const base = p.path.split("?")[0];
-  if (KNOWN[base] && !p.form) p.known = KNOWN[base];
-}
 
+// phase 5 — uploads (multipart), then the pages that show them
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg==", "base64");
+const png = (name) => ({ name, type: "image/png", data: PNG });
+PAGES.push(
+  { path: "/profile", as: "sara.test", formPage: "/profile", form: { name: "Sara Test", hasPhoto: "1" }, files: { photo: png("me.png") }, note: "photo" },
+  { path: "/profile", as: "sara.test", formPage: "/profile", form: { name: "Sara Test", hasPhoto: "1" }, files: { photo: { name: "x.txt", type: "text/plain", data: Buffer.from("hi") } }, note: "not an image" },
+  { path: "/support/new", as: "sara.test", formPage: "/support/new?topic=deposit", form: { topic: "deposit", subject: "Receipt", message: "See attached" }, files: { file: { name: "receipt.pdf", type: "application/pdf", data: Buffer.from("%PDF-1.4 test") } }, note: "attachment" },
+  { path: "/verify-identity", as: "lina.test", formPage: "/verify-identity", form: { fullName: "Lina Test", dob: "1995-05-05", address: "2 Test Rd" }, files: { cinFront: png("front.png"), cinBack: png("back.png") }, note: "CIN photos" },
+  { path: "/admin/users/4/deposit", as: "admin", formPage: "/admin/users/4", form: { amount: "300", plan: "safe", status: "approved", note: "with receipt" }, files: { receipt: png("r.png") }, note: "receipt" },
+  { path: "/admin/apps/add", as: "admin", formPage: "/admin/apps", form: { name: "Pic App", icon: "image", rate: "9", minLevel: "1", fixedAmount: "0", color: "success", desc: "", link: "" }, files: { image: png("app.png") }, note: "image" },
+  { path: "/admin/settings/logo", as: "admin", formPage: "/admin/settings/general", form: { brandMode: "logo" }, files: { logo: png("logo.png") }, note: "logo" },
+  { path: "/admin/tickets/1/reply", as: "admin", formPage: "/admin/tickets/1", form: { message: "Here you go" }, files: { file: png("shot.png") }, note: "attachment" },
+  { path: "/admin/import/users", as: "admin", formPage: "/admin/data", form: {}, files: { file: { name: "u.csv", type: "text/csv", data: Buffer.from("name,email,status,xp,earnings,password\nImported One,imported.one@kanzup.test,active,30,12,pw1234\nNoName,,active,,,\nSara Again,sara.test@kanzup.test,,,,\n") } }, note: "CSV" },
+);
+for (const p of ["/profile", "/referral", "/support", "/support/3", "/dashboard"]) PAGES.push({ path: p, as: "sara.test", note: "after uploads" });
+PAGES.push({ path: "/verify-identity", as: "lina.test", note: "after uploads" });
+for (const p of ["/admin/users/4", "/admin/tickets/1", "/admin/settings/general", "/admin/users", "/admin/apps?show=all", "/admin/invoice/deposit/12", "/admin"]) PAGES.push({ path: p, as: "admin", note: "after uploads" });
+PAGES.push({ path: "/", as: "anon", note: "logo" });
+
+// phase 6 — the main pages in English and French (left-to-right layout, other number/date text)
+for (const lang of ["en", "fr"]) {
+  for (const p of ["/", "/start", "/guide", "/terms", "/privacy", "/login", "/signup"]) PAGES.push({ path: p, as: "anon", lang, note: lang });
+  for (const p of ["/dashboard", "/invest", "/withdraw", "/send", "/activity", "/referral", "/profile", "/support/1", "/invoice/deposit/1"]) PAGES.push({ path: p, as: "omar.test", lang, note: lang });
+  for (const p of ["/admin", "/admin/users/2", "/admin/withdrawals", "/admin/settings/economy", "/admin/users/2/statement"]) PAGES.push({ path: p, as: "admin", lang, note: lang });
+}
