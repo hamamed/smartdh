@@ -1,0 +1,149 @@
+// Branded HTML email + optional SMTP sending — a port of the Express app's email.js.
+// If SMTP_HOST is not configured, emails are logged instead of sent.
+import nodemailer, { type Transporter } from "nodemailer";
+
+export interface EmailOptions {
+  siteName?: string; appUrl?: string; logoUrl?: string; unsubscribeUrl?: string; preview?: string;
+  heading?: string; intro?: string; bodyHtml?: string; lines?: string[];
+  cta?: { text?: string; url: string } | null; dir?: string;
+  labels?: { tagline?: string; unsubscribe?: string; visit?: string };
+}
+
+let transporter: Transporter | null = null;
+try {
+  if (process.env.SMTP_HOST) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+    });
+  }
+} catch (e) {
+  console.warn("Email disabled (nodemailer/SMTP not ready):", (e as Error).message);
+}
+
+export function esc(s: unknown): string {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Turn a plain-text message (what an admin types) into safe paragraph HTML:
+// blank lines separate paragraphs, single newlines become <br>.
+export function textToHtml(text: unknown): string {
+  return String(text || '').trim().split(/\n{2,}/).map((block) =>
+    `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${
+      esc(block).replace(/\n/g, '<br>')
+    }</p>`
+  ).join('');
+}
+
+// Build a full, email-client-safe HTML message that matches the site's look:
+// a sunset-gradient header, a white card body, a CTA button and a footer with
+// an unsubscribe link. Uses tables + inline styles so
+// it renders in Gmail/Outlook/Apple Mail (which strip <style> and flexbox).
+export function renderEmail(opts: EmailOptions = {}): string {
+  const {
+    siteName = 'KanzUp',
+    appUrl = '#',
+    logoUrl = '',
+    unsubscribeUrl = '',
+    preview = '',
+    heading = '',
+    intro = '',
+    bodyHtml = '',
+    lines = [],
+    cta = null,                 // { text, url }
+    dir = 'ltr',
+    labels = {}
+  } = opts;
+
+  const L = Object.assign({
+    tagline: '',
+    unsubscribe: 'Unsubscribe from these emails',
+    visit: 'Open ' + siteName
+  }, labels);
+
+  const align = dir === 'rtl' ? 'right' : 'left';
+  const body = bodyHtml || lines.map((l) =>
+    `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${esc(l)}</p>`
+  ).join('');
+
+  const button = cta && cta.url ? `
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 6px;">
+          <tr><td align="center" bgcolor="#0e9f6e" style="border-radius:12px;">
+            <a href="${esc(cta.url)}" target="_blank"
+               style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background:linear-gradient(135deg,#17b57e,#0b7d57);">
+              ${esc(cta.text || L.visit)}
+            </a>
+          </td></tr>
+        </table>` : '';
+
+  // Header pattern must be a HOSTED image (email clients strip data-URI backgrounds).
+  // The PNG bakes in the brand gradient + dots. Falls back to a CSS gradient when
+  // there's no absolute app URL (local previews), and to the solid bgcolor in Outlook.
+  const patternUrl = /^https?:\/\//.test(appUrl) ? appUrl.replace(/\/$/, '') + '/email/pattern.png' : '';
+  const headerStyle = patternUrl
+    ? `background-color:#0b7d57;background-image:url('${esc(patternUrl)}');background-size:cover;background-position:center;background-repeat:no-repeat;`
+    : 'background:linear-gradient(135deg,#13b07f 0%,#0b7d57 100%);';
+
+  return `<!doctype html>
+<html dir="${dir}" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>${esc(heading || siteName)}</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f3ef;-webkit-font-smoothing:antialiased;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(preview || heading)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f3ef;padding:24px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(20,38,28,.10);font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <!-- Header (hosted banner: brand gradient + dots, like the confirmation page) -->
+      <tr><td align="center" bgcolor="#0b7d57" ${patternUrl ? `background="${esc(patternUrl)}"` : ''} style="${headerStyle}padding:34px 24px;">
+        ${logoUrl
+          ? `<img src="${esc(logoUrl)}" alt="${esc(siteName)}" height="40" style="height:40px;max-height:40px;width:auto;display:inline-block;">`
+          : `<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.3px;">${esc(siteName)}</div>`}
+      </td></tr>
+      <!-- Body -->
+      <tr><td align="${align}" dir="${dir}" style="padding:32px 30px 8px;">
+        ${heading ? `<h1 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#14261c;">${esc(heading)}</h1>` : ''}
+        ${intro ? `<p style="margin:0 0 16px;color:#3a4640;font-size:15px;line-height:1.6;">${esc(intro)}</p>` : ''}
+        ${body}
+        ${button}
+      </td></tr>
+      <!-- Footer -->
+      <tr><td align="center" style="padding:20px 24px 28px;border-top:1px solid #e5eae2;">
+        <a href="${esc(appUrl)}" target="_blank" style="color:#0b7d57;font-size:13px;font-weight:600;text-decoration:none;">${esc(L.visit)}</a>
+        ${unsubscribeUrl ? `
+        <div style="margin-top:10px;">
+          <a href="${esc(unsubscribeUrl)}" target="_blank" style="color:#9a93a3;font-size:12px;text-decoration:underline;">${esc(L.unsubscribe)}</a>
+        </div>` : ''}
+        <div style="margin-top:10px;color:#b3adbd;font-size:11px;">© ${esc(siteName)} · ${esc(L.tagline)}</div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
+export async function sendMail(to: string, subject: string, html: string, opts: { replyTo?: string } = {}): Promise<{ ok: boolean; disabled?: boolean; error?: string }> {
+  if (!transporter) {
+    console.log(`\n[email disabled] To: ${to}\nSubject: ${subject}\n(HTML ${String(html).length} chars)\n`);
+    return { ok: true, disabled: true };
+  }
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || "KanzUp <no-reply@kanzup.com>",
+      to, subject, html,
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error("Failed to send email:", (e as Error).message);
+    return { ok: false, error: (e as Error).message };
+  }
+}

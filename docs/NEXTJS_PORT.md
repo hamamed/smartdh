@@ -21,33 +21,56 @@ Same site, new stack. A player or admin must not notice the switch:
 ```
 /            the live Express app (reference; untouched until cutover)
 /web         the Next.js app (Next 16.3.7, React 19.2.8, TypeScript)
-  src/lib/   ported logic (db, locales, email, game rules, session, request context)
-  src/app/   pages (one per old route) + one route handler that runs every form POST
-  src/views/ the converted EJS templates as React components
+  src/lib/     ported logic (db, locales, email, game rules, session) — pure where views need it
+  src/server/  pipeline (the Express middleware chain), router, route handlers by area
+  src/pages/   one catch-all page that runs the pipeline; _document/_app shells
+  src/views/   the converted EJS templates as React components
 ```
 
 At cutover `web/` moves to the repo root and the Express files are deleted.
 
 ## How the Express behaviour maps onto Next
 
-| Express | Next.js |
+**Pages Router, server-rendered only.** Every URL hits `src/pages/[[...path]].tsx`, whose
+`getServerSideProps` runs the ported Express pipeline (`src/server/pipeline.ts`). A route
+handler returns `render(view, data)`, `redirect(url)` (302, like Express), `json()` or `raw()`.
+The page sets `unstable_runtimeJS: false`, so the browser gets plain HTML with **no React
+runtime and no `__NEXT_DATA__`** — exactly like the EJS output, which is what lets
+`public/js/app.js`, Lucide and Bootstrap keep owning the page. (Checked in Next 16.3.7:
+`next/dist/pages/_document.js` drops all scripts and page data when the flag is false. It
+only applies in production builds; `next dev` still hydrates.)
+
+Why not the App Router: React hydration would fight Lucide/app.js rewriting the DOM, and
+route handlers can't render React or re-render a form with its error the way `res.render`
+does after a failed POST. `getServerSideProps` handles GET and POST at the same URL.
+
+| Express | Here |
 |---|---|
-| `express-session` + file store | `src/lib/session.ts`: same cookie signing (`s:<sid>.<hmac>`), same JSON files |
-| global middleware (`req.currentUser`, accrual, `res.locals.*`) | `src/lib/context.ts` → `getCtx()`, cached per request with React `cache()` |
-| `app.post('/x')` handlers | `src/proxy.ts` rewrites every non-asset POST to `/api/form/<path>`; `src/app/api/form/[...path]/route.ts` dispatches to the ported handler |
-| CSRF token in session + `_csrf` field | same token, checked in the form dispatcher |
-| admin subdomain (root = admin, `/admin/` stripped from HTML) | proxy rewrites admin-host paths to `/admin/...`; links go through `adminHref()` |
-| `setInterval` 60 s jobs | `src/instrumentation.ts` `register()` starts the same timer once |
-| multer uploads | `request.formData()` + same file names, size and type limits |
-| in-memory `db` cache | kept on `globalThis` so pages and route handlers share one instance |
+| `express-session` + file store | `src/lib/session.ts`: same cookie signing (`s:<sid>.<hmac>`), same JSON files, 7-day sliding expiry |
+| middleware chain (`req.currentUser`, accrual, impersonation, lang, GA event) | `src/server/pipeline.ts`, same order |
+| `app.get/post` + `adminRouter` | `src/server/router.ts` (Express matching rules) + `src/server/routes/*` in the same order |
+| `res.render(view, locals)` | view components in `src/views/pages/*`, registered in `src/views/registry.ts`; layout values in `src/server/page-props.ts` |
+| `res.locals` helpers (`t`, `money`, `planName`, …) | `src/views/helpers.ts` |
+| CSRF token + `_csrf` field | same token in the session, checked for every POST (body, `?_csrf=` or `X-CSRF-Token`) |
+| admin subdomain (root = admin, `/admin/` stripped from HTML and redirects) | pipeline routes `/` → `/admin` and tries the admin router at the root; redirects are stripped; views build links with `h.ah()` |
+| `setInterval` 60 s jobs | `src/instrumentation.ts` (phase 5) |
+| multer uploads | `src/server/body.ts` (`formData()`), same names/limits when saved |
+| in-memory `db` cache | kept on `globalThis` so every bundle shares one instance |
+
+Views must import only pure modules (`lib/locales`, `lib/text`, `lib/constants`,
+`lib/plan-color`, types): the Pages Router also builds a browser bundle for each page, and
+server modules (fs, nodemailer) would break it.
 
 The store is deliberately **mutable** (one shared object, atomic write on save), exactly
 like `db.js`. Rewriting it to immutable updates would change behaviour; don't.
 
+Known, intentional differences: `window.MSG` strings are JSON-encoded (EJS HTML-escaped
+apostrophes inside the JS strings, which showed up as `&#39;`).
+
 ## Phases (tick when pushed)
 
-- [ ] 0. Scaffold `web/`, plan doc
-- [ ] 1. Core libs: db, locales, email, game rules, session, context, CSRF, proxy
+- [x] 0. Scaffold `web/`, plan doc
+- [x] 1. Core libs: db, locales, email, game rules, session, pipeline, router, CSRF, layout
 - [ ] 2. Layout + public pages: landing, start, guide, terms, privacy, download, contact,
        signup, login, verify, forgot, reset, unsubscribe, pending, error/message/404
 - [ ] 3. Player pages: dashboard, invest, withdraw, send, rewards, achievements, activity,
@@ -63,5 +86,6 @@ like `db.js`. Rewriting it to immutable updates would change behaviour; don't.
 
 ```bash
 cd web && npm install
-DATA_DIR=../data UPLOAD_DIR=../public/uploads SESSION_SECRET=dev npm run dev   # :3031
+npm test                      # unit + differential tests against ../server.js
+npm run build && DATA_DIR=/tmp/kz SESSION_SECRET=dev npx next start -p 3031   # production mode (no hydration)
 ```
