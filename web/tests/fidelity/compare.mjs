@@ -146,7 +146,7 @@ function skipElement(el) {
   return false;
 }
 
-function normalise(html) {
+export function normalise(html) {
   const doc = parse(html);
   const lines = [];
   const walk = (node, depth) => {
@@ -288,4 +288,7 @@ async function main() {
   process.exit(failures ? 1 : 0);
 }
 
-main().catch((e) => { console.error(e); process.exit(2); });
+// Run only when executed directly (normalise() is also imported by other checks).
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((e) => { console.error(e); process.exit(2); });
+}

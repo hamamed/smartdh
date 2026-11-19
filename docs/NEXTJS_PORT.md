@@ -101,7 +101,18 @@ Known, intentional differences (each one is a fix of an Express quirk; nothing a
        `fixture.mjs`): add every page you port to `pages.mjs` and keep it at "same".
        It ignores only what can't matter: head tag order (React 19 hoists metas/links),
        React's image preload hints and comment separators, attribute order, CSRF/time values.
-- [ ] 7. Cutover: move `web/` to root, deploy with a build step, keep port 3830
+- [ ] 7. Cutover (waiting for the owner's go-ahead). Already checked on 2026-11-19: the app
+       builds and runs on the koydam server (Node 22) against a copy of the live data, and the
+       landing, ad landing, guide and terms pages are identical to the live Express output on
+       that real data (copy deleted afterwards). Steps when approved:
+       1. `cp -a /opt/kanzup /opt/kanzup-express` (rollback copy, includes data at that moment)
+       2. rsync `web/` into a fresh `/opt/kanzup-next`, `npm ci && npx next build` there
+       3. stop `kanzup`, move `data/`, `public/uploads/`, `public/downloads/`, `.env` across
+          (sessions included, so nobody is logged out), point the unit's WorkingDirectory to the
+          new folder and ExecStart to `node_modules/.bin/next start -p 3830 -H 127.0.0.1`
+          (add `.next/cache` to ReadWritePaths), start, check pages
+       4. rollback = point the unit back at `/opt/kanzup-express` and restart
+       Afterwards: move `web/` to the repo root on this branch, delete the Express files, merge.
 
 ## Running locally
 
@@ -109,5 +120,7 @@ Known, intentional differences (each one is a fix of an Express quirk; nothing a
 cd web && npm install
 npm test                      # unit + differential tests against ../server.js
 npm run build && node tests/fidelity/compare.mjs [filter]   # Express vs Next, page by page
+# the lock file is kept compatible with the server's npm 10: regenerate with
+# npx npm@10.9.2 install --package-lock-only
 npm run build && DATA_DIR=/tmp/kz SESSION_SECRET=dev npx next start -p 3031   # production mode (no hydration)
 ```
