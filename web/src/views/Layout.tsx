@@ -161,7 +161,7 @@ export function Layout({ L, children }: { L: LayoutData; children: ReactNode }) 
           <div className="container d-flex align-items-center gap-2 py-2 small">
             <i data-lucide="eye" className="flex-shrink-0"></i>
             <span className="flex-grow-1">{t("imp_viewing", { name: u.name })}</span>
-            <form action={L.adminHost ? "/stop-impersonate" : "/admin/stop-impersonate"} method="post" className="mb-0"><input type="hidden" name="_csrf" value={L.csrfToken} />
+            <form action="/admin/stop-impersonate" method="post" className="mb-0"><input type="hidden" name="_csrf" value={L.csrfToken} />
               <button className="btn btn-sm btn-light d-inline-flex align-items-center gap-1"><i data-lucide="log-out"></i>{t("imp_exit")}</button>
             </form>
           </div>

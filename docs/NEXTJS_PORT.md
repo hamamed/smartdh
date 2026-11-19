@@ -64,6 +64,11 @@ server modules (fs, nodemailer) would break it.
 The store is deliberately **mutable** (one shared object, atomic write on save), exactly
 like `db.js`. Rewriting it to immutable updates would change behaviour; don't.
 
+Inline event handlers (`onsubmit="…"`, `onclick="…"`): React drops string handlers, so
+views write `data-raw-onsubmit="…"` and `src/server/html-transform.ts` (run from
+`_document.getInitialProps`) turns it back into `onsubmit="…"`. The same transform does the
+admin-subdomain `/admin/` → `/` link rewrite over the whole page, exactly like Express.
+
 Known, intentional differences: `window.MSG` strings are JSON-encoded (EJS HTML-escaped
 apostrophes inside the JS strings, which showed up as `&#39;`).
 
@@ -74,8 +79,9 @@ apostrophes inside the JS strings, which showed up as `&#39;`).
 - [x] 2. Layout + public pages: landing, start, guide, terms, privacy, download, contact,
        signup, login, verify, forgot, reset, unsubscribe, pending, error/message/404
        (37 pages and form posts identical in `tests/fidelity/compare.mjs`)
-- [ ] 3. Player pages: dashboard, invest, withdraw, send, rewards, achievements, activity,
+- [x] 3. Player pages: dashboard, invest, withdraw, send, rewards, achievements, activity,
        referral, profile, support, verify-identity, leaderboard, invoice + all player POSTs
+       (132 pages and posts identical; multipart uploads still to be exercised in phase 5)
 - [ ] 4. Admin pages (hub, users, user, deposits, withdrawals, apps, email, tickets, audit,
        invoices, data, test lab, admins, account, settings-*) + all admin POSTs, CSV/JSON
 - [ ] 5. Background jobs, uploads, QR, Telegram, emails end-to-end

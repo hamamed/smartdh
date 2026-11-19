@@ -1,12 +1,20 @@
 // The <html>/<head>/<body> shell. Head tags come from the page's layout props, so
 // every page gets exactly the head views/layout.ejs produced. Runtime JS is off on
 // every page (see [[...path]].tsx), so Next adds no scripts and no page data.
-import Document, { Head, Html, Main, NextScript } from "next/document";
+import Document, { Head, Html, Main, NextScript, type DocumentContext, type DocumentInitialProps } from "next/document";
+import { onAdminHost } from "@/lib/config";
+import { transformHtml } from "@/server/html-transform";
 import type { PageProps } from "@/server/page-props";
 import { DefaultHead } from "@/views/Layout";
 import { BARE_BODY_CLASS, BARE_HEADS } from "@/views/bare";
 
 export default class KanzupDocument extends Document {
+  static async getInitialProps(ctx: DocumentContext): Promise<DocumentInitialProps> {
+    const initial = await Document.getInitialProps(ctx);
+    const adminHost = onAdminHost(ctx.req?.headers.host);
+    return { ...initial, html: transformHtml(initial.html, { adminHost }) };
+  }
+
   render() {
     const props = (this.props.__NEXT_DATA__.props as { pageProps?: PageProps }).pageProps;
     const L = props?.L;

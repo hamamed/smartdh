@@ -23,8 +23,6 @@ export function helpers(L: LayoutData) {
     statusLabel: (s: string) => t("st_" + s),
     rejectReason: (w: Withdrawal) => rejectReasonText(t, w),
     can: (perm: string) => L.perms.includes(perm),
-    /** Admin link: "/admin/x" stays as-is, but becomes "/x" on the admin subdomain (clean URLs). */
-    ah: (href: string) => (L.adminHost ? (href === "/admin" ? "/" : href.replace(/^\/admin\//, "/")) : href),
     ACH: ACHIEVEMENTS,
     TX,
   };

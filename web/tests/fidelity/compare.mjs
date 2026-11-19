@@ -103,6 +103,20 @@ function canonicalMsg(code) {
   });
 }
 
+// Values that differ between two live servers by nature: the session's CSRF token
+// (48 hex chars, also inside form URLs and scripts), balances that accrue every
+// second (rounded to cents here), and the chart point stamped at request time.
+// Things created while the comparison runs get timestamps a millisecond apart on the
+// two servers; times from before the run (the fixture) are still compared exactly.
+const RUN_START = Date.now();
+const maskCsrf = (v) => v.replace(/\b[0-9a-f]{48}\b/g, "<csrf>");
+function maskVolatile(name, v) {
+  v = maskCsrf(v);
+  if (name === "data-value" || name === "data-persec") v = v.replace(/^(-?\d+\.\d{2})\d*$/, "$1");
+  if (name === "data-points") v = v.replace(/"t":1\d{12}/g, '"t":<ts>');
+  return v;
+}
+
 function skipElement(el) {
   const a = Object.fromEntries((el.attrs || []).map((x) => [x.name, x.value]));
   if (el.nodeName === "meta" && (a.name === "next-head-count" || a.charset)) return true;
@@ -128,12 +142,17 @@ function normalise(html) {
       const attrs = Object.fromEntries((child.attrs || []).map((x) => [x.name, x.value]));
       if (child.nodeName === "div" && attrs.id === "__next") { walk(child, depth); continue; }
       delete attrs["data-next-head"]; // Next marks head tags it manages; not page content
+      if (attrs["data-ago"] && Number(attrs["data-ago"]) >= RUN_START) {
+        attrs["data-ago"] = "<during-run>";
+        if ("title" in attrs) attrs.title = "<during-run>";
+      }
       const parts = Object.keys(attrs).sort().map((k) => {
         let v = attrs[k];
         if (k === "style") v = normStyle(v);
         else if (k === "class") v = v.split(/\s+/).filter(Boolean).join(" ");
         else if (BOOLEAN.has(k)) v = "";
         else if (k === "value" && VOLATILE_VALUE.has(attrs.name)) v = "*";
+        else v = maskVolatile(k, v);
         return v === "" ? k : `${k}=${JSON.stringify(v)}`;
       });
       lines.push("  ".repeat(depth) + "<" + child.nodeName + (parts.length ? " " + parts.join(" ") : "") + ">");
@@ -150,7 +169,7 @@ function normalise(html) {
       }
       const content = child.nodeName === "template" ? child.content : child;
       if (child.nodeName === "script" || child.nodeName === "style") {
-        const code = canonicalMsg((content.childNodes || []).map((c) => c.value || "").join("")).replace(/\s+/g, " ").trim();
+        const code = maskCsrf(canonicalMsg((content.childNodes || []).map((c) => c.value || "").join(""))).replace(/\s+/g, " ").trim();
         if (code) lines.push("  ".repeat(depth + 1) + "{code} " + code);
       } else walk(content, depth + 1);
     }
